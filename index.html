@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
 
@@ -195,13 +195,22 @@
             <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
             <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span></div>
           </div>
-          <button class="go-live-btn" id="goLiveBtn"><span class="golive-dot"></span><span class="golive-txt"><b>Go Live</b><small>Camera turns on automatically — stream to the community</small></span></button>
+          <button class="go-live-btn" id="goLiveBtn"><span class="golive-dot"></span><span class="golive-txt"><b>Go Live</b><small>Camera check, title &amp; symbol — then stream to the community</small></span></button>
           <div class="you-live-bar" id="youLiveBar" hidden>
             <span class="live-pill"><i></i>YOU ARE LIVE</span>
             <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
             <span class="yl-stat num" id="youTimer">00:00</span>
             <span class="yl-stat"><b class="num pl-pos" id="youPL">+$0.00</b> today</span>
             <button class="danger-btn sm" id="endLiveBtn">End</button>
+          </div>
+          <div class="live-hint card" id="liveHint" hidden>
+            <b>You're live — what now?</b>
+            <ol>
+              <li>Call out your entries on <b id="liveHintSym">XAUUSD</b> as you take them.</li>
+              <li>Viewers see your live chart and face-cam.</li>
+              <li>Tap <b>End</b> when you're done.</li>
+            </ol>
+            <button class="ghost-btn sm" id="liveHintOk">Got it</button>
           </div>
           <div class="chart-wrap live-chart" id="liveChartWrap">
             <div class="tv-host" id="tvChartLive"></div>
@@ -347,6 +356,33 @@
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
+
+<!-- ============ GO-LIVE SETUP SHEET ============ -->
+<div class="backdrop" id="liveSetupBackdrop" hidden></div>
+<section class="sheet" id="liveSetupSheet" hidden aria-label="Set up your stream">
+  <div class="sheet-head"><b>Set up your stream</b><button class="icon-btn" id="lsClose" aria-label="Close">✕</button></div>
+  <div class="ls-body">
+    <div class="ls-cam">
+      <video id="lsCamVideo" autoplay playsinline muted hidden></video>
+      <div class="ls-cam-empty" id="lsCamEmpty">
+        <span class="ic" data-icon="cam"></span>
+        <span>Camera preview</span>
+        <button class="fc-cam-btn" id="lsCamBtn">Enable camera</button>
+      </div>
+    </div>
+    <div class="fld"><label for="lsTitle">Stream title</label>
+      <input class="field" id="lsTitle" maxlength="60" value="XAUUSD · Live scalps" autocomplete="off">
+    </div>
+    <div class="fld"><span class="fld-label">Symbol you'll trade</span>
+      <div class="chip-row" id="lsSymChips"></div>
+    </div>
+    <p class="fine">Viewers see your live chart and face-cam. Nothing is really streamed — demo.</p>
+  </div>
+  <div class="sheet-foot">
+    <button class="ghost-btn" id="lsCancel">Cancel</button>
+    <button class="primary-btn" id="lsStart">Start Live</button>
+  </div>
+</section>
 </body>
 </html>

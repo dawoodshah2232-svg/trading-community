@@ -703,6 +703,22 @@ select.field{ appearance:none; }
 .conn-dot{ width:7px; height:7px; border-radius:50%; background:currentColor; }
 
 /* ---------- modal / sheet ---------- */
+/* ---------- go-live setup sheet ---------- */
+#liveSetupSheet{ z-index:70; }
+.ls-body{ padding:2px 18px 6px; overflow-y:auto; }
+.ls-cam{ position:relative; height:168px; border-radius:14px; overflow:hidden; background:var(--surface-2); margin-bottom:14px; }
+.ls-cam video{ width:100%; height:100%; object-fit:cover; }
+.ls-cam-empty{ position:absolute; inset:0; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; color:var(--muted); font-size:13px; }
+.ls-cam-empty .ic{ width:30px; height:30px; opacity:.7; }
+.chip-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:2px; }
+.ls-chip{ padding:9px 15px; border-radius:999px; border:1px solid var(--border); background:var(--surface); font-weight:700; font-size:13px; color:var(--text); }
+.ls-chip.on{ background:var(--blue); border-color:var(--blue); color:#fff; }
+.sheet-foot{ display:flex; gap:10px; padding:12px 18px calc(16px + env(safe-area-inset-bottom)); }
+.sheet-foot .primary-btn, .sheet-foot .ghost-btn{ flex:1; min-height:48px; }
+/* "what now" hint shown when the stream starts */
+.live-hint{ margin:10px 14px 0; padding:12px 14px; }
+.live-hint ol{ margin:8px 0 10px 20px; font-size:13px; color:var(--muted); display:grid; gap:5px; }
+.live-hint ol b{ color:var(--text); }
 .modal-wrap{
   position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:20px;
 }

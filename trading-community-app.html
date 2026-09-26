@@ -711,6 +711,22 @@ select.field{ appearance:none; }
 .conn-dot{ width:7px; height:7px; border-radius:50%; background:currentColor; }
 
 /* ---------- modal / sheet ---------- */
+/* ---------- go-live setup sheet ---------- */
+#liveSetupSheet{ z-index:70; }
+.ls-body{ padding:2px 18px 6px; overflow-y:auto; }
+.ls-cam{ position:relative; height:168px; border-radius:14px; overflow:hidden; background:var(--surface-2); margin-bottom:14px; }
+.ls-cam video{ width:100%; height:100%; object-fit:cover; }
+.ls-cam-empty{ position:absolute; inset:0; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; color:var(--muted); font-size:13px; }
+.ls-cam-empty .ic{ width:30px; height:30px; opacity:.7; }
+.chip-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:2px; }
+.ls-chip{ padding:9px 15px; border-radius:999px; border:1px solid var(--border); background:var(--surface); font-weight:700; font-size:13px; color:var(--text); }
+.ls-chip.on{ background:var(--blue); border-color:var(--blue); color:#fff; }
+.sheet-foot{ display:flex; gap:10px; padding:12px 18px calc(16px + env(safe-area-inset-bottom)); }
+.sheet-foot .primary-btn, .sheet-foot .ghost-btn{ flex:1; min-height:48px; }
+/* "what now" hint shown when the stream starts */
+.live-hint{ margin:10px 14px 0; padding:12px 14px; }
+.live-hint ol{ margin:8px 0 10px 20px; font-size:13px; color:var(--muted); display:grid; gap:5px; }
+.live-hint ol b{ color:var(--text); }
 .modal-wrap{
   position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:20px;
 }
@@ -1153,13 +1169,22 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
             <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
             <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span></div>
           </div>
-          <button class="go-live-btn" id="goLiveBtn"><span class="golive-dot"></span><span class="golive-txt"><b>Go Live</b><small>Camera turns on automatically — stream to the community</small></span></button>
+          <button class="go-live-btn" id="goLiveBtn"><span class="golive-dot"></span><span class="golive-txt"><b>Go Live</b><small>Camera check, title &amp; symbol — then stream to the community</small></span></button>
           <div class="you-live-bar" id="youLiveBar" hidden>
             <span class="live-pill"><i></i>YOU ARE LIVE</span>
             <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
             <span class="yl-stat num" id="youTimer">00:00</span>
             <span class="yl-stat"><b class="num pl-pos" id="youPL">+$0.00</b> today</span>
             <button class="danger-btn sm" id="endLiveBtn">End</button>
+          </div>
+          <div class="live-hint card" id="liveHint" hidden>
+            <b>You're live — what now?</b>
+            <ol>
+              <li>Call out your entries on <b id="liveHintSym">XAUUSD</b> as you take them.</li>
+              <li>Viewers see your live chart and face-cam.</li>
+              <li>Tap <b>End</b> when you're done.</li>
+            </ol>
+            <button class="ghost-btn sm" id="liveHintOk">Got it</button>
           </div>
           <div class="chart-wrap live-chart" id="liveChartWrap">
             <div class="tv-host" id="tvChartLive"></div>
@@ -1400,6 +1425,52 @@ SYM_ORDER.forEach(s=>{
   state.prices[s] = { bid:m.base, ask:m.base+m.spread, chg:m.chg };
   state.hist[s] = [m.base];
 });
+
+/* ---------------- REAL MARKET ANCHORS (free public APIs; fail-soft to sim) ---------------- */
+const CG_IDS = { BTCUSD:"bitcoin", ETHUSD:"ethereum", SOLUSD:"solana", BNBUSD:"binancecoin", XRPUSD:"ripple" };
+function fetchJSON(url, ms){
+  const c = new AbortController(); const t = setTimeout(()=>c.abort(), ms || 8000);
+  return fetch(url, { cache:"no-store", signal:c.signal })
+    .then(r=>{ clearTimeout(t); if(!r.ok) throw new Error("bad"); return r.json(); })
+    .catch(e=>{ clearTimeout(t); throw e; });
+}
+/* Anchors the sim to the real market. tick() mean-reverts toward base, so refreshes glide smoothly. */
+function anchorPrice(sym, price, chg, hard){
+  const m = SYMBOLS[sym]; if(!m || !(price > 0)) return;
+  m.base = price;
+  if(typeof chg === "number" && isFinite(chg)) m.chg = Math.max(-99, Math.min(99, chg));
+  const pr = state.prices[sym];
+  if(hard){ pr.bid = price; pr.ask = price + m.spread; }
+  pr.chg = m.chg;
+  const h = state.hist[sym]; h.push(hard ? price : pr.bid); if(h.length > 140) h.shift();
+}
+async function fetchRealPrices(cryptoOnly){
+  const jobs = [];
+  if(!cryptoOnly){
+    /* forex — Friday close on weekends (frankfurter, free, no key) */
+    jobs.push(fetchJSON("https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,JPY,AUD,CAD,NZD,CHF").then(f=>{
+      const r = f && f.rates; if(!r) return;
+      const conv = { EURUSD:1/r.EUR, GBPUSD:1/r.GBP, USDJPY:r.JPY, AUDUSD:1/r.AUD, USDCAD:r.CAD, NZDUSD:1/r.NZD, USDCHF:r.CHF };
+      Object.entries(conv).forEach(([s,p])=>anchorPrice(s, p, undefined, true));
+    }).catch(()=>{}));
+    /* metals — live spot when available */
+    jobs.push(fetchJSON("https://api.metals.live/v1/spot").then(g=>{
+      if(g && g.gold > 0) anchorPrice("XAUUSD", g.gold, undefined, true);
+      if(g && g.silver > 0) anchorPrice("XAGUSD", g.silver, undefined, true);
+    }).catch(()=>{}));
+  }
+  /* crypto — trades 24/7, refreshed every minute */
+  const ids = Object.values(CG_IDS).join(",");
+  jobs.push(fetchJSON("https://api.coingecko.com/api/v3/simple/price?ids="+ids+"&vs_currencies=usd&include_24hr_change=true").then(j=>{
+    Object.entries(CG_IDS).forEach(([s,id])=>{
+      const d = j && j[id];
+      if(d && d.usd > 0) anchorPrice(s, d.usd, d.usd_24h_change, !cryptoOnly);
+    });
+  }).catch(()=>{}));
+  await Promise.all(jobs);
+}
+fetchRealPrices(false);
+setInterval(()=>fetchRealPrices(true), 60000);
 /* seed one demo alert so the feature is visible */
 state.alerts.push({ id:"a"+(state.alertSeq++), sym:"XAUUSD", cond:"above", price:2660.00, triggered:false });
 
@@ -2383,27 +2454,31 @@ $("copySwitch").addEventListener("click", function(){
 /* ---------------- REAL FACE CAMERA (getUserMedia; needs HTTPS — GitHub Pages is HTTPS) ---------------- */
 let camStream = null;
 function camOn(){ return !!camStream; }
+function camVideoEls(){ return [$("faceCamVideo"), $("lsCamVideo")].filter(Boolean); }
+function paintCamUI(on){
+  camVideoEls().forEach(v=>{
+    if(on){ v.srcObject = camStream; v.hidden = false; }
+    else { try{ v.pause(); }catch(e){} v.srcObject = null; v.hidden = true; }
+  });
+  const e1 = $("faceCamEmpty"); if(e1) e1.hidden = on;
+  const e2 = $("lsCamEmpty"); if(e2) e2.hidden = on;
+  const b1 = $("camToggleBtn"); if(b1) b1.textContent = on ? "Stop camera" : "Enable camera";
+  const b2 = $("lsCamBtn"); if(b2) b2.textContent = on ? "Stop camera" : "Enable camera";
+}
 function stopCamera(){
   if(camStream){ try{ camStream.getTracks().forEach(t=>t.stop()); }catch(e){} camStream = null; }
-  const v = $("faceCamVideo");
-  if(v){ v.srcObject = null; v.hidden = true; }
-  const e = $("faceCamEmpty"); if(e) e.hidden = false;
-  const b = $("camToggleBtn"); if(b) b.textContent = "Enable camera";
+  paintCamUI(false);
 }
 async function enableCamera(){
   if(camStream) return;
-  const v = $("faceCamVideo");
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     toast("Camera not supported here — showing placeholder (demo)"); return;
   }
   try{
     /* front camera preferred on phones (ideal, not required), default webcam on laptops */
     camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:"user" } }, audio:false });
-    v.srcObject = camStream;
-    v.hidden = false;
-    $("faceCamEmpty").hidden = true;
-    try{ await v.play(); }catch(e){ /* mobile browsers need the explicit play() call */ }
-    $("camToggleBtn").textContent = "Stop camera";
+    paintCamUI(true);
+    for(const v of camVideoEls()){ try{ await v.play(); }catch(e){ /* mobile browsers need the explicit play() call */ } }
     toast("Camera on — preview only, nothing is streamed (demo)");
   }catch(err){
     camStream = null;
@@ -2417,6 +2492,46 @@ async function enableCamera(){
   }
 }
 $("camToggleBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stopCamera() : enableCamera(); });
+
+/* ---------------- GO-LIVE SETUP (camera check + title + symbol before broadcast) ---------------- */
+const liveSetup = { sym:"XAUUSD", title:"" };
+const LS_SYMS = ["XAUUSD","BTCUSD","EURUSD","GBPUSD","ETHUSD","US30"];
+function renderLsChips(){
+  const box = $("lsSymChips"); if(!box) return; box.innerHTML = "";
+  LS_SYMS.forEach(s=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "ls-chip" + (s === liveSetup.sym ? " on" : "");
+    b.textContent = s;
+    b.addEventListener("click", ()=>{
+      liveSetup.sym = s;
+      $("lsTitle").value = s + " · Live scalps";
+      renderLsChips();
+    });
+    box.appendChild(b);
+  });
+}
+function openLiveSetup(){
+  if(youLive.active) return;
+  liveSetup.sym = state.sym;
+  renderLsChips();
+  $("lsTitle").value = state.sym + " · Live scalps";
+  $("liveSetupBackdrop").hidden = false;
+  $("liveSetupSheet").hidden = false;
+  enableCamera(); /* preview attempt; fails gracefully to the placeholder */
+}
+function closeLiveSetup(){
+  $("liveSetupBackdrop").hidden = true;
+  $("liveSetupSheet").hidden = true;
+}
+let liveHintTimer = null;
+function showLiveHint(){
+  const h = $("liveHint"); if(!h) return;
+  $("liveHintSym").textContent = liveSetup.sym;
+  h.hidden = false;
+  clearTimeout(liveHintTimer);
+  liveHintTimer = setTimeout(()=>{ h.hidden = true; }, 12000);
+}
 
 /* ---------------- GO LIVE (demo broadcast; ALL numbers simulated) ---------------- */
 const youLive = { active:false, viewers:0, startT:0, pl:0, timerId:null };
@@ -2445,6 +2560,7 @@ function startLive(){
     renderYouLiveCard();
   }, 1000);
   renderYouLiveCard();
+  showLiveHint();
   toast("You are LIVE — demo broadcast, nothing really streams");
 }
 function endLive(){
@@ -2457,8 +2573,18 @@ function endLive(){
   const card = $("youLiveCard"); if(card) card.remove();
   toast("Live ended — demo");
 }
-$("goLiveBtn").addEventListener("click", startLive);
+$("goLiveBtn").addEventListener("click", openLiveSetup);
 $("endLiveBtn").addEventListener("click", endLive);
+$("lsClose").addEventListener("click", closeLiveSetup);
+$("lsCancel").addEventListener("click", closeLiveSetup);
+$("liveSetupBackdrop").addEventListener("click", closeLiveSetup);
+$("lsCamBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stopCamera() : enableCamera(); });
+$("lsStart").addEventListener("click", ()=>{
+  liveSetup.title = ($("lsTitle").value || "").trim().slice(0, 60) || (liveSetup.sym + " · Live scalps");
+  closeLiveSetup();
+  startLive();
+});
+$("liveHintOk").addEventListener("click", ()=>{ $("liveHint").hidden = true; clearTimeout(liveHintTimer); });
 
 /* live card published to the TOP of the Community tab while you are live */
 function renderYouLiveCard(){
@@ -2475,10 +2601,10 @@ function renderYouLiveCard(){
   const plTxt = (youLive.pl>=0?"+$":"−$")+Math.abs(youLive.pl).toFixed(2);
   card.innerHTML =
     '<div class="yl-top"><span class="live-pill"><i></i>LIVE</span>'+
-    '<span class="pair-badge">XAUUSD</span>'+
+    '<span class="pair-badge">'+liveSetup.sym+'</span>'+
     '<span class="yl-viewers num">'+youLive.viewers.toLocaleString("en-US")+' watching</span></div>'+
     '<div class="yl-main"><div class="avatar">DR</div>'+
-    '<div><b>Daud is live now</b><span class="tstat">Today <b class="'+plCls+'">'+plTxt+'</b> · XAUUSD scalps</span></div>'+
+    '<div><b>'+esc(liveSetup.title || (liveSetup.sym+" · Live scalps"))+'</b><span class="tstat">Today <b class="'+plCls+'">'+plTxt+'</b> · '+liveSetup.sym+' scalps</span></div>'+
     '<button class="primary-btn sm" id="youLiveWatch">Watch</button></div>'+
     '<p class="fine">Demo broadcast — viewers and profit are simulated.</p>';
   $("youLiveWatch").addEventListener("click", ()=>goTab("live"));
@@ -2859,5 +2985,32 @@ try{ buildMainChart(); }catch(err){ console.error("[chart] buildMainChart threw:
 })();
 
 </script>
+
+<!-- ============ GO-LIVE SETUP SHEET ============ -->
+<div class="backdrop" id="liveSetupBackdrop" hidden></div>
+<section class="sheet" id="liveSetupSheet" hidden aria-label="Set up your stream">
+  <div class="sheet-head"><b>Set up your stream</b><button class="icon-btn" id="lsClose" aria-label="Close">✕</button></div>
+  <div class="ls-body">
+    <div class="ls-cam">
+      <video id="lsCamVideo" autoplay playsinline muted hidden></video>
+      <div class="ls-cam-empty" id="lsCamEmpty">
+        <span class="ic" data-icon="cam"></span>
+        <span>Camera preview</span>
+        <button class="fc-cam-btn" id="lsCamBtn">Enable camera</button>
+      </div>
+    </div>
+    <div class="fld"><label for="lsTitle">Stream title</label>
+      <input class="field" id="lsTitle" maxlength="60" value="XAUUSD · Live scalps" autocomplete="off">
+    </div>
+    <div class="fld"><span class="fld-label">Symbol you'll trade</span>
+      <div class="chip-row" id="lsSymChips"></div>
+    </div>
+    <p class="fine">Viewers see your live chart and face-cam. Nothing is really streamed — demo.</p>
+  </div>
+  <div class="sheet-foot">
+    <button class="ghost-btn" id="lsCancel">Cancel</button>
+    <button class="primary-btn" id="lsStart">Start Live</button>
+  </div>
+</section>
 </body>
 </html>
