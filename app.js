@@ -43,7 +43,11 @@ const ICONS = {
   cam:'<rect x="3" y="7" width="13" height="12" rx="3"/><path d="M16 10.5l5-3v9l-5-3"/>',
   star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/>',
-  reel:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9.5h18M7.5 5v4.5M16.5 5v4.5"/><path d="M10.5 12.5l4.5 2.5-4.5 2.5z"/>'
+  reel:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9.5h18M7.5 5v4.5M16.5 5v4.5"/><path d="M10.5 12.5l4.5 2.5-4.5 2.5z"/>',
+  edit:'<path d="M4 20l4-1L19 8l-3-3L5 16l-1 4z"/><path d="M13.5 6.5l3 3"/>',
+  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  bank:'<path d="M4 10l8-6 8 6"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8"/><path d="M4 20h16"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/>',
 };
 function injectIcons(){
   document.querySelectorAll("[data-icon]").forEach(el=>{
@@ -218,6 +222,7 @@ function theme(){ return document.documentElement.dataset.theme || "dark"; }
 function setTheme(t){
   document.documentElement.dataset.theme = t;
   $("themeNameSide").textContent = t === "dark" ? "Dark" : "Light";
+  const stn = $("setThemeName"); if(stn) stn.textContent = t === "dark" ? "Dark" : "Light";
   try{ localStorage.setItem("tc_theme_v1", t); }catch(e){}
   applyChartTheme(); /* recolor the self-hosted chart */
 }
@@ -1643,20 +1648,26 @@ $("composerInput").addEventListener("keydown", e=>{ if(e.key==="Enter") $("compo
 
 /* ---------------- PROFILE + BROKERS ---------------- */
 const BROKERS = [
-  { name:"Exness",     sub:"MT4 / MT5",            g:["#2F80FF","#1B5FD6"], ini:"EX", server:"Exness-MT5Real", connected:false },
-  { name:"Vantage",    sub:"MT4 / MT5",            g:["#22C55E","#166534"], ini:"VA", server:"Vantage-MT5",     connected:false },
-  { name:"IC Markets", sub:"MT4 / MT5 · cTrader",  g:["#5B8DEF","#2B4A8A"], ini:"IC", server:"ICMarkets-MT5",  connected:false },
-  { name:"XM",         sub:"MT4 / MT5",            g:["#B678F0","#5E2B8A"], ini:"XM", server:"XM-MT5",          connected:false },
-  { name:"OctaFX",     sub:"MT4 / MT5",            g:["#F5A623","#B26A00"], ini:"OC", server:"OctaFX-MT5",      connected:false },
-  { name:"FBS",        sub:"MT4 / MT5",            g:["#F04452","#8A1F28"], ini:"FB", server:"FBS-MT5",         connected:false }
+  { name:"Exness",     sub:"MT4 / MT5",            g:["#2F80FF","#1B5FD6"], ini:"EX", server:"Exness-MT5Real", connected:false, logo:"assets/brokers/exness.png" },
+  { name:"Vantage",    sub:"MT4 / MT5",            g:["#22C55E","#166534"], ini:"VA", server:"Vantage-MT5",     connected:false, logo:"assets/brokers/vantage.png" },
+  { name:"IC Markets", sub:"MT4 / MT5 · cTrader",  g:["#5B8DEF","#2B4A8A"], ini:"IC", server:"ICMarkets-MT5",  connected:false, logo:"assets/brokers/icmarkets.png" },
+  { name:"XM",         sub:"MT4 / MT5",            g:["#B678F0","#5E2B8A"], ini:"XM", server:"XM-MT5",          connected:false, logo:"assets/brokers/xm.png" },
+  { name:"OctaFX",     sub:"MT4 / MT5",            g:["#F5A623","#B26A00"], ini:"OC", server:"OctaFX-MT5",     connected:false, logo:"assets/brokers/octafx.png" },
+  { name:"FBS",        sub:"MT4 / MT5",            g:["#F04452","#8A1F28"], ini:"FB", server:"FBS-MT5",         connected:false, logo:"assets/brokers/fbs.png" }
 ];
+/* broker logo tile: real logo image; falls back to the gradient monogram if the image fails */
+function brokerLogoHTML(b, cls){
+  const fb = '<div class="broker-logo '+(cls||"")+'" style="--g1:'+b.g[0]+';--g2:'+b.g[1]+'"><b>'+esc(b.name.split(" ")[0])+'</b><span>MT5</span></div>';
+  if(!b.logo) return fb;
+  return '<div class="broker-logo has-img '+(cls||"")+'"><img src="'+b.logo+'" alt="'+esc(b.name)+' logo" loading="lazy" onerror="this.closest(\'.broker-logo\').outerHTML=\''+fb.replace(/'/g,"\\'")+'\'"></div>';
+}
 function renderBrokers(){
   const list = $("brokerList"); list.innerHTML = "";
   BROKERS.forEach((b,i)=>{
     const r = document.createElement("div");
     r.className = "broker-row";
     r.innerHTML =
-      '<div class="broker-logo" style="--g1:'+b.g[0]+';--g2:'+b.g[1]+'"><b>'+esc(b.name.split(" ")[0])+'</b><span>MT5</span></div>'+
+      brokerLogoHTML(b)+
       '<div><b>'+esc(b.name)+'</b><span>'+esc(b.sub)+(b.connected?' · <span class="pl-pos">Live link · demo</span>':"")+'</span></div>'+
       '<button class="conn-btn'+(b.connected?" connected":"")+'" data-broker="'+i+'">'+
       (b.connected?'<span class="conn-dot"></span>Connected':"Connect")+'</button>';
@@ -1676,7 +1687,7 @@ let brokerTarget = null;
 function openBrokerModal(i){
   brokerTarget = i;
   const b = BROKERS[i];
-  $("brokerModalIc").innerHTML = '<div class="broker-logo lg" style="--g1:'+b.g[0]+';--g2:'+b.g[1]+'"><b>'+esc(b.name.split(" ")[0])+'</b><span>MT5</span></div>';
+  $("brokerModalIc").innerHTML = brokerLogoHTML(b, "lg");
   $("brokerModalName").textContent = b.name;
   $("brokerLogin").value = ""; $("brokerPass").value = "";
   $("brokerServer").value = b.server;
@@ -2669,6 +2680,9 @@ function bootV15(){
   renderAcctUI();
   /* KYC */
   $("kycRow").addEventListener("click", openKyc);
+  /* profile settings rows */
+  $("setThemeRow").addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
+  $("setAlertsRow").addEventListener("click", ()=>{ goTab("trade"); setTimeout(()=>{ $("alertsCard").scrollIntoView({behavior:"smooth", block:"center"}); }, 60); });
   $("kycBack").addEventListener("click", closeKyc);
   renderKyc();
   /* courses */
