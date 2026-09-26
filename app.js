@@ -2723,7 +2723,7 @@ const _renderLiveNow = renderLiveNow;
 renderLiveNow = function(){ _renderLiveNow(); renderHomeLive(); };
 
 /* ---------------- TRADERS DISCOVER SEARCH ---------------- */
-$("traderSearch").addEventListener("input", renderTraders);
+$("traderSearch").addEventListener("input", ()=>renderTraders());
 const _renderTraders = renderTraders;
 renderTraders = function(){
   const q = ($("traderSearch") && $("traderSearch").value || "").trim().toLowerCase();
