@@ -41,7 +41,8 @@ const ICONS = {
   send:'<path d="M4 12l16-7-7 16-2.5-6.5z"/><path d="M11.5 14.5L20 5"/>',
   cam:'<rect x="3" y="7" width="13" height="12" rx="3"/><path d="M16 10.5l5-3v9l-5-3"/>',
   star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/>',
-  search:'<circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/>'
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/>',
+  reel:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9.5h18M7.5 5v4.5M16.5 5v4.5"/><path d="M10.5 12.5l4.5 2.5-4.5 2.5z"/>'
 };
 function injectIcons(){
   document.querySelectorAll("[data-icon]").forEach(el=>{
@@ -1163,7 +1164,25 @@ async function enableCamera(){
 $("camToggleBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stopCamera() : enableCamera(); });
 
 /* ---------------- GO-LIVE SETUP (camera check + title + symbol before broadcast) ---------------- */
-const liveSetup = { sym:"XAUUSD", title:"" };
+const liveSetup = { sym:"XAUUSD", title:"", bg:"none" };
+const BG_OPTIONS = [
+  { id:"none",   label:"None" },
+  { id:"blur",   label:"Blur" },
+  { id:"remove", label:"Remove" },
+  { id:"desk",   label:"Desk" },
+  { id:"city",   label:"City night" },
+  { id:"studio", label:"Studio" }
+];
+function renderBgChips(){
+  const el = $("lsBgChips"); if(!el) return;
+  el.innerHTML = BG_OPTIONS.map(o=>'<button class="bg-chip bg-'+o.id+(liveSetup.bg===o.id?" active":"")+'" data-bg="'+o.id+'"><i></i><span>'+o.label+'</span></button>').join("");
+  el.querySelectorAll(".bg-chip").forEach(b=>b.addEventListener("click", ()=>{
+    liveSetup.bg = b.dataset.bg; renderBgChips(); applyLsBg();
+  }));
+}
+function applyLsBg(){
+  const bg = $("lsCamBg"); if(bg) bg.className = "cam-bg bg-"+liveSetup.bg;
+}
 const LS_SYMS = ["XAUUSD","BTCUSD","EURUSD","GBPUSD","ETHUSD","US30"];
 function renderLsChips(){
   const box = $("lsSymChips"); if(!box) return; box.innerHTML = "";
@@ -1184,6 +1203,7 @@ function openLiveSetup(){
   if(youLive.active) return;
   liveSetup.sym = state.sym;
   renderLsChips();
+  renderBgChips(); applyLsBg();
   $("lsTitle").value = state.sym + " · Live scalps";
   $("liveSetupBackdrop").hidden = false;
   $("liveSetupSheet").hidden = false;
@@ -1217,6 +1237,8 @@ function startLive(){
   youLive.pl = 0;
   $("goLiveBtn").hidden = true;
   $("youLiveBar").hidden = false;
+  const fbg = $("faceCamBg"); if(fbg) fbg.className = "cam-bg bg-"+liveSetup.bg;
+  renderLiveNow();
   enableCamera(); /* auto-request camera; fails gracefully to the placeholder */
   youLive.timerId = setInterval(()=>{
     youLive.viewers = Math.max(50, youLive.viewers + Math.round((Math.random()-0.47)*24));
@@ -1238,11 +1260,18 @@ function endLive(){
   clearInterval(youLive.timerId); youLive.timerId = null;
   $("goLiveBtn").hidden = false;
   $("youLiveBar").hidden = true;
+  const fbg = $("faceCamBg"); if(fbg) fbg.className = "cam-bg bg-none";
+  renderLiveNow();
   stopCamera();
   const card = $("youLiveCard"); if(card) card.remove();
   toast("Live ended — demo");
 }
 $("goLiveBtn").addEventListener("click", openLiveSetup);
+$("hubNewReel").addEventListener("click", ()=>{
+  const you = TRADERS.find(t=>t.id==="you");
+  you.reels.unshift({ id:"you-r"+Date.now(), title:"My latest strategy breakdown", views:"0", likes:0, liked:false, seed:Math.floor(Math.random()*999) });
+  renderReelsHub(); toast("Reel added — demo");
+});
 $("endLiveBtn").addEventListener("click", endLive);
 $("lsClose").addEventListener("click", closeLiveSetup);
 $("lsCancel").addEventListener("click", closeLiveSetup);
@@ -2315,6 +2344,7 @@ function paintWatchMode(){
     if(bar) bar.hidden = true;
     if(cam){ cam.classList.remove("viewer"); }
     const tag = $("faceCamTag"); if(tag) tag.hidden = true;
+    renderLiveNow();
     return;
   }
   if(bar){
@@ -2323,8 +2353,49 @@ function paintWatchMode(){
   }
   if(cam){ cam.classList.add("viewer"); }
   const tag = $("faceCamTag"); if(tag){ tag.hidden = false; tag.textContent = t.handle; }
+  renderLiveNow();
 }
 function stopWatching(){ watchingHost = null; paintWatchMode(); }
+
+/* --- v16: live-now strip (who's live) + all-reels hub in the Live section --- */
+function renderLiveNow(){
+  const el = $("liveNowStrip"); if(!el) return;
+  let html = "";
+  if(youLive.active){
+    html += '<button class="ln-item you" data-ln="you"><span class="ln-av" style="--g1:#2F80FF;--g2:#1B5FD6">AT</span><span class="ln-live">LIVE</span><span class="ln-name">You</span></button>';
+  }
+  TRADERS.filter(t=>!t.you && t.live).forEach(t=>{
+    const watching = watchingHost && watchingHost.id===t.id;
+    html += '<button class="ln-item'+(watching?' watching':'')+'" data-ln="'+t.id+'"><span class="ln-av" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+t.ini+'</span><span class="ln-live">LIVE</span><span class="ln-name">'+esc(t.name.split(" ")[0])+'</span></button>';
+  });
+  if(!html) html = '<span class="ln-empty">No one is live right now — be the first.</span>';
+  el.innerHTML = html;
+  el.querySelectorAll(".ln-item").forEach(b=>b.addEventListener("click", ()=>{
+    const id = b.dataset.ln;
+    if(id==="you"){ goTab("live"); return; }
+    if(watchingHost && watchingHost.id===id) stopWatching(); else watchTraderLive(id);
+  }));
+}
+function allReels(){
+  const out = [];
+  TRADERS.forEach(t=>{ (t.reels||[]).forEach(r=>out.push({ t, r })); });
+  return out.sort((a,b)=>(b.r.likes||0)-(a.r.likes||0));
+}
+function renderReelsHub(){
+  const g = $("reelsHubGrid"); if(!g) return;
+  const items = allReels();
+  const c = $("reelsHubCount"); if(c) c.textContent = items.length + " reels";
+  g.innerHTML = items.map(({t,r})=>
+    '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+    '<span class="rt-play"><i>▶</i></span>'+
+    '<span class="rt-handle">'+esc(t.handle)+'</span>'+
+    '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views||"0")+'</span></span></button>').join("");
+  g.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
+    const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
+    const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
+    openReel(t, r);
+  }));
+}
 
 /* --- quick one-tap buy/sell on the chart (uses ticket lots + type) --- */
 function quickTrade(dir){
@@ -2523,6 +2594,8 @@ setSymbol("XAUUSD");
 setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } })());
 renderTicketTick();
 renderAccount();
+renderLiveNow();
+renderReelsHub();
 try{ bootV15(); }catch(err){ console.error("[v15] boot failed:", err); }
 setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
 /* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */

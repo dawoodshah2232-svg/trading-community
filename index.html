@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
 
@@ -203,7 +203,10 @@
             <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
             <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span><span class="copy-chip" id="copyChip" hidden>📋 Copying</span></div>
           </div>
-          <button class="go-live-btn" id="goLiveBtn"><span class="golive-dot"></span><span class="golive-txt"><b>Go Live</b><small>Camera check, title &amp; symbol — then stream to the community</small></span></button>
+          <div class="live-toprow">
+            <button class="golive-mini" id="goLiveBtn"><span class="golive-dot"></span><b>Go Live</b></button>
+            <div class="live-now" id="liveNowStrip" aria-label="Live now"></div>
+          </div>
           <div class="you-live-bar" id="youLiveBar" hidden>
             <span class="live-pill"><i></i>YOU ARE LIVE</span>
             <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
@@ -228,6 +231,7 @@
             <div class="tv-host" id="tvChartLive"></div>
             <div class="live-hearts" id="liveHearts" aria-hidden="true"></div>
             <div class="face-cam" id="faceCam" aria-label="Streamer camera">
+              <div class="cam-bg bg-none" id="faceCamBg"></div>
               <span class="fc-tag" id="faceCamTag" hidden></span>
               <video id="faceCamVideo" autoplay playsinline muted hidden></video>
               <div class="fc-empty" id="faceCamEmpty">
@@ -254,6 +258,15 @@
                 <button class="icon-btn primary" id="chatSend" aria-label="Send message"><span class="ic" data-icon="send"></span></button>
               </div>
             </div>
+          </div>
+          <div class="reels-hub">
+            <div class="sec-head">
+              <h3><span class="ic sm" data-icon="reel"></span> Reels</h3>
+              <span class="fine num" id="reelsHubCount"></span>
+            </div>
+            <button class="ghost-btn wide new-reel-btn" id="hubNewReel"><span class="ic xs" data-icon="plus"></span> New reel (demo)</button>
+            <div class="reel-grid" id="reelsHubGrid"></div>
+            <p class="fine">Every reel from the community in one place — demo.</p>
           </div>
         </section>
 
@@ -405,6 +418,7 @@
   <div class="sheet-head"><b>Set up your stream</b><button class="icon-btn" id="lsClose" aria-label="Close">✕</button></div>
   <div class="ls-body">
     <div class="ls-cam">
+      <div class="cam-bg bg-none" id="lsCamBg"></div>
       <video id="lsCamVideo" autoplay playsinline muted hidden></video>
       <div class="ls-cam-empty" id="lsCamEmpty">
         <span class="ic" data-icon="cam"></span>
@@ -417,6 +431,10 @@
     </div>
     <div class="fld"><span class="fld-label">Symbol you'll trade</span>
       <div class="chip-row" id="lsSymChips"></div>
+    </div>
+    <div class="fld"><span class="fld-label">Camera background <span class="demo-tag">Simulated</span></span>
+      <div class="bg-chips" id="lsBgChips"></div>
+      <p class="fine">Preview only — real background removal needs the video SDK in the next phase.</p>
     </div>
     <p class="fine">Viewers see your live chart and face-cam. Nothing is really streamed — demo.</p>
   </div>
@@ -553,6 +571,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=15"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

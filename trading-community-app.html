@@ -1196,6 +1196,45 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .trader-mini span:last-child{ display:flex; flex-direction:column; line-height:1.3; }
 .trader-mini .handle{ font-size:12px; color:var(--muted); }
 
+/* ================= v16: live top row, live-now strip, reels hub, camera backgrounds ================= */
+.live-toprow{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.golive-mini{ flex-shrink:0; display:flex; align-items:center; gap:8px; background:linear-gradient(135deg,#F04452,#C92A38); color:#fff; border:0; border-radius:14px; padding:11px 16px; font:inherit; font-size:14px; font-weight:800; cursor:pointer; box-shadow:var(--shadow); }
+.golive-mini:active{ transform:scale(.96); }
+.live-now{ flex:1; min-width:0; display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding:2px; }
+.live-now::-webkit-scrollbar{ display:none; }
+.ln-item{ position:relative; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:0; cursor:pointer; padding:0; }
+.ln-av{ width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; color:#fff; background:linear-gradient(135deg,var(--g1),var(--g2)); border:3px solid #F04452; }
+.ln-item.watching .ln-av{ border-color:#22C55E; }
+.ln-item.you .ln-av{ border-color:#2F80FF; }
+.ln-live{ position:absolute; top:36px; background:#F04452; color:#fff; font-size:9px; font-weight:800; padding:2px 6px; border-radius:6px; letter-spacing:.5px; }
+.ln-name{ font-size:11px; color:var(--muted); max-width:62px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ln-empty{ font-size:12px; color:var(--muted); padding:14px 4px; white-space:nowrap; }
+
+.reels-hub{ margin-top:14px; }
+.reels-hub .sec-head h3{ display:flex; align-items:center; gap:8px; }
+.rt-handle{ position:absolute; top:8px; left:8px; font-size:10px; font-weight:700; color:#fff; background:rgba(0,0,0,.45); padding:3px 8px; border-radius:10px; }
+
+.bg-chips{ display:flex; gap:8px; flex-wrap:wrap; }
+.bg-chip{ display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:2px solid transparent; border-radius:12px; padding:6px; cursor:pointer; font-size:11px; color:var(--muted); }
+.bg-chip i{ width:46px; height:34px; border-radius:8px; display:block; }
+.bg-chip.active{ border-color:var(--accent); color:var(--text); }
+.bg-chip.bg-none i{ background:linear-gradient(135deg,#2a3348,#141b2c); }
+.bg-chip.bg-blur i{ background:linear-gradient(135deg,#5a6f9e,#232f52); }
+.bg-chip.bg-remove i{ background:linear-gradient(135deg,#0f172a,#334155); }
+.bg-chip.bg-desk i{ background:linear-gradient(135deg,#8B5E34,#3E2A18); }
+.bg-chip.bg-city i{ background:linear-gradient(135deg,#1e1b4b,#c2410c); }
+.bg-chip.bg-studio i{ background:linear-gradient(135deg,#334155,#0ea5e9); }
+
+.cam-bg{ position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:0; }
+.cam-bg.bg-none{ background:transparent; }
+.cam-bg.bg-blur{ background:rgba(20,28,48,.55); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+.cam-bg.bg-remove{ background:linear-gradient(135deg,#0f172a,#334155); }
+.cam-bg.bg-desk{ background:linear-gradient(135deg,#8B5E34,#3E2A18); }
+.cam-bg.bg-city{ background:linear-gradient(135deg,#1e1b4b,#c2410c); }
+.cam-bg.bg-studio{ background:linear-gradient(135deg,#334155,#0ea5e9); }
+.face-cam > *:not(.cam-bg){ position:relative; z-index:1; }
+.ls-cam > *:not(.cam-bg){ position:relative; z-index:1; }
+
 </style>
 </head>
 <body>
@@ -1394,7 +1433,10 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
             <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
             <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span><span class="copy-chip" id="copyChip" hidden>📋 Copying</span></div>
           </div>
-          <button class="go-live-btn" id="goLiveBtn"><span class="golive-dot"></span><span class="golive-txt"><b>Go Live</b><small>Camera check, title &amp; symbol — then stream to the community</small></span></button>
+          <div class="live-toprow">
+            <button class="golive-mini" id="goLiveBtn"><span class="golive-dot"></span><b>Go Live</b></button>
+            <div class="live-now" id="liveNowStrip" aria-label="Live now"></div>
+          </div>
           <div class="you-live-bar" id="youLiveBar" hidden>
             <span class="live-pill"><i></i>YOU ARE LIVE</span>
             <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
@@ -1419,6 +1461,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
             <div class="tv-host" id="tvChartLive"></div>
             <div class="live-hearts" id="liveHearts" aria-hidden="true"></div>
             <div class="face-cam" id="faceCam" aria-label="Streamer camera">
+              <div class="cam-bg bg-none" id="faceCamBg"></div>
               <span class="fc-tag" id="faceCamTag" hidden></span>
               <video id="faceCamVideo" autoplay playsinline muted hidden></video>
               <div class="fc-empty" id="faceCamEmpty">
@@ -1445,6 +1488,15 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
                 <button class="icon-btn primary" id="chatSend" aria-label="Send message"><span class="ic" data-icon="send"></span></button>
               </div>
             </div>
+          </div>
+          <div class="reels-hub">
+            <div class="sec-head">
+              <h3><span class="ic sm" data-icon="reel"></span> Reels</h3>
+              <span class="fine num" id="reelsHubCount"></span>
+            </div>
+            <button class="ghost-btn wide new-reel-btn" id="hubNewReel"><span class="ic xs" data-icon="plus"></span> New reel (demo)</button>
+            <div class="reel-grid" id="reelsHubGrid"></div>
+            <p class="fine">Every reel from the community in one place — demo.</p>
           </div>
         </section>
 
@@ -1596,6 +1648,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
   <div class="sheet-head"><b>Set up your stream</b><button class="icon-btn" id="lsClose" aria-label="Close">✕</button></div>
   <div class="ls-body">
     <div class="ls-cam">
+      <div class="cam-bg bg-none" id="lsCamBg"></div>
       <video id="lsCamVideo" autoplay playsinline muted hidden></video>
       <div class="ls-cam-empty" id="lsCamEmpty">
         <span class="ic" data-icon="cam"></span>
@@ -1608,6 +1661,10 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
     </div>
     <div class="fld"><span class="fld-label">Symbol you'll trade</span>
       <div class="chip-row" id="lsSymChips"></div>
+    </div>
+    <div class="fld"><span class="fld-label">Camera background <span class="demo-tag">Simulated</span></span>
+      <div class="bg-chips" id="lsBgChips"></div>
+      <p class="fine">Preview only — real background removal needs the video SDK in the next phase.</p>
     </div>
     <p class="fine">Viewers see your live chart and face-cam. Nothing is really streamed — demo.</p>
   </div>
@@ -1788,7 +1845,8 @@ const ICONS = {
   send:'<path d="M4 12l16-7-7 16-2.5-6.5z"/><path d="M11.5 14.5L20 5"/>',
   cam:'<rect x="3" y="7" width="13" height="12" rx="3"/><path d="M16 10.5l5-3v9l-5-3"/>',
   star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/>',
-  search:'<circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/>'
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/>',
+  reel:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9.5h18M7.5 5v4.5M16.5 5v4.5"/><path d="M10.5 12.5l4.5 2.5-4.5 2.5z"/>'
 };
 function injectIcons(){
   document.querySelectorAll("[data-icon]").forEach(el=>{
@@ -2910,7 +2968,25 @@ async function enableCamera(){
 $("camToggleBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stopCamera() : enableCamera(); });
 
 /* ---------------- GO-LIVE SETUP (camera check + title + symbol before broadcast) ---------------- */
-const liveSetup = { sym:"XAUUSD", title:"" };
+const liveSetup = { sym:"XAUUSD", title:"", bg:"none" };
+const BG_OPTIONS = [
+  { id:"none",   label:"None" },
+  { id:"blur",   label:"Blur" },
+  { id:"remove", label:"Remove" },
+  { id:"desk",   label:"Desk" },
+  { id:"city",   label:"City night" },
+  { id:"studio", label:"Studio" }
+];
+function renderBgChips(){
+  const el = $("lsBgChips"); if(!el) return;
+  el.innerHTML = BG_OPTIONS.map(o=>'<button class="bg-chip bg-'+o.id+(liveSetup.bg===o.id?" active":"")+'" data-bg="'+o.id+'"><i></i><span>'+o.label+'</span></button>').join("");
+  el.querySelectorAll(".bg-chip").forEach(b=>b.addEventListener("click", ()=>{
+    liveSetup.bg = b.dataset.bg; renderBgChips(); applyLsBg();
+  }));
+}
+function applyLsBg(){
+  const bg = $("lsCamBg"); if(bg) bg.className = "cam-bg bg-"+liveSetup.bg;
+}
 const LS_SYMS = ["XAUUSD","BTCUSD","EURUSD","GBPUSD","ETHUSD","US30"];
 function renderLsChips(){
   const box = $("lsSymChips"); if(!box) return; box.innerHTML = "";
@@ -2931,6 +3007,7 @@ function openLiveSetup(){
   if(youLive.active) return;
   liveSetup.sym = state.sym;
   renderLsChips();
+  renderBgChips(); applyLsBg();
   $("lsTitle").value = state.sym + " · Live scalps";
   $("liveSetupBackdrop").hidden = false;
   $("liveSetupSheet").hidden = false;
@@ -2964,6 +3041,8 @@ function startLive(){
   youLive.pl = 0;
   $("goLiveBtn").hidden = true;
   $("youLiveBar").hidden = false;
+  const fbg = $("faceCamBg"); if(fbg) fbg.className = "cam-bg bg-"+liveSetup.bg;
+  renderLiveNow();
   enableCamera(); /* auto-request camera; fails gracefully to the placeholder */
   youLive.timerId = setInterval(()=>{
     youLive.viewers = Math.max(50, youLive.viewers + Math.round((Math.random()-0.47)*24));
@@ -2985,11 +3064,18 @@ function endLive(){
   clearInterval(youLive.timerId); youLive.timerId = null;
   $("goLiveBtn").hidden = false;
   $("youLiveBar").hidden = true;
+  const fbg = $("faceCamBg"); if(fbg) fbg.className = "cam-bg bg-none";
+  renderLiveNow();
   stopCamera();
   const card = $("youLiveCard"); if(card) card.remove();
   toast("Live ended — demo");
 }
 $("goLiveBtn").addEventListener("click", openLiveSetup);
+$("hubNewReel").addEventListener("click", ()=>{
+  const you = TRADERS.find(t=>t.id==="you");
+  you.reels.unshift({ id:"you-r"+Date.now(), title:"My latest strategy breakdown", views:"0", likes:0, liked:false, seed:Math.floor(Math.random()*999) });
+  renderReelsHub(); toast("Reel added — demo");
+});
 $("endLiveBtn").addEventListener("click", endLive);
 $("lsClose").addEventListener("click", closeLiveSetup);
 $("lsCancel").addEventListener("click", closeLiveSetup);
@@ -4062,6 +4148,7 @@ function paintWatchMode(){
     if(bar) bar.hidden = true;
     if(cam){ cam.classList.remove("viewer"); }
     const tag = $("faceCamTag"); if(tag) tag.hidden = true;
+    renderLiveNow();
     return;
   }
   if(bar){
@@ -4070,8 +4157,49 @@ function paintWatchMode(){
   }
   if(cam){ cam.classList.add("viewer"); }
   const tag = $("faceCamTag"); if(tag){ tag.hidden = false; tag.textContent = t.handle; }
+  renderLiveNow();
 }
 function stopWatching(){ watchingHost = null; paintWatchMode(); }
+
+/* --- v16: live-now strip (who's live) + all-reels hub in the Live section --- */
+function renderLiveNow(){
+  const el = $("liveNowStrip"); if(!el) return;
+  let html = "";
+  if(youLive.active){
+    html += '<button class="ln-item you" data-ln="you"><span class="ln-av" style="--g1:#2F80FF;--g2:#1B5FD6">AT</span><span class="ln-live">LIVE</span><span class="ln-name">You</span></button>';
+  }
+  TRADERS.filter(t=>!t.you && t.live).forEach(t=>{
+    const watching = watchingHost && watchingHost.id===t.id;
+    html += '<button class="ln-item'+(watching?' watching':'')+'" data-ln="'+t.id+'"><span class="ln-av" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+t.ini+'</span><span class="ln-live">LIVE</span><span class="ln-name">'+esc(t.name.split(" ")[0])+'</span></button>';
+  });
+  if(!html) html = '<span class="ln-empty">No one is live right now — be the first.</span>';
+  el.innerHTML = html;
+  el.querySelectorAll(".ln-item").forEach(b=>b.addEventListener("click", ()=>{
+    const id = b.dataset.ln;
+    if(id==="you"){ goTab("live"); return; }
+    if(watchingHost && watchingHost.id===id) stopWatching(); else watchTraderLive(id);
+  }));
+}
+function allReels(){
+  const out = [];
+  TRADERS.forEach(t=>{ (t.reels||[]).forEach(r=>out.push({ t, r })); });
+  return out.sort((a,b)=>(b.r.likes||0)-(a.r.likes||0));
+}
+function renderReelsHub(){
+  const g = $("reelsHubGrid"); if(!g) return;
+  const items = allReels();
+  const c = $("reelsHubCount"); if(c) c.textContent = items.length + " reels";
+  g.innerHTML = items.map(({t,r})=>
+    '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+    '<span class="rt-play"><i>▶</i></span>'+
+    '<span class="rt-handle">'+esc(t.handle)+'</span>'+
+    '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views||"0")+'</span></span></button>').join("");
+  g.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
+    const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
+    const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
+    openReel(t, r);
+  }));
+}
 
 /* --- quick one-tap buy/sell on the chart (uses ticket lots + type) --- */
 function quickTrade(dir){
@@ -4270,6 +4398,8 @@ setSymbol("XAUUSD");
 setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } })());
 renderTicketTick();
 renderAccount();
+renderLiveNow();
+renderReelsHub();
 try{ bootV15(); }catch(err){ console.error("[v15] boot failed:", err); }
 setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
 /* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */
