@@ -1338,6 +1338,33 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 
 <div class="toast" id="toast" hidden role="status"></div>
 
+<!-- ============ GO-LIVE SETUP SHEET ============ -->
+<div class="backdrop" id="liveSetupBackdrop" hidden></div>
+<section class="sheet" id="liveSetupSheet" hidden aria-label="Set up your stream">
+  <div class="sheet-head"><b>Set up your stream</b><button class="icon-btn" id="lsClose" aria-label="Close">✕</button></div>
+  <div class="ls-body">
+    <div class="ls-cam">
+      <video id="lsCamVideo" autoplay playsinline muted hidden></video>
+      <div class="ls-cam-empty" id="lsCamEmpty">
+        <span class="ic" data-icon="cam"></span>
+        <span>Camera preview</span>
+        <button class="fc-cam-btn" id="lsCamBtn">Enable camera</button>
+      </div>
+    </div>
+    <div class="fld"><label for="lsTitle">Stream title</label>
+      <input class="field" id="lsTitle" maxlength="60" value="XAUUSD · Live scalps" autocomplete="off">
+    </div>
+    <div class="fld"><span class="fld-label">Symbol you'll trade</span>
+      <div class="chip-row" id="lsSymChips"></div>
+    </div>
+    <p class="fine">Viewers see your live chart and face-cam. Nothing is really streamed — demo.</p>
+  </div>
+  <div class="sheet-foot">
+    <button class="ghost-btn" id="lsCancel">Cancel</button>
+    <button class="primary-btn" id="lsStart">Start Live</button>
+  </div>
+</section>
+
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 /* ============================================================
@@ -2994,32 +3021,5 @@ try{ buildMainChart(); }catch(err){ console.error("[chart] buildMainChart threw:
 })();
 
 </script>
-
-<!-- ============ GO-LIVE SETUP SHEET ============ -->
-<div class="backdrop" id="liveSetupBackdrop" hidden></div>
-<section class="sheet" id="liveSetupSheet" hidden aria-label="Set up your stream">
-  <div class="sheet-head"><b>Set up your stream</b><button class="icon-btn" id="lsClose" aria-label="Close">✕</button></div>
-  <div class="ls-body">
-    <div class="ls-cam">
-      <video id="lsCamVideo" autoplay playsinline muted hidden></video>
-      <div class="ls-cam-empty" id="lsCamEmpty">
-        <span class="ic" data-icon="cam"></span>
-        <span>Camera preview</span>
-        <button class="fc-cam-btn" id="lsCamBtn">Enable camera</button>
-      </div>
-    </div>
-    <div class="fld"><label for="lsTitle">Stream title</label>
-      <input class="field" id="lsTitle" maxlength="60" value="XAUUSD · Live scalps" autocomplete="off">
-    </div>
-    <div class="fld"><span class="fld-label">Symbol you'll trade</span>
-      <div class="chip-row" id="lsSymChips"></div>
-    </div>
-    <p class="fine">Viewers see your live chart and face-cam. Nothing is really streamed — demo.</p>
-  </div>
-  <div class="sheet-foot">
-    <button class="ghost-btn" id="lsCancel">Cancel</button>
-    <button class="primary-btn" id="lsStart">Start Live</button>
-  </div>
-</section>
 </body>
 </html>
