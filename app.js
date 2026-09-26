@@ -3339,11 +3339,12 @@ function updateDataBadges(){
     const age = quoteAge(s);
     const ageTxt = age ? " · "+age : "";
     const ts = state.quoteAt[s] ? new Date(state.quoteAt[s]).toLocaleString() : "";
-    const src = kind === "live" ? "CoinGecko" : kind === "daily" ? "open.er-api.com" : "";
+    let src = kind === "live" ? "CoinGecko" : kind === "daily" ? "open.er-api.com" : "";
+    if(!src) src = CG_IDS[s] ? "CoinGecko" : "open.er-api.com"; /* known provider even before first quote */
     if(!open){
       badge.className = "data-badge sim";
       badge.textContent = "Frozen · last price";
-      if(ts) badge.title = "Last real quote: "+ts+(src ? " via "+src : "");
+      badge.title = ts ? "Last real quote: "+ts+" via "+src : "Market closed — source: "+src;
     }else if(kind === "live"){
       badge.className = "data-badge live";
       badge.textContent = "Real-time"+ageTxt;
