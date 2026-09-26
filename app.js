@@ -1630,6 +1630,7 @@ $("brokerConnectGo").addEventListener("click", ()=>{
 });
 
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
+function bootApp(){
 injectIcons();
 renderWatchlist();
 renderAlerts();
@@ -1648,5 +1649,33 @@ renderAccount();
 setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
 /* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */
 try{ buildMainChart(); }catch(err){ console.error("[chart] buildMainChart threw:", err); }
+}
+
+/* ---- TEMPORARY demo password gate (Dawood 2026-09-26): 223219 ----
+   Client-side only — keeps casual visitors out of the demo. Not real security. */
+(function(){
+  var PASS = "223219", KEY = "tc_demo_pass_v1", booted = false;
+  function start(){ if(booted) return; booted = true; bootApp(); }
+  function unlocked(){ try{ return sessionStorage.getItem(KEY) === PASS; }catch(e){ return false; } }
+  var lock = document.getElementById("tcLock");
+  if(unlocked()){ if(lock) lock.hidden = true; start(); return; }
+  if(lock) lock.hidden = false;
+  function go(){
+    var v = (document.getElementById("tcPass").value || "").trim();
+    if(v === PASS){
+      try{ sessionStorage.setItem(KEY, PASS); }catch(e){}
+      if(lock) lock.hidden = true;
+      start();
+    }else{
+      var er = document.getElementById("tcPassErr");
+      if(er) er.hidden = false;
+      var inp = document.getElementById("tcPass");
+      if(inp){ inp.value = ""; inp.focus(); }
+    }
+  }
+  document.getElementById("tcPassGo").addEventListener("click", go);
+  document.getElementById("tcPass").addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+  setTimeout(function(){ var inp = document.getElementById("tcPass"); if(inp) inp.focus(); }, 300);
+})();
 
 })();

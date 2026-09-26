@@ -355,6 +355,18 @@
 
 <div class="toast" id="toast" hidden role="status"></div>
 
+<!-- ============ TEMPORARY DEMO PASSWORD GATE (223219) ============ -->
+<div class="tc-lock" id="tcLock" hidden>
+  <div class="tc-lock-card">
+    <div class="tc-lock-logo">TC</div>
+    <h2>Trading Community</h2>
+    <p class="tc-lock-sub">Demo preview — enter the password to continue.</p>
+    <input type="password" id="tcPass" class="field tc-lock-input" placeholder="Password" autocomplete="off" inputmode="numeric">
+    <button class="primary-btn tc-lock-go" id="tcPassGo">Enter</button>
+    <p class="tc-lock-err" id="tcPassErr" hidden>Wrong password — try again.</p>
+  </div>
+</div>
+
 <!-- ============ GO-LIVE SETUP SHEET ============ -->
 <div class="backdrop" id="liveSetupBackdrop" hidden></div>
 <section class="sheet" id="liveSetupSheet" hidden aria-label="Set up your stream">

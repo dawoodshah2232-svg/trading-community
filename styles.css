@@ -979,3 +979,23 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 #screen-community .card{ margin-bottom:12px; }
 #screen-community .sec-head{ margin:20px 0 10px; }
 #screen-community .sec-head:first-child{ margin-top:0; }
+
+/* ---------- temporary demo password gate ---------- */
+.tc-lock{
+  position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(120% 120% at 50% 0%, #16233d 0%, #0b1220 70%);
+  padding:24px;
+}
+.tc-lock[hidden]{ display:none; }
+.tc-lock-card{ width:100%; max-width:340px; text-align:center; }
+.tc-lock-logo{
+  width:64px; height:64px; margin:0 auto 14px; border-radius:18px;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,#2F80FF,#22C55E); color:#fff;
+  font-weight:800; font-size:24px;
+}
+.tc-lock-card h2{ margin:0 0 6px; font-size:22px; }
+.tc-lock-sub{ color:var(--muted); font-size:14px; margin:0 0 18px; }
+.tc-lock-input{ text-align:center; font-size:20px; letter-spacing:6px; margin-bottom:12px; }
+.tc-lock-go{ width:100%; }
+.tc-lock-err{ color:#f87171; font-size:13px; margin:10px 0 0; }
