@@ -8,352 +8,173 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="phone">
 
-<div class="app" id="app">
-
-  <!-- MOCK: fake OS status bar for native app feel -->
-  <div class="statusbar">
-    <span id="sbTime">9:41</span>
-    <span class="sb-icons">
-      <svg width="17" height="11" viewBox="0 0 17 11" fill="#fff"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1" opacity=".4"/></svg>
-      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#fff" opacity=".5"/><rect x="2.5" y="2.5" width="14" height="7" rx="2" fill="#fff"/><rect x="23" y="4" width="2" height="4" rx="1" fill="#fff" opacity=".5"/></svg>
-    </span>
-  </div>
-
-  <!-- ==================== HOME ==================== -->
-  <section class="screen scroll active" id="screen-home">
-    <div class="app-header">
-      <div class="brand">
-        <div class="brand-mark">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <rect x="3" y="6" width="3" height="7" rx="1" fill="#1A1206"/>
-            <rect x="4.2" y="3" width=".7" height="13" fill="#1A1206"/>
-            <rect x="8" y="3" width="3" height="7" rx="1" fill="#1A1206"/>
-            <rect x="9.2" y="1" width=".7" height="12" fill="#1A1206"/>
-            <rect x="13" y="8" width="3" height="6" rx="1" fill="#1A1206"/>
-            <rect x="14.2" y="5" width=".7" height="12" fill="#1A1206"/>
-          </svg>
-        </div>
-        <div class="brand-name">Trading <span>Community</span></div>
+  <!-- ============ TRADE (default) ============ -->
+  <section class="screen active" id="screen-trade">
+    <header class="appbar">
+      <div class="brand"><div class="brand-mark">TC</div></div>
+      <button class="sym-picker" id="symPicker"><span id="symName">XAUUSD</span><span class="chev">▾</span></button>
+      <div class="px-block">
+        <div class="px" id="hdrPrice">—</div>
+        <div class="chg" id="hdrChg">—</div>
       </div>
-      <button class="icon-btn" data-toast="Notifications are mocked in this prototype.">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-        <span class="dot"></span>
+      <button class="icon-btn" id="bellBtn" aria-label="Alerts">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
       </button>
+      <button class="avatar-btn" id="avatarBtn" aria-label="Profile">DR</button>
+    </header>
+
+    <div class="tf-bar" id="tfBar">
+      <button class="tf active" data-tf="1m">1m</button>
+      <button class="tf" data-tf="5m">5m</button>
+      <button class="tf" data-tf="15m">15m</button>
+      <button class="tf" data-tf="1H">1H</button>
+      <button class="tf" data-tf="4H">4H</button>
+      <button class="tf" data-tf="1D">1D</button>
     </div>
 
-    <div class="search">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" placeholder="Search traders, pairs…" data-toast="Search is mocked in this prototype.">
+    <div class="chart-wrap" id="tradeChartWrap">
+      <div class="tv-host" id="tvChart"></div>
+      <canvas class="fallback-chart" id="fallbackChart" hidden></canvas>
+      <div class="chart-note" id="chartNote" hidden>Offline chart · simulated feed</div>
     </div>
 
-    <div class="section-label"><h2>Live now</h2><a href="#" data-goto="live">View all</a></div>
-    <!-- MOCK: rail rendered from MOCK_CREATORS in app.js -->
-    <div class="rail" id="liveRail"></div>
-
-    <div class="section-label"><h2>Top traders</h2><a href="#" data-toast="Leaderboard is mocked in this prototype.">Leaderboard</a></div>
-    <!-- MOCK: feed rendered from MOCK_CREATORS in app.js -->
-    <div id="creatorFeed"></div>
+    <div class="ticket">
+      <div class="ticket-meta">
+        <div class="meta-item"><span class="meta-label">Spread</span><span class="meta-val" id="spreadVal">—</span></div>
+        <div class="meta-item"><span class="meta-label">Margin</span><span class="meta-val" id="marginVal">—</span></div>
+        <div class="meta-item"><span class="meta-label">Lot</span>
+          <div class="stepper">
+            <button id="lotMinus" aria-label="Decrease lot">−</button>
+            <span id="lotVal">0.10</span>
+            <button id="lotPlus" aria-label="Increase lot">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="exec-row">
+        <button class="exec sell" id="sellBtn"><span class="exec-label">SELL</span><span class="exec-px" id="bidPx">—</span></button>
+        <button class="exec buy" id="buyBtn"><span class="exec-label">BUY</span><span class="exec-px" id="askPx">—</span></button>
+      </div>
+    </div>
   </section>
 
-  <!-- ==================== LIVE ROOM ==================== -->
+  <!-- ============ POSITIONS ============ -->
+  <section class="screen" id="screen-positions">
+    <header class="page-head"><h1>Positions</h1><div class="eq-chip">Equity <b id="eqVal">$10,000.00</b></div></header>
+    <div class="subtabs" id="posTabs">
+      <button class="subtab active" data-ptab="open">Open <span class="count" id="openCount">0</span></button>
+      <button class="subtab" data-ptab="pending">Pending <span class="count" id="pendCount">0</span></button>
+      <button class="subtab" data-ptab="history">History</button>
+    </div>
+    <div class="pos-list" id="posOpen"></div>
+    <div class="pos-list" id="posPending" hidden></div>
+    <div class="pos-list" id="posHistory" hidden></div>
+  </section>
+
+  <!-- ============ LIVE ============ -->
   <section class="screen" id="screen-live">
-    <div class="live-header">
-      <button class="icon-btn" id="liveBack">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
+    <header class="live-head">
+      <div class="avatar lg" style="--g1:#2F80FF;--g2:#1B5FD6">DR</div>
+      <div class="live-id"><b>Daud</b><span>@daudtradefx · XAUUSD</span></div>
+      <div class="live-pill"><span class="dot"></span>LIVE</div>
+      <div class="viewers"><span id="viewerCount">2,412</span> watching</div>
+    </header>
+    <div class="chart-wrap live-chart" id="liveChartWrap">
+      <div class="tv-host" id="tvChartLive"></div>
+      <canvas class="fallback-chart" id="fallbackChartLive" hidden></canvas>
+      <div class="facecam" id="faceCam">
+        <div class="fc-label">YOU</div>
+        <div class="fc-resize" id="fcResize"></div>
+      </div>
+    </div>
+    <div class="live-feed" id="liveFeed"></div>
+    <div class="copy-row">
+      <div><b>Copy trades</b><span>Mirror this streamer's entries &amp; exits (mock)</span></div>
+      <button class="switch" id="copySwitch" aria-label="Copy trades"><span class="knob"></span></button>
+    </div>
+    <div class="chat" id="liveChat"></div>
+    <div class="chat-bar">
+      <input id="chatInput" type="text" placeholder="Say something…" maxlength="120" autocomplete="off">
+      <button class="send-btn" id="chatSend" aria-label="Send">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
       </button>
-      <div class="live-id">
-        <div class="avatar sm" id="liveAvatar" style="--g1:#2F80FF;--g2:#1B5FD6">DR</div>
-        <div>
-          <div class="live-name"><span id="liveName">Daud</span>
-            <span class="verified"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 2.4 3.4-.5.9 3.3 3 1.7-1.5 3.1 1.5 3.1-3 1.7-.9 3.3-3.4-.5L12 22l-2.4-2.4-3.4.5-.9-3.3-3-1.7L3.8 12 2.3 8.9l3-1.7.9-3.3 3.4.5z"/><path d="M10.6 14.6l-2.1-2.1-1.4 1.4 3.5 3.5 7.1-7.1-1.4-1.4z" fill="#05080F"/></svg></span>
-          </div>
-          <div class="live-sub" id="livePair">XAUUSD · London session</div>
-        </div>
-      </div>
-      <span class="live-badge"><span class="pulse"></span>LIVE</span>
-      <div class="viewers-pill">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span id="liveViewers">2,418</span>
-      </div>
-    </div>
-
-    <!-- REAL (when online): TradingView Advanced Real-Time Chart widget.
-         MOCK fallback message is shown if the widget cannot load. -->
-    <div class="chart-wrap" id="chartWrap">
-      <div class="tv tradingview-widget-container" style="height:100%;width:100%">
-        <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-        {
-          "autosize": true,
-          "symbol": "OANDA:XAUUSD",
-          "interval": "15",
-          "timezone": "Asia/Dubai",
-          "theme": "dark",
-          "style": "1",
-          "locale": "en",
-          "backgroundColor": "rgba(7, 11, 21, 1)",
-          "gridColor": "rgba(255, 255, 255, 0.04)",
-          "hide_top_toolbar": false,
-          "hide_legend": false,
-          "allow_symbol_change": true,
-          "save_image": false,
-          "calendar": false,
-          "support_host": "https://www.tradingview.com"
-        }
-        </script>
-      </div>
-      <div class="chart-fallback" id="chartFallback">
-        <div>Chart could not load (needs internet for the TradingView widget).<br>In the prototype this area hosts the advanced XAUUSD chart.</div>
-      </div>
-
-      <!-- MOCK: face-cam overlay placeholder. Drag to move, drag corner handle to resize.
-           Position persists via localStorage. No real camera in prototype. -->
-      <div class="facecam c-br" id="facecam">
-        <div class="cam-tag"><span class="pulse"></span>YOU</div>
-        <div class="cam-body">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-          <div class="cam-label">Face cam</div>
-          <div class="cam-hint">drag to move</div>
-        </div>
-        <div class="cam-handle" id="camHandle">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 1L1 11M11 5v6H5"/></svg>
-        </div>
-      </div>
-
-      <button class="like-fab" id="likeBtn" aria-label="Like">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
-        <span id="likeCount">8.2k</span>
-      </button>
-    </div>
-
-    <!-- MOCK: copy-trading toggle is UI only in the prototype -->
-    <div class="copy-bar">
-      <div class="cb-text"><b>Copy this trader's trades</b><small>Mirror entries &amp; exits automatically · mock</small></div>
-      <label class="switch"><input type="checkbox" id="copyToggle"><span class="sl"></span></label>
-    </div>
-
-    <div class="live-panel">
-      <div class="lp-tabs">
-        <button class="lp-tab active" data-panel="trades">Live trades</button>
-        <button class="lp-tab" data-panel="chat">Chat</button>
-      </div>
-      <div class="lp-body">
-        <!-- MOCK: simulated live trade feed -->
-        <div class="lp-pane active" id="panel-trades"><div id="tradeFeed"></div></div>
-        <div class="lp-pane" id="panel-chat">
-          <div class="chat-feed" id="chatFeed"></div>
-        </div>
-      </div>
-      <div class="chat-input-row" id="chatInputRow" style="display:none">
-        <input type="text" id="chatInput" placeholder="Say something…" maxlength="140">
-        <button class="send-btn" id="chatSend">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-        </button>
-      </div>
     </div>
   </section>
 
-  <!-- ==================== GO LIVE ==================== -->
-  <section class="screen scroll" id="screen-golive">
-    <div class="app-header">
-      <div class="screen-title">Go Live</div>
-      <button class="icon-btn" data-toast="Stream settings are mocked in this prototype.">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-    </div>
-
-    <div class="form-card">
-      <h3>Stream title</h3>
-      <input class="text-input" id="glTitle" value="London session — scalping Gold live" maxlength="80">
-    </div>
-
-    <div class="form-card">
-      <h3>Trading pair</h3>
-      <p>Pick what you'll trade on this stream.</p>
-      <div class="chip-row" id="glPairs">
-        <button class="chip active">XAUUSD</button>
-        <button class="chip">BTCUSD</button>
-        <button class="chip">EURUSD</button>
-        <button class="chip">GBPUSD</button>
-        <button class="chip">US30</button>
+  <!-- ============ COMMUNITY ============ -->
+  <section class="screen" id="screen-community">
+    <header class="page-head"><h1>Community</h1></header>
+    <div class="poll card">
+      <div class="poll-q">XAUUSD direction this week?</div>
+      <div class="poll-bars">
+        <div class="poll-row"><span>Buy</span><div class="bar"><div class="fill buy-fill" id="pollBuyFill" style="width:62%"></div></div><b id="pollBuyPct">62%</b></div>
+        <div class="poll-row"><span>Sell</span><div class="bar"><div class="fill sell-fill" id="pollSellFill" style="width:38%"></div></div><b id="pollSellPct">38%</b></div>
+      </div>
+      <div class="poll-votes" id="pollVotes">12,408 votes</div>
+      <div class="poll-btns" id="pollBtns">
+        <button class="exec buy sm" id="pollBuy">BUY</button>
+        <button class="exec sell sm" id="pollSell">SELL</button>
       </div>
     </div>
-
-    <div class="form-card">
-      <h3>Multistream destinations</h3>
-      <p>Go live here and automatically on every connected platform. <b style="color:var(--accent)">Mock toggles.</b></p>
-      <div class="dest-row">
-        <div class="dest-ic" style="background:linear-gradient(135deg,#2F80FF,#1B5FD6)">TC</div>
-        <div class="grow"><b>Trading Community</b><small>Always on</small></div>
-        <label class="switch"><input type="checkbox" checked disabled><span class="sl"></span></label>
-      </div>
-      <div class="dest-row">
-        <div class="dest-ic" style="background:#FF0000">YT</div>
-        <div class="grow"><b>YouTube</b><small>RTMP multistream</small></div>
-        <label class="switch"><input type="checkbox" class="dest-toggle" checked><span class="sl"></span></label>
-      </div>
-      <div class="dest-row">
-        <div class="dest-ic" style="background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)">IG</div>
-        <div class="grow"><b>Instagram</b><small>Live Producer</small></div>
-        <label class="switch"><input type="checkbox" class="dest-toggle" checked><span class="sl"></span></label>
-      </div>
-    </div>
-
-    <div class="form-card">
-      <h3>Face-cam position</h3>
-      <p>Choose where your camera sits on the stream. You can also drag it live in the room.</p>
-      <div class="cam-picker" id="camPicker">
-        <button class="campick" data-corner="tl"><span class="mini-cam"></span><small>Top left</small></button>
-        <button class="campick" data-corner="tr"><span class="mini-cam"></span><small>Top right</small></button>
-        <button class="campick" data-corner="bl"><span class="mini-cam"></span><small>Bottom left</small></button>
-        <button class="campick active" data-corner="br"><span class="mini-cam"></span><small>Bottom right</small></button>
-      </div>
-    </div>
-
-    <button class="start-live-btn" id="startLiveBtn">
-      <span class="pulse" style="width:10px;height:10px"></span>
-      Start Live
-    </button>
-
-    <div class="mock-note"><b style="color:var(--text)">Prototype note:</b> no real streaming happens. Tapping Start Live opens the live room in "You are live" mock mode.</div>
+    <div id="postList"></div>
   </section>
 
-  <!-- ==================== COMMUNITY ==================== -->
-  <section class="screen scroll" id="screen-community">
-    <div class="app-header">
-      <div class="screen-title">Community</div>
-      <button class="icon-btn" data-toast="Posting is mocked in this prototype.">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-      </button>
+  <!-- ============ PROFILE ============ -->
+  <section class="screen" id="screen-profile">
+    <header class="prof-head">
+      <div class="avatar xl" style="--g1:#2F80FF;--g2:#1B5FD6">DR</div>
+      <div class="prof-id"><h1>Daud <span class="verified">✓</span></h1><span>@daudtradefx</span></div>
+    </header>
+    <div class="stat-tiles">
+      <div class="tile"><b>67%</b><span>Win rate</span></div>
+      <div class="tile"><b>312</b><span>Live trades</span></div>
+      <div class="tile"><b>48.2k</b><span>Followers</span></div>
     </div>
-
-    <!-- MOCK: prediction poll, votes stored in memory only -->
-    <div class="poll-card">
-      <h3>NFP Friday — where does Gold go?</h3>
-      <div class="poll-sub">Non-Farm Payrolls drop in 2 days. Cast your bias.</div>
-      <div class="poll-opt">
-        <div class="poll-btns">
-          <button class="poll-vote buy" id="pollBuy">▲ Buy</button>
-          <button class="poll-vote sell" id="pollSell">▼ Sell</button>
-        </div>
-        <div class="poll-bar buy"><i id="buyBar"></i></div>
-        <div class="poll-meta"><span id="buyPct">—</span><span>Buy bias</span></div>
-      </div>
-      <div class="poll-opt">
-        <div class="poll-bar sell"><i id="sellBar"></i></div>
-        <div class="poll-meta"><span id="sellPct">—</span><span>Sell bias</span></div>
-      </div>
-      <div class="poll-meta"><span id="pollVotes">10,057 votes</span><span id="pollMsg">Tap to vote</span></div>
-    </div>
-
-    <div class="section-label"><h2>Latest analysis</h2><a href="#" data-toast="Filters are mocked in this prototype.">Filters</a></div>
-    <!-- MOCK: analysis posts rendered from MOCK_POSTS in app.js -->
-    <div id="analysisList"></div>
+    <div class="pnl-banner">This week <b class="pos">+$1,284.50</b></div>
+    <h2 class="sec-title">Trade history</h2>
+    <div class="pos-list" id="profHistory"></div>
+    <h2 class="sec-title">Broker accounts <span class="mock-tag">mock</span></h2>
+    <div class="broker-list" id="brokerList"></div>
+    <button class="ghost-btn" id="addBroker">+ Add broker</button>
   </section>
 
-  <!-- ==================== PROFILE ==================== -->
-  <section class="screen scroll" id="screen-profile">
-    <div class="cover">
-      <svg viewBox="0 0 400 150" preserveAspectRatio="none">
-        <polyline points="0,120 40,110 70,118 100,95 130,105 160,80 190,92 220,70 250,82 280,55 310,68 340,45 370,58 400,35"
-          fill="none" stroke="#2F80FF" stroke-width="2.5" opacity=".8"/>
-        <polygon points="0,120 40,110 70,118 100,95 130,105 160,80 190,92 220,70 250,82 280,55 310,68 340,45 370,58 400,35 400,150 0,150"
-          fill="url(#cg)" opacity=".25"/>
-        <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#2F80FF" stop-opacity="0"/>
-        </linearGradient></defs>
-      </svg>
-    </div>
-    <div class="pf-body">
-      <div class="pf-top">
-        <div class="avatar lg" style="--g1:#2F80FF;--g2:#1B5FD6">DR</div>
-        <div class="pf-id">
-          <div class="pf-name">Daud
-            <span class="verified"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 2.4 3.4-.5.9 3.3 3 1.7-1.5 3.1 1.5 3.1-3 1.7-.9 3.3-3.4-.5L12 22l-2.4-2.4-3.4.5-.9-3.3-3-1.7L3.8 12 2.3 8.9l3-1.7.9-3.3 3.4.5z"/><path d="M10.6 14.6l-2.1-2.1-1.4 1.4 3.5 3.5 7.1-7.1-1.4-1.4z" fill="#05080F"/></svg></span>
-          </div>
-          <div class="pf-handle">@daudtradefx · Dubai, UAE</div>
-        </div>
-      </div>
-      <p class="pf-bio">Gold scalper. Live every London &amp; New York session. Every trade on stream — wins and losses. No signals sold, ever.</p>
-
-      <div class="pf-stats">
-        <div class="pf-stat"><b class="pos">67%</b><span>Win rate</span></div>
-        <div class="pf-stat"><b>312</b><span>Live trades</span></div>
-        <div class="pf-stat"><b>48.2K</b><span>Followers</span></div>
-      </div>
-
-      <div class="pf-actions">
-        <button class="btn-primary" id="connectBrokerBtn">Connect broker</button>
-        <button class="btn-ghost" data-toast="Sharing is mocked in this prototype.">Share</button>
-      </div>
-
-      <div class="pf-tabs">
-        <button class="lp-tab pf-tab active" data-ppanel="ptrades">Trade history</button>
-        <button class="lp-tab pf-tab" data-ppanel="panalysis">Analysis</button>
-      </div>
-      <!-- MOCK: trade history rendered from MOCK_HISTORY in app.js -->
-      <div class="lp-pane active" id="ptrades"><div id="tradeHistory"></div></div>
-      <div class="lp-pane" id="panalysis"><div id="profileAnalysis"></div></div>
-    </div>
-  </section>
-
-  <!-- ==================== BROKERS (sub-screen) ==================== -->
-  <section class="screen scroll subscreen" id="screen-brokers">
-    <div class="sub-header">
-      <button class="icon-btn" id="brokerBack">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div class="screen-title">Connect broker</div>
-    </div>
-    <div class="mock-note" style="margin-top:2px"><b style="color:var(--text)">UI mock only.</b> No real authentication happens in this prototype.</div>
-    <!-- MOCK: broker list rendered from MOCK_BROKERS in app.js -->
-    <div id="brokerList" style="margin-top:14px"></div>
-    <button class="add-broker" id="addBrokerRow">+ Add new broker</button>
-  </section>
-
-  <!-- ==================== TAB BAR ==================== -->
+  <!-- ============ TAB BAR (always visible) ============ -->
   <nav class="tabbar">
-    <button class="tab active" data-screen="home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
-      Home
+    <button class="tab active" data-tab="trade">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg>
+      <span>Trade</span>
     </button>
-    <button class="tab" data-screen="live">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="13" height="12" rx="2"/><path d="M15 10.5l7-3.5v10l-7-3.5"/></svg>
-      Live
+    <button class="tab" data-tab="positions">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/></svg>
+      <span>Positions</span><i class="tab-badge" id="posBadge" hidden></i>
     </button>
-    <div class="tab-fab-wrap" id="fabWrap">
-      <button class="tab-fab" data-screen="golive" aria-label="Go live">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="#fff" stroke-width="2" opacity=".55"/></svg>
-      </button>
-    </div>
-    <button class="tab" data-screen="community">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Community
+    <button class="tab" data-tab="live">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/></svg>
+      <span>Live</span><i class="tab-dot"></i>
     </button>
-    <button class="tab" data-screen="profile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      Profile
+    <button class="tab" data-tab="community">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Community</span>
+    </button>
+    <button class="tab" data-tab="profile">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profile</span>
     </button>
   </nav>
 
-  <div class="toast" id="toast"></div>
-
-  <div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <div class="sheet" id="sheet">
+  <!-- ============ SYMBOL SHEET ============ -->
+  <div class="backdrop" id="backdrop" hidden></div>
+  <div class="sheet" id="symbolSheet" hidden>
     <div class="sheet-grab"></div>
-    <div class="mock-tag">UI mock</div>
-    <h3 id="sheetTitle">Title</h3>
-    <p id="sheetBody">Body</p>
-    <div id="sheetExtra"></div>
-    <div class="sheet-actions">
-      <button class="btn-ghost" id="sheetClose">Close</button>
-      <button class="btn-primary" id="sheetPrimary">Got it</button>
-    </div>
+    <h3>Select symbol</h3>
+    <div id="symbolList"></div>
   </div>
 
+  <div class="toast" id="toast" hidden></div>
 </div>
 
+<script src="https://s3.tradingview.com/tv.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

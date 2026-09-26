@@ -1,58 +1,54 @@
-# Trading Community — Static Prototype
+# Trading Community — App UI Prototype (FULL REBUILD)
 
-Mobile-first, app-like **static** web prototype for the "Trading Community" live-trading
-community app concept. Plain HTML/CSS/JS — no build step, no frameworks. Open
-`index.html` directly in a browser, or serve the folder with any static server.
+Mobile-first, app-like **static** web prototype for the "Trading Community"
+live-trading community app concept. Plain HTML/CSS/JS — no build step, no
+frameworks. Opens **directly into the logged-in trading interface** (like
+Binance / Exness Trade): no landing page, no marketing.
 
 ## Preview
 
-- Direct: open `/home/hatch/workspace/trading-community/index.html` in a browser
-  (double-click works; the TradingView chart needs internet).
+- Direct: open `index.html` in a browser (double-click works; the TradingView
+  chart needs internet).
 - Local server: `cd ~/workspace/trading-community && python3 -m http.server 8080`
   then visit `http://localhost:8080`.
+- Single-file build: `trading-community-app.html` (CSS+JS inlined) — generated
+  from the three source files for easy sharing.
 
-On desktop the app renders inside a centered phone frame (max-width 430px);
-on a real phone it is full-bleed with safe-area padding and a bottom tab bar.
+On desktop the app renders inside a phone frame; on mobile it is full-bleed.
 
-## Screens
+## Screens (bottom tab bar always visible)
 
-Bottom tab bar: **Home · Live · Go Live · Community · Profile**
+1. **Trade** (default) — app bar with brand mark, symbol picker (XAUUSD, EURUSD,
+   GBPUSD, USDJPY, BTCUSD, ETHUSD, US30, NAS100), ticking price + 24h change,
+   alerts bell, avatar. TradingView Advanced chart with timeframe bar
+   (1m–1D, reloads widget interval). Trade ticket: spread, lot stepper (0.01),
+   margin estimate, BUY/SELL with live bid/ask → mock market orders land in
+   Positions with live-ticking P/L.
+2. **Positions** — Open / Pending / History tabs. Open rows show live P/L and a
+   close (×) button; pending mock limit orders can be cancelled; history lists
+   closed trades. Equity chip ticks with open P/L; tab badge counts open
+   positions.
+3. **Live** — streamer room: TradingView chart, draggable + resizable face-cam
+   placeholder (position/size persist in localStorage), simulated live trade
+   feed, viewer count, Copy-trades toggle, working chat with simulated
+   incoming messages.
+4. **Community** — XAUUSD sentiment poll (one vote, animated bars, persisted)
+   + analysis post cards with like buttons.
+5. **Profile** — trader stats, weekly P/L banner, trade history, broker connect
+   list (Exness, Vantage, IC Markets, XM + Add broker) — UI mock.
 
-1. **Home** — "Live now" rail + top-trader cards (avatar, verified badge, pair,
-   P/L, win rate, live-trade count, Follow toggle, Watch live).
-2. **Live room** — TradingView Advanced Real-Time Chart (XAUUSD), draggable +
-   resizable face-cam overlay (snaps to corners, position/size persist in
-   `localStorage`), simulated live trade feed, viewer count ticker, like button,
-   "Copy trades" toggle, mock chat with send box.
-3. **Go Live** — stream title, pair picker, multistream toggles
-   (YouTube / Instagram), 4-corner face-cam position picker, Start Live button.
-4. **Community** — NFP prediction poll with animated Buy/Sell sentiment bars,
-   analysis post cards.
-5. **Profile** — cover, verified badge, stats (win rate / live trades / followers),
-   trade-history list, analysis tab, "Connect broker" entry point.
-6. **Broker connect** (sub-screen from Profile) — broker list
-   (Exness, Vantage, IC Markets, XM, OctaFX, FBS) with Connect buttons and
-   an "Add new broker" row.
+## Mock vs real
 
-## What is MOCK vs REAL
-
-| Feature | Status |
+| Area | Status |
 |---|---|
-| All creators, stats, trades, chat messages, poll votes, posts | **Mock** — hardcoded in `app.js` (`MOCK_*`), chat/trade feed simulated on timers |
-| TradingView Advanced Real-Time Chart (XAUUSD) | **Real** third-party widget (needs internet); a fallback notice shows if it can't load |
-| Face-cam overlay | **Mock placeholder** — draggable/resizable, position persists via `localStorage`; no real camera access |
-| Multistream toggles, Start Live, Copy-trades toggle | **Mock** — UI state only, toasts confirm nothing real happens |
-| Broker Connect / Add new broker | **Mock** — bottom-sheet explains no auth occurs; "Connected" is a visual state |
-| Follow buttons, likes, poll votes, chat send | **Mock** — in-memory page state only |
-| Search, notifications, filters, share | **Mock** — toast placeholders |
+| Prices, spreads, P/L, margin, equity | Simulated random-walk engine in `app.js` |
+| Order execution, close, cancel | Mock, in-memory only |
+| TradingView chart widget | Real embed (needs internet); canvas fallback if offline |
+| Face-cam | Styled placeholder box, no camera access |
+| Brokers, copy-trading, alerts, votes | UI mock; votes/poll persisted locally only |
+| Chat, live feed, viewers | Simulated timers |
 
-## Deliberate placeholders / not built
+## Theme
 
-- No backend, no accounts, no real streaming (RTMP/WebRTC), no broker APIs.
-- Face-cam is a styled placeholder box, not `getUserMedia` video.
-- Trade prices in the simulated feed are random-walk numbers, not market data
-  (the TradingView widget itself shows real XAUUSD data when online).
-- Copy trading has major regulatory/brokerage implications — intentionally left as
-  a UI toggle with an explicit mock disclaimer.
-- No iOS/Android wrapper; this is the mobile-web prototype that "looks like an app".
-- Typography: Apple system font stack only; dark navy/black + single gold accent.
+Fintech blue `#2F80FF` primary + profit green `#22C55E` / loss red `#F04452`
+on dark navy (`#05080F` family). Apple font stack only.
