@@ -676,6 +676,28 @@ select.field{ appearance:none; }
 [data-theme="light"] .exec.buy{ background:linear-gradient(135deg,#3B8BFF,#1B5FD6); }
 [data-theme="light"] .exec.sell{ background:linear-gradient(135deg,#F2555F,#C92A38); }
 [data-theme="light"] .face-cam{ background:linear-gradient(135deg,#E8EDF5,#F4F6FA); }
+
+/* ---------- real camera + go live ---------- */
+#faceCamVideo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:12px; background:#000; }
+.fc-empty{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+.fc-cam-btn{ font-size:11px; font-weight:700; color:#fff; background:var(--blue); border:0; border-radius:8px; padding:8px 12px; min-height:32px; }
+.go-live-btn{ width:100%; margin:0 0 12px; }
+.danger-btn{ display:inline-flex; align-items:center; justify-content:center; background:var(--red); color:#fff; border:0; border-radius:10px; font-weight:700; }
+.danger-btn.sm{ min-height:44px; padding:0 18px; font-size:14px; }
+.you-live-bar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:linear-gradient(135deg,rgba(240,68,82,.18),rgba(240,68,82,.05)); border:1px solid rgba(240,68,82,.45); border-radius:12px; padding:10px 12px; margin-bottom:12px; }
+.yl-stat{ font-size:12.5px; color:var(--muted); }
+.yl-stat b{ font-size:13px; }
+.you-live-bar .danger-btn{ margin-left:auto; }
+.you-live-card{ border:1px solid rgba(240,68,82,.45); }
+.yl-top{ display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.pair-badge{ font-size:11px; font-weight:800; letter-spacing:.04em; color:var(--blue); background:var(--blue-soft); border-radius:6px; padding:4px 8px; }
+.yl-viewers{ margin-left:auto; font-size:12.5px; color:var(--muted); }
+.yl-main{ display:flex; align-items:center; gap:10px; }
+.yl-main .avatar{ width:44px; height:44px; font-size:15px; flex-shrink:0; background:linear-gradient(135deg,#2F80FF,#1B5FD6); }
+.yl-main b{ display:block; font-size:14.5px; }
+.yl-main .tstat{ font-size:12.5px; color:var(--muted); }
+.yl-main .primary-btn{ margin-left:auto; flex-shrink:0; }
+.you-live-card .fine{ margin:10px 0 0; }
 [data-theme="light"] .chart-note{ background:rgba(255,255,255,.75); }
 
 .acct .warn{ color:#F5A623; font-weight:800; }
@@ -882,11 +904,23 @@ select.field{ appearance:none; }
             <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
             <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span></div>
           </div>
+          <button class="primary-btn go-live-btn" id="goLiveBtn">Go Live</button>
+          <div class="you-live-bar" id="youLiveBar" hidden>
+            <span class="live-pill"><i></i>YOU ARE LIVE</span>
+            <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
+            <span class="yl-stat num" id="youTimer">00:00</span>
+            <span class="yl-stat"><b class="num pl-pos" id="youPL">+$0.00</b> today</span>
+            <button class="danger-btn sm" id="endLiveBtn">End</button>
+          </div>
           <div class="chart-wrap live-chart" id="liveChartWrap">
             <div class="tv-host" id="tvChartLive"></div>
             <canvas class="fallback-chart" id="fallbackChartLive" hidden></canvas>
             <div class="face-cam" id="faceCam" aria-label="Streamer camera">
-              <span>Face cam</span>
+              <video id="faceCamVideo" autoplay playsinline muted hidden></video>
+              <div class="fc-empty" id="faceCamEmpty">
+                <span>Face cam</span>
+                <button class="fc-cam-btn" id="camToggleBtn">Enable camera</button>
+              </div>
               <i class="fc-resize" id="fcResize"></i>
             </div>
           </div>
@@ -1120,6 +1154,7 @@ function goTab(tab){
   $("screen-"+tab).classList.add("active");
   document.querySelector(".content").scrollTop = 0;
   if(tab==="live" && !state.liveBuilt){ state.liveBuilt = true; buildLive(); }
+  if(tab!=="live" && state.liveBuilt) stopCamera(); /* stop face-cam tracks off the live tab */
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.tab)));
 $("avatarBtn").addEventListener("click", ()=>goTab("profile"));
@@ -1821,7 +1856,7 @@ $("copySwitch").addEventListener("click", function(){
     cam.style.right = "auto"; cam.style.bottom = "auto";
   }
   cam.addEventListener("pointerdown", e=>{
-    if(e.target===grip) return;
+    if(e.target===grip || (e.target.closest && e.target.closest("button"))) return; /* let buttons tap */
     drag = { dx: e.clientX - cam.offsetLeft, dy: e.clientY - cam.offsetTop };
     try{ cam.setPointerCapture(e.pointerId); }catch(err){}
   });
@@ -1847,6 +1882,101 @@ $("copySwitch").addEventListener("click", function(){
   });
   ["pointerup","pointercancel"].forEach(ev=>cam.addEventListener(ev, ()=>{ if(drag) save(); drag = null; resizing = false; }));
 })();
+
+/* ---------------- REAL FACE CAMERA (getUserMedia; needs HTTPS — GitHub Pages is HTTPS) ---------------- */
+let camStream = null;
+function camOn(){ return !!camStream; }
+function stopCamera(){
+  if(camStream){ try{ camStream.getTracks().forEach(t=>t.stop()); }catch(e){} camStream = null; }
+  const v = $("faceCamVideo");
+  if(v){ v.srcObject = null; v.hidden = true; }
+  const e = $("faceCamEmpty"); if(e) e.hidden = false;
+  const b = $("camToggleBtn"); if(b) b.textContent = "Enable camera";
+}
+async function enableCamera(){
+  if(camStream) return;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast("Camera unavailable — showing placeholder (demo)"); return;
+  }
+  try{
+    /* front camera on phones, default webcam on laptops */
+    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user" }, audio:false });
+    const v = $("faceCamVideo");
+    v.srcObject = camStream; v.hidden = false;
+    $("faceCamEmpty").hidden = true;
+    $("camToggleBtn").textContent = "Stop camera";
+    toast("Camera on — preview only, nothing is streamed (demo)");
+  }catch(err){
+    toast("Camera unavailable — showing placeholder (demo)");
+  }
+}
+$("camToggleBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stopCamera() : enableCamera(); });
+
+/* ---------------- GO LIVE (demo broadcast; ALL numbers simulated) ---------------- */
+const youLive = { active:false, viewers:0, startT:0, pl:0, timerId:null };
+function fmtClock(ms){
+  const s = Math.floor(ms/1000), p = n=>String(n).padStart(2,"0");
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60);
+  return h>0 ? p(h)+":"+p(m)+":"+p(s%60) : p(m)+":"+p(s%60);
+}
+function startLive(){
+  if(youLive.active) return;
+  youLive.active = true;
+  youLive.viewers = 120 + Math.round(Math.random()*80);
+  youLive.startT = Date.now();
+  youLive.pl = 0;
+  $("goLiveBtn").hidden = true;
+  $("youLiveBar").hidden = false;
+  enableCamera(); /* auto-request camera; fails gracefully to the placeholder */
+  youLive.timerId = setInterval(()=>{
+    youLive.viewers = Math.max(50, youLive.viewers + Math.round((Math.random()-0.47)*24));
+    youLive.pl += (Math.random()-0.48)*8;
+    $("youViewers").textContent = youLive.viewers.toLocaleString("en-US");
+    $("youTimer").textContent = fmtClock(Date.now()-youLive.startT);
+    const plEl = $("youPL");
+    plEl.textContent = (youLive.pl>=0?"+$":"−$")+Math.abs(youLive.pl).toFixed(2);
+    plEl.className = "num "+(youLive.pl>=0?"pl-pos":"pl-neg");
+    renderYouLiveCard();
+  }, 1000);
+  renderYouLiveCard();
+  toast("You are LIVE — demo broadcast, nothing really streams");
+}
+function endLive(){
+  if(!youLive.active) return;
+  youLive.active = false;
+  clearInterval(youLive.timerId); youLive.timerId = null;
+  $("goLiveBtn").hidden = false;
+  $("youLiveBar").hidden = true;
+  stopCamera();
+  const card = $("youLiveCard"); if(card) card.remove();
+  toast("Live ended — demo");
+}
+$("goLiveBtn").addEventListener("click", startLive);
+$("endLiveBtn").addEventListener("click", endLive);
+
+/* live card published to the TOP of the Community tab while you are live */
+function renderYouLiveCard(){
+  if(!youLive.active) return;
+  let card = $("youLiveCard");
+  if(!card){
+    card = document.createElement("div");
+    card.className = "card you-live-card";
+    card.id = "youLiveCard";
+    const sc = $("screen-community");
+    sc.insertBefore(card, sc.firstChild);
+  }
+  const plCls = youLive.pl>=0 ? "pl-pos" : "pl-neg";
+  const plTxt = (youLive.pl>=0?"+$":"−$")+Math.abs(youLive.pl).toFixed(2);
+  card.innerHTML =
+    '<div class="yl-top"><span class="live-pill"><i></i>LIVE</span>'+
+    '<span class="pair-badge">XAUUSD</span>'+
+    '<span class="yl-viewers num">'+youLive.viewers.toLocaleString("en-US")+' watching</span></div>'+
+    '<div class="yl-main"><div class="avatar">DR</div>'+
+    '<div><b>Daud is live now</b><span class="tstat">Today <b class="'+plCls+'">'+plTxt+'</b> · XAUUSD scalps</span></div>'+
+    '<button class="primary-btn sm" id="youLiveWatch">Watch</button></div>'+
+    '<p class="fine">Demo broadcast — viewers and profit are simulated.</p>';
+  $("youLiveWatch").addEventListener("click", ()=>goTab("live"));
+}
 
 /* ---------------- COMMUNITY ---------------- */
 const TRADERS = [

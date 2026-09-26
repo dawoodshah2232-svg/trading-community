@@ -124,6 +124,7 @@ function goTab(tab){
   $("screen-"+tab).classList.add("active");
   document.querySelector(".content").scrollTop = 0;
   if(tab==="live" && !state.liveBuilt){ state.liveBuilt = true; buildLive(); }
+  if(tab!=="live" && state.liveBuilt) stopCamera(); /* stop face-cam tracks off the live tab */
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.tab)));
 $("avatarBtn").addEventListener("click", ()=>goTab("profile"));
@@ -825,7 +826,7 @@ $("copySwitch").addEventListener("click", function(){
     cam.style.right = "auto"; cam.style.bottom = "auto";
   }
   cam.addEventListener("pointerdown", e=>{
-    if(e.target===grip) return;
+    if(e.target===grip || (e.target.closest && e.target.closest("button"))) return; /* let buttons tap */
     drag = { dx: e.clientX - cam.offsetLeft, dy: e.clientY - cam.offsetTop };
     try{ cam.setPointerCapture(e.pointerId); }catch(err){}
   });
@@ -851,6 +852,101 @@ $("copySwitch").addEventListener("click", function(){
   });
   ["pointerup","pointercancel"].forEach(ev=>cam.addEventListener(ev, ()=>{ if(drag) save(); drag = null; resizing = false; }));
 })();
+
+/* ---------------- REAL FACE CAMERA (getUserMedia; needs HTTPS — GitHub Pages is HTTPS) ---------------- */
+let camStream = null;
+function camOn(){ return !!camStream; }
+function stopCamera(){
+  if(camStream){ try{ camStream.getTracks().forEach(t=>t.stop()); }catch(e){} camStream = null; }
+  const v = $("faceCamVideo");
+  if(v){ v.srcObject = null; v.hidden = true; }
+  const e = $("faceCamEmpty"); if(e) e.hidden = false;
+  const b = $("camToggleBtn"); if(b) b.textContent = "Enable camera";
+}
+async function enableCamera(){
+  if(camStream) return;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast("Camera unavailable — showing placeholder (demo)"); return;
+  }
+  try{
+    /* front camera on phones, default webcam on laptops */
+    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user" }, audio:false });
+    const v = $("faceCamVideo");
+    v.srcObject = camStream; v.hidden = false;
+    $("faceCamEmpty").hidden = true;
+    $("camToggleBtn").textContent = "Stop camera";
+    toast("Camera on — preview only, nothing is streamed (demo)");
+  }catch(err){
+    toast("Camera unavailable — showing placeholder (demo)");
+  }
+}
+$("camToggleBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stopCamera() : enableCamera(); });
+
+/* ---------------- GO LIVE (demo broadcast; ALL numbers simulated) ---------------- */
+const youLive = { active:false, viewers:0, startT:0, pl:0, timerId:null };
+function fmtClock(ms){
+  const s = Math.floor(ms/1000), p = n=>String(n).padStart(2,"0");
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60);
+  return h>0 ? p(h)+":"+p(m)+":"+p(s%60) : p(m)+":"+p(s%60);
+}
+function startLive(){
+  if(youLive.active) return;
+  youLive.active = true;
+  youLive.viewers = 120 + Math.round(Math.random()*80);
+  youLive.startT = Date.now();
+  youLive.pl = 0;
+  $("goLiveBtn").hidden = true;
+  $("youLiveBar").hidden = false;
+  enableCamera(); /* auto-request camera; fails gracefully to the placeholder */
+  youLive.timerId = setInterval(()=>{
+    youLive.viewers = Math.max(50, youLive.viewers + Math.round((Math.random()-0.47)*24));
+    youLive.pl += (Math.random()-0.48)*8;
+    $("youViewers").textContent = youLive.viewers.toLocaleString("en-US");
+    $("youTimer").textContent = fmtClock(Date.now()-youLive.startT);
+    const plEl = $("youPL");
+    plEl.textContent = (youLive.pl>=0?"+$":"−$")+Math.abs(youLive.pl).toFixed(2);
+    plEl.className = "num "+(youLive.pl>=0?"pl-pos":"pl-neg");
+    renderYouLiveCard();
+  }, 1000);
+  renderYouLiveCard();
+  toast("You are LIVE — demo broadcast, nothing really streams");
+}
+function endLive(){
+  if(!youLive.active) return;
+  youLive.active = false;
+  clearInterval(youLive.timerId); youLive.timerId = null;
+  $("goLiveBtn").hidden = false;
+  $("youLiveBar").hidden = true;
+  stopCamera();
+  const card = $("youLiveCard"); if(card) card.remove();
+  toast("Live ended — demo");
+}
+$("goLiveBtn").addEventListener("click", startLive);
+$("endLiveBtn").addEventListener("click", endLive);
+
+/* live card published to the TOP of the Community tab while you are live */
+function renderYouLiveCard(){
+  if(!youLive.active) return;
+  let card = $("youLiveCard");
+  if(!card){
+    card = document.createElement("div");
+    card.className = "card you-live-card";
+    card.id = "youLiveCard";
+    const sc = $("screen-community");
+    sc.insertBefore(card, sc.firstChild);
+  }
+  const plCls = youLive.pl>=0 ? "pl-pos" : "pl-neg";
+  const plTxt = (youLive.pl>=0?"+$":"−$")+Math.abs(youLive.pl).toFixed(2);
+  card.innerHTML =
+    '<div class="yl-top"><span class="live-pill"><i></i>LIVE</span>'+
+    '<span class="pair-badge">XAUUSD</span>'+
+    '<span class="yl-viewers num">'+youLive.viewers.toLocaleString("en-US")+' watching</span></div>'+
+    '<div class="yl-main"><div class="avatar">DR</div>'+
+    '<div><b>Daud is live now</b><span class="tstat">Today <b class="'+plCls+'">'+plTxt+'</b> · XAUUSD scalps</span></div>'+
+    '<button class="primary-btn sm" id="youLiveWatch">Watch</button></div>'+
+    '<p class="fine">Demo broadcast — viewers and profit are simulated.</p>';
+  $("youLiveWatch").addEventListener("click", ()=>goTab("live"));
+}
 
 /* ---------------- COMMUNITY ---------------- */
 const TRADERS = [

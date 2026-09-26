@@ -193,11 +193,23 @@
             <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
             <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span></div>
           </div>
+          <button class="primary-btn go-live-btn" id="goLiveBtn">Go Live</button>
+          <div class="you-live-bar" id="youLiveBar" hidden>
+            <span class="live-pill"><i></i>YOU ARE LIVE</span>
+            <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
+            <span class="yl-stat num" id="youTimer">00:00</span>
+            <span class="yl-stat"><b class="num pl-pos" id="youPL">+$0.00</b> today</span>
+            <button class="danger-btn sm" id="endLiveBtn">End</button>
+          </div>
           <div class="chart-wrap live-chart" id="liveChartWrap">
             <div class="tv-host" id="tvChartLive"></div>
             <canvas class="fallback-chart" id="fallbackChartLive" hidden></canvas>
             <div class="face-cam" id="faceCam" aria-label="Streamer camera">
-              <span>Face cam</span>
+              <video id="faceCamVideo" autoplay playsinline muted hidden></video>
+              <div class="fc-empty" id="faceCamEmpty">
+                <span>Face cam</span>
+                <button class="fc-cam-btn" id="camToggleBtn">Enable camera</button>
+              </div>
               <i class="fc-resize" id="fcResize"></i>
             </div>
           </div>
