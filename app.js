@@ -301,7 +301,10 @@ function renderSymbolSheet(){
       '<span class="sym-id"><b>'+s+'</b><i>'+esc(meta(s).name)+'</i></span>'+
       '<span class="sym-px"><span class="num" data-sh-px="'+s+'">'+fmtP(s,pr.bid)+'</span>'+
       '<span class="chg num '+(pr.chg>=0?"up":"down")+'" data-sh-chg="'+s+'">'+(pr.chg>=0?"+":"")+pr.chg.toFixed(2)+'%</span></span>';
-    row.addEventListener("click", ()=>{ setSymbol(s); closeSheet(); });
+    row.addEventListener("click", (e)=>{
+      if(e.target.closest("[data-fav]")) return; /* star toggle handles itself — don't also select */
+      setSymbol(s); closeSheet();
+    });
     list.appendChild(row);
   });
   injectIcons();
@@ -395,14 +398,33 @@ function lwCandleOpts(){
            borderVisible:false, priceLineVisible:true, lastValueVisible:true };
 }
 
+function chartErr(host, msg){
+  if(host) host.innerHTML = '<div class="lw-err">'+msg+'<br>Check your connection and reload.</div>';
+}
+/* Deferred, guarded chart creation: the #tvChart container can be zero-sized
+   at init (not yet laid out), which used to produce a permanently blank chart.
+   We wait via rAF until it has real dimensions, then build inside try/catch so
+   a chart failure can NEVER kill the rest of the app again. */
 function buildMainChart(){
   const host = $("tvChart");
-  if(!host || !LW()){
-    if(host) host.innerHTML = '<div class="lw-err">Chart library failed to load.<br>Check your connection and reload.</div>';
-    return;
-  }
+  if(!host) return;
+  if(!LW()){ chartErr(host, "Chart library failed to load."); return; }
+  if(lw.chart) return;
+  let tries = 0;
+  (function waitSize(){
+    if(lw.chart) return;
+    if(host.clientWidth > 0 && host.clientHeight > 0){
+      try{ buildMainChartNow(host); }
+      catch(err){ console.error("[chart] init failed:", err); chartErr(host, "Chart failed to start."); }
+      return;
+    }
+    if(++tries < 90) requestAnimationFrame(waitSize);
+    else chartErr(host, "Chart area unavailable.");
+  })();
+}
+function buildMainChartNow(host){
   host.innerHTML = "";
-  lw.chart = LW().createChart(host, Object.assign({ width:host.clientWidth||300, height:host.clientHeight||340 }, lwTheme()));
+  lw.chart = LW().createChart(host, Object.assign({ width:host.clientWidth, height:host.clientHeight }, lwTheme()));
   lw.candles = lw.chart.addCandlestickSeries(lwCandleOpts());
   lw.volume = lw.chart.addHistogramSeries({ priceScaleId:"vol", priceFormat:{ type:"volume" } });
   lw.chart.priceScale("vol").applyOptions({ scaleMargins:{ top:0.84, bottom:0 } });
@@ -451,13 +473,15 @@ function updateLegend(bar){
 function buildLiveChart(){
   const host = $("tvChartLive");
   if(!host || !LW() || lw.liveChart) return;
-  host.innerHTML = "";
-  lw.liveChart = LW().createChart(host, Object.assign({ width:host.clientWidth||300, height:host.clientHeight||300 }, lwTheme()));
-  lw.liveCandles = lw.liveChart.addCandlestickSeries(lwCandleOpts());
-  lw.liveBars = genBars("XAUUSD", "5m").bars;
-  lw.liveCandles.setData(lw.liveBars);
-  lw.liveChart.timeScale().scrollToRealTime();
-  new ResizeObserver(()=>{ if(lw.liveChart && host.clientWidth) lw.liveChart.resize(host.clientWidth, host.clientHeight); }).observe(host);
+  try{
+    host.innerHTML = "";
+    lw.liveChart = LW().createChart(host, Object.assign({ width:host.clientWidth||300, height:host.clientHeight||300 }, lwTheme()));
+    lw.liveCandles = lw.liveChart.addCandlestickSeries(lwCandleOpts());
+    lw.liveBars = genBars("XAUUSD", "5m").bars;
+    lw.liveCandles.setData(lw.liveBars);
+    lw.liveChart.timeScale().scrollToRealTime();
+    new ResizeObserver(()=>{ if(lw.liveChart && host.clientWidth) lw.liveChart.resize(host.clientWidth, host.clientHeight); }).observe(host);
+  }catch(err){ console.error("[chart] live init failed:", err); chartErr(host, "Chart failed to start."); }
 }
 
 /* Called from the 700ms price engine tick: rolls the live candle forward */
@@ -1232,6 +1256,30 @@ document.addEventListener("click", e=>{
   openTraderProfile(el.dataset.tprof);
 });
 
+/* --- community sentiment poll (restored: init calls renderPoll()) --- */
+const POLL_KEY = "tc_poll_v1";
+let poll = { buy:7693, sell:4715, voted:null };
+try{ const s = JSON.parse(localStorage.getItem(POLL_KEY)||"null"); if(s && s.voted) poll = s; }catch(e){}
+function renderPoll(){
+  const total = poll.buy + poll.sell;
+  const bp = Math.round(poll.buy/total*100), sp = 100-bp;
+  $("pollBuyFill").style.width = bp+"%";
+  $("pollSellFill").style.width = sp+"%";
+  $("pollBuyPct").textContent = bp+"%";
+  $("pollSellPct").textContent = sp+"%";
+  $("pollVotes").textContent = total.toLocaleString("en-US")+" votes";
+  $("pollBtns").classList.toggle("voted", !!poll.voted);
+}
+function vote(side){
+  if(poll.voted){ toast("You already voted — demo"); return; }
+  poll[side]++; poll.voted = side;
+  try{ localStorage.setItem(POLL_KEY, JSON.stringify(poll)); }catch(e){}
+  renderPoll();
+  toast("Vote counted: "+side.toUpperCase()+" — demo");
+}
+$("pollBuy").addEventListener("click", ()=>vote("buy"));
+$("pollSell").addEventListener("click", ()=>vote("sell"));
+
 /* --- trader profile overlay --- */
 function monthlyBars(m){
   const max = Math.max.apply(null, m.map(v=>Math.abs(v)).concat([1]));
@@ -1350,7 +1398,7 @@ function postCard(p){
 function renderComments(p){
   const box = $("cm-"+p.id); if(!box) return;
   box.innerHTML = p.comments.map(cm=>
-    '<div class="comment"><b>'+esc(cm.n)+'</b><span class="ctime">'+esc(cm.time)+'</span><p></p></div>'
+    '<div class="comment"><b>'+esc(cm.n)+'</b><span class="ctime"> · '+esc(cm.time)+'</span><p></p></div>'
   ).join("");
   box.querySelectorAll(".comment p").forEach((el,i)=>{ el.textContent = p.comments[i].t; });
 }
@@ -1484,9 +1532,10 @@ renderDepth(true);
 renderTape(true);
 setSymbol("XAUUSD");
 setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } })());
-buildMainChart(); /* self-hosted candle chart, after theme is set */
 renderTicketTick();
 renderAccount();
-setInterval(tick, 700);
+setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
+/* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */
+try{ buildMainChart(); }catch(err){ console.error("[chart] buildMainChart threw:", err); }
 
 })();
