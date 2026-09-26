@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=17">
+<link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 
@@ -545,14 +545,28 @@
 </div>
 <input type="file" id="reelFileInput" accept="video/*" hidden>
 
-<!-- ============ REEL TITLE MODAL ============ -->
-<div class="modal-wrap" id="reelTitleModal" hidden role="dialog" aria-label="Name your reel">
+<!-- ============ REEL UPLOAD SHEET ============ -->
+<div class="modal-wrap" id="reelTitleModal" hidden role="dialog" aria-label="Upload reel">
   <div class="modal-backdrop" id="reelTitleBg"></div>
-  <div class="modal">
-    <h3>Name your reel</h3>
-    <p class="modal-sub">Uploaded from your device — demo, stays on this device.</p>
+  <div class="modal reel-upload-modal">
+    <h3>New reel</h3>
+    <p class="modal-sub">Demo — stays on this device, not published anywhere.</p>
+    <video id="reelUploadPreview" playsinline muted></video>
     <div class="fld"><label for="reelTitleInput">Title</label>
       <input class="field" id="reelTitleInput" maxlength="80" placeholder="e.g. My gold scalp breakdown" autocomplete="off">
+    </div>
+    <div class="fld"><label for="reelDescInput">Description</label>
+      <textarea class="field" id="reelDescInput" rows="2" maxlength="300" placeholder="What is this reel about?"></textarea>
+    </div>
+    <div class="fld"><label for="reelTagsInput">Hashtags</label>
+      <input class="field" id="reelTagsInput" maxlength="120" placeholder="#xauusd #scalping #forex" autocomplete="off">
+    </div>
+    <div class="fld"><label>Visibility</label>
+      <div class="seg" id="reelVisSeg">
+        <button class="seg-btn active" data-vis="public">Public</button>
+        <button class="seg-btn" data-vis="private">Private</button>
+      </div>
+      <p class="fine">Private reels stay on your profile only — they never appear in the reels hub.</p>
     </div>
     <div class="form-row">
       <button class="ghost-btn" id="reelTitleCancel">Cancel</button>
@@ -589,6 +603,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

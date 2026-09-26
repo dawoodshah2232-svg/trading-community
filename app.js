@@ -1841,7 +1841,9 @@ function renderTprofTrades(t){
 let reelTimer = null, reelRAF = 0;
 function openReel(t, r){
   $("reelTrader").textContent = t.handle + (t.live?" · LIVE":"");
-  $("reelTitle").textContent = r.title;
+  $("reelTitle").innerHTML = esc(r.title) +
+    (r.desc ? '<span class="reel-desc">'+esc(r.desc)+'</span>' : "") +
+    (r.tags && r.tags.length ? '<span class="reel-tags">'+r.tags.map(esc).join(" ")+'</span>' : "");
   $("reelLikeN").textContent = fmtK(r.likes);
   $("reelComN").textContent = fmtK(r.commentsN || (r.comments?r.comments.length:0) || Math.round(r.likes/9));
   $("reelLike").classList.toggle("liked", !!r.liked);
@@ -2391,7 +2393,7 @@ function allReels(){
 }
 function renderReelsHub(){
   const g = $("reelsHubGrid"); if(!g) return;
-  const items = allReels();
+  const items = allReels().filter(({r})=>r.visibility!=="private");
   const c = $("reelsHubCount"); if(c) c.textContent = items.length + " reels";
   g.innerHTML = items.map(({t,r})=>
     '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
@@ -2478,6 +2480,7 @@ function renderProfReels(){
   else{
     g.innerHTML = '<div class="reel-grid">'+you.reels.map(r=>
       '<button class="reel-tile" data-reel="'+r.id+'" style="--g1:'+you.g[0]+';--g2:'+you.g[1]+'">'+
+      (r.visibility==="private"?'<span class="rt-priv">Private</span>':"")+
       '<span class="rt-play"><i>▶</i></span><span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views)+'</span></span></button>').join("")+'</div>';
     g.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
       const r = you.reels.find(x=>x.id===tile.dataset.reel); openReel(you, r);
@@ -2488,7 +2491,7 @@ function renderProfReels(){
 }
 
 /* --- reel upload from profile (device video file; demo, stays local) --- */
-let pendingReelFile = null;
+let pendingReelFile = null, pendingReelVis = "public";
 function triggerReelUpload(){
   const inp = $("reelFileInput"); if(!inp) return;
   inp.value = "";
@@ -2497,22 +2500,45 @@ function triggerReelUpload(){
 function cleanFileName(n){
   return (n||"").replace(/\.[a-z0-9]+$/i,"").replace(/[_-]+/g," ").trim().slice(0,80) || "My new reel";
 }
+function parseTags(s){
+  return (s||"").split(/[\s,]+/).map(t=>t.trim()).filter(Boolean)
+    .map(t=>t[0]==="#"?t:"#"+t).filter((t,i,a)=>a.indexOf(t)===i).slice(0,12);
+}
+$("reelVisSeg").querySelectorAll(".seg-btn").forEach(b=>b.addEventListener("click", ()=>{
+  $("reelVisSeg").querySelectorAll(".seg-btn").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  pendingReelVis = b.dataset.vis;
+}));
 $("reelFileInput").addEventListener("change", ()=>{
   const f = $("reelFileInput").files && $("reelFileInput").files[0];
   if(!f) return;
   pendingReelFile = f;
+  pendingReelVis = "public";
+  $("reelVisSeg").querySelectorAll(".seg-btn").forEach(x=>x.classList.toggle("active", x.dataset.vis==="public"));
   $("reelTitleInput").value = cleanFileName(f.name);
+  $("reelDescInput").value = "";
+  $("reelTagsInput").value = "";
+  const pv = $("reelUploadPreview");
+  pv.src = URL.createObjectURL(f); pv.muted = true; pv.play().catch(()=>{});
   $("reelTitleModal").hidden = false;
 });
-$("reelTitleBg").addEventListener("click", ()=>{ $("reelTitleModal").hidden = true; pendingReelFile = null; });
-$("reelTitleCancel").addEventListener("click", ()=>{ $("reelTitleModal").hidden = true; pendingReelFile = null; });
+function hideReelUpload(){
+  $("reelTitleModal").hidden = true; pendingReelFile = null;
+  const pv = $("reelUploadPreview"); if(pv){ pv.pause(); pv.removeAttribute("src"); }
+}
+$("reelTitleBg").addEventListener("click", hideReelUpload);
+$("reelTitleCancel").addEventListener("click", hideReelUpload);
 $("reelTitleSave").addEventListener("click", ()=>{
   if(!pendingReelFile) return;
   const title = ($("reelTitleInput").value || "").trim().slice(0,80) || cleanFileName(pendingReelFile.name);
+  const desc = ($("reelDescInput").value || "").trim().slice(0,300);
+  const tags = parseTags($("reelTagsInput").value);
   const you = TRADERS.find(t=>t.id==="you");
-  you.reels.unshift({ id:"you-r"+Date.now(), title, views:"0", likes:0, liked:false,
-    seed:Math.floor(Math.random()*999), videoUrl:URL.createObjectURL(pendingReelFile) });
+  you.reels.unshift({ id:"you-r"+Date.now(), title, desc, tags, visibility:pendingReelVis,
+    views:"0", likes:0, liked:false, seed:Math.floor(Math.random()*999),
+    videoUrl:URL.createObjectURL(pendingReelFile) });
   pendingReelFile = null;
+  const pv = $("reelUploadPreview"); pv.pause(); pv.removeAttribute("src");
   $("reelTitleModal").hidden = true;
   renderProfReels(); renderReelsHub();
   toast("Reel uploaded — demo");
