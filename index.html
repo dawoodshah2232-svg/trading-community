@@ -105,10 +105,12 @@
                 <button class="tf" data-tf="1D" role="tab">1D</button>
               </div>
               <button class="idea-fab" id="shareIdeaBtn"><span class="ic xs" data-icon="send"></span> Post idea</button>
+              <button class="ind-btn" id="indBtn" aria-label="Chart indicators">Indicators</button>
             </div>
             <div class="chart-wrap" id="tradeChartWrap">
-                <div class="lw-legend num" id="chartLegend"><b id="lgSym">XAUUSD</b><span class="lg-tf" id="lgTF">1m</span><span>O <i id="lgO">—</i></span><span>H <i id="lgH">—</i></span><span>L <i id="lgL">—</i></span><span>C <i id="lgC">—</i></span><span id="lgChg" class="num">—</span></div>
+                <div class="lw-legend num" id="chartLegend"><b id="lgSym">XAUUSD</b><span class="lg-tf" id="lgTF">1m</span><span class="mkt-pill" id="mktPill"></span><span class="data-badge" id="dataBadge"></span><span>O <i id="lgO">—</i></span><span>H <i id="lgH">—</i></span><span>L <i id="lgL">—</i></span><span>C <i id="lgC">—</i></span><span id="lgChg" class="num">—</span></div>
                 <div class="tv-host" id="tvChart"></div>
+                <div id="indPanes"></div>
                 <div class="quick-trade">
                   <button class="qt buy" id="qtBuy">BUY</button>
                   <button class="qt sell" id="qtSell">SELL</button>
@@ -119,6 +121,7 @@
             <!-- Order ticket -->
             <div class="ticket-card">
               <div class="sec-head"><h3>New order</h3><span class="fine">Demo execution</span></div>
+              <div class="mkt-note" id="mktNote" hidden>⏸ Market closed — showing the last price. Demo orders still work.</div>
               <div class="ticket" aria-label="Order ticket">
               <div class="ttype-tabs" id="ttypeTabs" role="tablist" aria-label="Order type">
                   <button class="ttype active" data-ttype="market" role="tab">Market</button>
@@ -563,6 +566,16 @@
   </div>
   <div class="reel-cap"><b id="reelTrader">@trader</b><p id="reelTitle"></p></div>
 </div>
+<!-- Indicator settings sheet -->
+<div class="modal-wrap" id="indSheetWrap" hidden role="dialog" aria-label="Chart indicators">
+  <div class="modal-backdrop" id="indSheetBg"></div>
+  <div class="modal sheet">
+    <div class="sheet-head"><b>Indicators</b><button class="modal-x" id="indSheetX" aria-label="Close">✕</button></div>
+    <p class="modal-sub" id="indDataNote"></p>
+    <div id="indList"></div>
+  </div>
+</div>
+
 <input type="file" id="reelFileInput" accept="video/*" hidden>
 
 <!-- ============ REEL UPLOAD SHEET ============ -->

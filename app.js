@@ -95,51 +95,69 @@ SYM_ORDER.forEach(s=>{
   state.hist[s] = [m.base];
 });
 
-/* ---------------- REAL MARKET ANCHORS (free public APIs; fail-soft to sim) ---------------- */
-const CG_IDS = { BTCUSD:"bitcoin", ETHUSD:"ethereum", SOLUSD:"solana", BNBUSD:"binancecoin", XRPUSD:"ripple" };
+/* ---------------- MARKET HOURS ----------------
+   Spot forex/metals/indices/energy trade Sun 22:00 UTC -> Fri 21:00 UTC.
+   Crypto trades 24/7. When closed we FREEZE the price (no fake ticking)
+   and the UI shows a clear "Market closed" state. */
+const CRYPTO_SYMS = new Set(["BTCUSD","ETHUSD","SOLUSD","BNBUSD","XRPUSD"]);
+function mktOpen(sym){
+  if(CRYPTO_SYMS.has(sym)) return true;
+  const n = new Date(), d = n.getUTCDay(), h = n.getUTCHours() + n.getUTCMinutes()/60;
+  if(d === 6) return false;             /* Saturday */
+  if(d === 0 && h < 22) return false;   /* Sunday before 22:00 UTC */
+  if(d === 5 && h >= 21) return false;  /* Friday after 21:00 UTC */
+  return true;
+}
+state.live = {};   /* sym -> "live" (real-time quote) | "daily" (daily indicative anchor) */
+state.dataReal = {}; /* sym -> true once the chart holds REAL candles */
+
+/* ---------------- REAL MARKET FEEDS (free, no key, CORS-ok; fail-soft) ---------------- */
+const CG_IDS = { BTCUSD:"bitcoin", ETHUSD:"ethereum", SOLUSD:"solana", BNBUSD:"binancecoin", XRPUSD:"ripple", XAUUSD:"pax-gold" };
 function fetchJSON(url, ms){
   const c = new AbortController(); const t = setTimeout(()=>c.abort(), ms || 8000);
   return fetch(url, { cache:"no-store", signal:c.signal })
     .then(r=>{ clearTimeout(t); if(!r.ok) throw new Error("bad"); return r.json(); })
     .catch(e=>{ clearTimeout(t); throw e; });
 }
-/* Anchors the sim to the real market. tick() mean-reverts toward base, so refreshes glide smoothly. */
-function anchorPrice(sym, price, chg, hard){
+/* Anchors the price to the market. Real quotes set the traded price exactly —
+   no glide, no invented ticks: what you see is the quote we received.
+   kind: "live" = real-time quote, "daily" = daily indicative anchor, falsy = simulated. */
+function anchorPrice(sym, price, chg, hard, kind){
   const m = SYMBOLS[sym]; if(!m || !(price > 0)) return;
   m.base = price;
   if(typeof chg === "number" && isFinite(chg)) m.chg = Math.max(-99, Math.min(99, chg));
   const pr = state.prices[sym];
-  if(hard){ pr.bid = price; pr.ask = price + m.spread; }
+  if(hard || kind){ pr.bid = price; pr.ask = price + m.spread; }
   pr.chg = m.chg;
-  const h = state.hist[sym]; h.push(hard ? price : pr.bid); if(h.length > 140) h.shift();
+  if(kind) state.live[sym] = kind;
+  const h = state.hist[sym]; h.push(pr.bid); if(h.length > 140) h.shift();
 }
-async function fetchRealPrices(cryptoOnly){
+async function fetchRealPrices(full){
   const jobs = [];
-  if(!cryptoOnly){
-    /* forex — Friday close on weekends (frankfurter, free, no key) */
-    jobs.push(fetchJSON("https://api.frankfurter.app/latest?from=USD&to=EUR,GBP,JPY,AUD,CAD,NZD,CHF").then(f=>{
-      const r = f && f.rates; if(!r) return;
-      const conv = { EURUSD:1/r.EUR, GBPUSD:1/r.GBP, USDJPY:r.JPY, AUDUSD:1/r.AUD, USDCAD:r.CAD, NZDUSD:1/r.NZD, USDCHF:r.CHF };
-      Object.entries(conv).forEach(([s,p])=>anchorPrice(s, p, undefined, true));
-    }).catch(()=>{}));
-    /* metals — live spot when available */
-    jobs.push(fetchJSON("https://api.metals.live/v1/spot").then(g=>{
-      if(g && g.gold > 0) anchorPrice("XAUUSD", g.gold, undefined, true);
-      if(g && g.silver > 0) anchorPrice("XAGUSD", g.silver, undefined, true);
-    }).catch(()=>{}));
-  }
-  /* crypto — trades 24/7, refreshed every minute */
+  /* crypto + gold (PAXG tracks spot gold) — 24/7 quote, but we only move the
+     chart anchor while each market is actually open */
   const ids = Object.values(CG_IDS).join(",");
   jobs.push(fetchJSON("https://api.coingecko.com/api/v3/simple/price?ids="+ids+"&vs_currencies=usd&include_24hr_change=true").then(j=>{
     Object.entries(CG_IDS).forEach(([s,id])=>{
       const d = j && j[id];
-      if(d && d.usd > 0) anchorPrice(s, d.usd, d.usd_24h_change, !cryptoOnly);
+      if(d && d.usd > 0 && mktOpen(s)) anchorPrice(s, d.usd, d.usd_24h_change, full, "live");
     });
   }).catch(()=>{}));
+  if(full){
+    /* forex — free, no key, CORS-enabled (daily anchor; intraday stays simulated) */
+    jobs.push(fetchJSON("https://open.er-api.com/v6/latest/USD").then(f=>{
+      const r = f && f.rates; if(!r || f.result !== "success") return;
+      const conv = { EURUSD:1/r.EUR, GBPUSD:1/r.GBP, USDJPY:r.JPY, AUDUSD:1/r.AUD,
+                     USDCAD:r.CAD, NZDUSD:1/r.NZD, USDCHF:r.CHF };
+      Object.entries(conv).forEach(([s,p])=>{ if(mktOpen(s)) anchorPrice(s, p, undefined, true, "daily"); });
+    }).catch(()=>{}));
+  }
   await Promise.all(jobs);
+  updateDataBadges();
 }
-fetchRealPrices(false);
-setInterval(()=>fetchRealPrices(true), 60000);
+fetchRealPrices(true);
+setInterval(()=>fetchRealPrices(false), 60000);
+setInterval(()=>fetchRealPrices(true), 15*60000);
 /* seed one demo alert so the feature is visible */
 state.alerts.push({ id:"a"+(state.alertSeq++), sym:"XAUUSD", cond:"above", price:2660.00, triggered:false });
 
@@ -228,7 +246,10 @@ function tick(){
   SYM_ORDER.forEach(s=>{
     const m = meta(s), pr = px(s);
     prevBid[s] = pr.bid;
-    pr.bid += (m.base - pr.bid)*0.002 + (Math.random()-0.5)*2*m.vol;
+    if(!mktOpen(s)) return; /* market closed: freeze at last price, no fake movement */
+    if(state.live[s]) return; /* real feed: price moves ONLY when a real quote arrives — never invented */
+    /* simulated symbols only: honest random-walk, badged "Simulated" in the UI */
+    pr.bid += (m.base - pr.bid)*0.004 + (Math.random()-0.5)*2*m.vol;
     pr.ask = pr.bid + m.spread;
     pr.chg += (Math.random()-0.5)*0.02;
     const h = state.hist[s]; h.push(pr.bid); if(h.length>140) h.shift();
@@ -245,7 +266,8 @@ function tick(){
   renderPositionsTick();
   renderAccount();
   updateChartTick(); /* roll the self-hosted candle chart forward */
-  if(++tickCount % 7 === 0) renderYouCard(); /* your presence card, ~5s */
+  if(++tickCount % 7 === 0){ renderYouCard(); updateDataBadges(); } /* your presence card, ~5s */
+  if(lw.bars.length !== lastIndBars || tickCount % 9 === 0) renderIndicators(); /* keep indicators live */
 }
 let tickCount = 0;
 
@@ -254,10 +276,10 @@ function renderWatchlist(){
   const list = $("watchList"); list.innerHTML = "";
   watchOrder().forEach(s=>{
     const b = document.createElement("button");
-    b.className = "wl-item" + (s===state.sym ? " current" : "");
+    b.className = "wl-item" + (s===state.sym ? " current" : "") + (!mktOpen(s) ? " is-closed" : "");
     b.dataset.sym = s; b.setAttribute("role","option");
     b.setAttribute("aria-selected", s===state.sym ? "true" : "false");
-    b.innerHTML = '<span class="wl-sym">'+(isFav(s)?'<span class="ic xs wl-star" data-icon="star"></span>':"")+'<b>'+s+'</b></span>'+
+    b.innerHTML = '<span class="wl-sym">'+(isFav(s)?'<span class="ic xs wl-star" data-icon="star"></span>':"")+'<b>'+s+'</b>'+(!mktOpen(s)?'<span class="wl-closed">Closed</span>':"")+'</span>'+
       '<span class="wl-px"><span class="num" data-wl-px="'+s+'">—</span><br>'+
       '<span class="chg num" data-wl-chg="'+s+'">—</span></span>';
     b.addEventListener("click", ()=>setSymbol(s));
@@ -267,6 +289,9 @@ function renderWatchlist(){
   renderWatchlistTick();
 }
 function renderWatchlistTick(){
+  document.querySelectorAll(".wl-item").forEach(el=>{
+    el.classList.toggle("is-closed", !mktOpen(el.dataset.sym));
+  });
   SYM_ORDER.forEach(s=>{
     const pr = px(s);
     const pxEl = document.querySelector('[data-wl-px="'+s+'"]');
@@ -299,6 +324,7 @@ function setSymbol(s){
   refreshMainData(); /* regenerate candles for the new symbol */
   renderDepth(true); renderTape(true);
   renderHeaderTick(); renderTicketTick();
+  updateDataBadges(); /* market open/closed + real-time/simulated state */
   $("tPrice").value = "";
 }
 function renderHeaderTick(){
@@ -472,29 +498,77 @@ function buildMainChart(){
 }
 function buildMainChartNow(host){
   host.innerHTML = "";
+  /* indicator objects belong to the previous chart instance — drop them so they rebuild cleanly */
+  try{ Object.keys(indPanes).forEach(dropIndPane); }catch(e){}
+  indBuilt = null; indSig = ""; indSyncBound = false;
   lw.chart = LW().createChart(host, Object.assign({ width:host.clientWidth, height:host.clientHeight }, lwTheme()));
   lw.candles = lw.chart.addCandlestickSeries(lwCandleOpts());
   lw.volume = lw.chart.addHistogramSeries({ priceScaleId:"vol", priceFormat:{ type:"volume" } });
   lw.chart.priceScale("vol").applyOptions({ scaleMargins:{ top:0.84, bottom:0 } });
   refreshMainData();
   lw.chart.subscribeCrosshairMove(onMainCrosshair);
+  bindIndSync(); /* keep indicator panes glued to the main chart's scroll/zoom */
   new ResizeObserver(()=>{ if(lw.chart && host.clientWidth) lw.chart.resize(host.clientWidth, host.clientHeight); }).observe(host);
 }
-function refreshMainData(){
+/* Real OHLC history (CoinGecko, free/no-key/CORS-ok) for crypto + PAXG (gold).
+   Other symbols keep anchored simulated intraday, honestly badged. */
+const realBarsCache = {};
+function bucketBars(pts, mins){
+  const bucket = mins*60*1000, map = new Map();
+  pts.forEach(pt=>{
+    const t = pt[0], p = pt[1]; if(!(p > 0)) return;
+    const b = Math.floor(t/bucket)*bucket;
+    let c = map.get(b);
+    if(!c) map.set(b, c = { time:Math.floor(b/1000), open:p, high:p, low:p, close:p });
+    else { c.close = p; if(p > c.high) c.high = p; if(p < c.low) c.low = p; }
+  });
+  return [...map.values()].sort((a,b)=>a.time-b.time);
+}
+async function fetchRealBars(sym, tf){
+  const id = CG_IDS[sym]; if(!id) return null;
+  const key = sym+"|"+tf, now = Date.now(), c = realBarsCache[key];
+  if(c && now - c.t < 5*60000) return c.bars;
+  const mins = TF_MIN[tf] || 1, days = mins >= 240 ? 30 : 2;
+  try{
+    const j = await fetchJSON("https://api.coingecko.com/api/v3/coins/"+id+"/market_chart?vs_currency=usd&days="+days+(days <= 2 ? "&interval=minutely" : ""), 12000);
+    const pts = j && j.prices;
+    if(!Array.isArray(pts) || pts.length < 20) return null;
+    const bars = bucketBars(pts, mins).slice(-N_BARS);
+    if(bars.length < 30) return null;
+    realBarsCache[key] = { t:now, bars };
+    return bars;
+  }catch(e){ return null; }
+}
+function genVols(bars){
+  const rnd = mulberry32(hashStr("vol|"+bars.length));
+  return bars.map(b=>({ time:b.time, value:+(0.4+rnd()*2.2).toFixed(2),
+    color: b.close >= b.open ? "rgba(34,197,94,0.32)" : "rgba(239,68,68,0.32)" }));
+}
+async function refreshMainData(){
   if(!lw.candles) return;
-  const d = genBars(state.sym, state.tf);
-  lw.bars = d.bars; lw.vols = d.vols;
-  lw.candles.setData(d.bars);
-  lw.volume.setData(d.vols);
+  const s = state.sym, tf = state.tf;
+  let bars = null, real = false;
+  try{ bars = await fetchRealBars(s, tf); }catch(e){ bars = null; }
+  if(state.sym !== s || state.tf !== tf) return; /* user switched mid-fetch */
+  let vols;
+  if(bars && bars.length > 30){ real = true; vols = genVols(bars); }
+  else { const d = genBars(s, tf); bars = d.bars; vols = d.vols; }
+  state.dataReal[s] = real;
+  lw.bars = bars; lw.vols = vols;
+  lw.candles.setData(bars);
+  lw.volume.setData(vols);
   lw.chart.timeScale().scrollToRealTime();
-  $("lgSym").textContent = state.sym;
-  $("lgTF").textContent = state.tf;
-  updateLegend(d.bars[d.bars.length-1]);
+  $("lgSym").textContent = s;
+  $("lgTF").textContent = tf;
+  updateLegend(bars[bars.length-1]);
+  renderIndicators();
+  updateDataBadges();
 }
 function applyChartTheme(){
   if(!LW()) return;
   if(lw.chart) lw.chart.applyOptions(lwTheme());
   if(lw.liveChart) lw.liveChart.applyOptions(lwTheme());
+  try{ Object.values(indPanes).forEach(P=>P.chart.applyOptions(lwTheme())); }catch(e){}
 }
 function onMainCrosshair(param){
   if(!lw.candles || !lw.bars.length) return;
@@ -2854,4 +2928,347 @@ try{ buildMainChart(); }catch(err){ console.error("[chart] buildMainChart threw:
   setTimeout(function(){ var inp = document.getElementById("tcPass"); if(inp) inp.focus(); }, 300);
 })();
 
+})();
+
+/* ================= INDICATORS (real-time, computed on chart candles) =================
+   The mostly-used set with industry-standard defaults. Overlay indicators draw on
+   the price chart; oscillators get their own synced panes below it. Values are real
+   whenever the chart holds real candles (gold + crypto via CoinGecko). */
+const IND_DEFS = [
+  { id:"emaFast", name:"EMA",        color:"#2F80FF", params:[["p1","Period"]],      def:{on:true,  p1:9} },
+  { id:"emaSlow", name:"EMA",        color:"#F59E0B", params:[["p1","Period"]],      def:{on:true,  p1:21} },
+  { id:"sma50",   name:"SMA",        color:"#94A3B8", params:[["p1","Period"]],      def:{on:false, p1:50} },
+  { id:"sma200",  name:"SMA",        color:"#A855F7", params:[["p1","Period"]],      def:{on:false, p1:200} },
+  { id:"bb",      name:"Bollinger",  color:"#22C55E", params:[["p1","Length"],["p2","Mult"]], def:{on:false, p1:20, p2:2} },
+  { id:"rsi",     name:"RSI",        color:"#A855F7", params:[["p1","Period"]],      def:{on:true,  p1:14}, pane:true },
+  { id:"macd",    name:"MACD",       color:"#2F80FF", params:[["p1","Fast"],["p2","Slow"],["p3","Signal"]], def:{on:true, p1:12, p2:26, p3:9}, pane:true },
+  { id:"stoch",   name:"Stochastic", color:"#F59E0B", params:[["p1","%K"],["p2","%K smooth"],["p3","%D"]], def:{on:false, p1:14, p2:3, p3:3}, pane:true },
+  { id:"atr",     name:"ATR",        color:"#EF4444", params:[["p1","Period"]],      def:{on:false, p1:14}, pane:true }
+];
+const IND_KEY = "tc_inds_v1";
+function loadIndCfg(){
+  let saved = {};
+  try{ saved = JSON.parse(localStorage.getItem(IND_KEY) || "{}"); }catch(e){}
+  const cfg = {};
+  IND_DEFS.forEach(d=>{ cfg[d.id] = Object.assign({}, d.def, saved[d.id] || {}); });
+  return cfg;
+}
+let indCfg = loadIndCfg();
+function saveIndCfg(){ try{ localStorage.setItem(IND_KEY, JSON.stringify(indCfg)); }catch(e){} }
+
+/* --- math (standard definitions) --- */
+function indSMA(vals, p){
+  const out = new Array(vals.length).fill(null); let sum = 0;
+  for(let i=0;i<vals.length;i++){ sum += vals[i];
+    if(i >= p) sum -= vals[i-p];
+    if(i >= p-1) out[i] = sum/p; }
+  return out;
+}
+function indEMA(vals, p){
+  const out = new Array(vals.length).fill(null), k = 2/(p+1);
+  let e = null;
+  for(let i=0;i<vals.length;i++){ e = e === null ? vals[i] : vals[i]*k + e*(1-k);
+    if(i >= p-1) out[i] = e; }
+  return out;
+}
+function indRSI(closes, p){
+  const out = new Array(closes.length).fill(null);
+  if(closes.length <= p) return out;
+  let g = 0, l = 0;
+  for(let i=1;i<=p;i++){ const d = closes[i]-closes[i-1]; if(d>0) g+=d; else l-=d; }
+  g/=p; l/=p;
+  out[p] = l === 0 ? 100 : 100 - 100/(1+g/l);
+  for(let i=p+1;i<closes.length;i++){
+    const d = closes[i]-closes[i-1];
+    g = (g*(p-1) + Math.max(d,0))/p; l = (l*(p-1) + Math.max(-d,0))/p;
+    out[i] = l === 0 ? 100 : 100 - 100/(1+g/l);
+  }
+  return out;
+}
+function indMACD(closes, fast, slow, sig){
+  const ef = indEMA(closes, fast), es = indEMA(closes, slow);
+  const line = closes.map((_,i)=> (ef[i]===null||es[i]===null) ? null : ef[i]-es[i]);
+  const lineVals = [], lineIdx = [];
+  line.forEach((v,i)=>{ if(v!==null){ lineVals.push(v); lineIdx.push(i); } });
+  const sigRaw = indEMA(lineVals, sig);
+  const signal = new Array(closes.length).fill(null);
+  sigRaw.forEach((v,j)=>{ if(v!==null) signal[lineIdx[j]] = v; });
+  const hist = closes.map((_,i)=> (line[i]===null||signal[i]===null) ? null : line[i]-signal[i]);
+  return { line, signal, hist };
+}
+function indBB(closes, p, mult){
+  const mid = indSMA(closes, p), up = new Array(closes.length).fill(null), lo = new Array(closes.length).fill(null);
+  for(let i=p-1;i<closes.length;i++){
+    let m = 0; for(let j=i-p+1;j<=i;j++) m += closes[j]; m/=p;
+    let v = 0; for(let j=i-p+1;j<=i;j++) v += (closes[j]-m)*(closes[j]-m); v/=p;
+    const sd = Math.sqrt(v);
+    up[i] = mid[i] + mult*sd; lo[i] = mid[i] - mult*sd;
+  }
+  return { mid, up, lo };
+}
+function indStoch(bars, k, ks, d){
+  const hk = new Array(bars.length).fill(null);
+  for(let i=k-1;i<bars.length;i++){
+    let h=-Infinity, l=Infinity;
+    for(let j=i-k+1;j<=i;j++){ if(bars[j].high>h)h=bars[j].high; if(bars[j].low<l)l=bars[j].low; }
+    hk[i] = h === l ? 50 : 100*(bars[i].close-l)/(h-l);
+  }
+  const kVals=[], kIdx=[];
+  hk.forEach((v,i)=>{ if(v!==null){ kVals.push(v); kIdx.push(i); } });
+  const dRaw = indSMA(kVals, ks), pctK = new Array(bars.length).fill(null), pctD = new Array(bars.length).fill(null);
+  dRaw.forEach((v,j)=>{ if(v!==null) pctK[kIdx[j]] = v; });
+  const k2=[], k2i=[];
+  pctK.forEach((v,i)=>{ if(v!==null){ k2.push(v); k2i.push(i); } });
+  indSMA(k2, d).forEach((v,j)=>{ if(v!==null) pctD[k2i[j]] = v; });
+  return { k:pctK, d:pctD };
+}
+function indATR(bars, p){
+  const out = new Array(bars.length).fill(null);
+  if(bars.length <= p) return out;
+  const trs = [];
+  for(let i=1;i<bars.length;i++){
+    const h=bars[i].high, l=bars[i].low, pc=bars[i-1].close;
+    trs.push(Math.max(h-l, Math.abs(h-pc), Math.abs(l-pc)));
+  }
+  let a = trs.slice(0,p).reduce((x,y)=>x+y,0)/p;
+  out[p] = a;
+  for(let i=p+1;i<bars.length;i++) a = out[i] = (a*(p-1)+trs[i-1])/p;
+  return out;
+}
+function seriesData(bars, vals){
+  const d = [];
+  for(let i=0;i<bars.length;i++) if(vals[i] !== null && isFinite(vals[i])) d.push({ time:bars[i].time, value:+vals[i].toFixed(6) });
+  return d;
+}
+function levelLine(bars, v){
+  return bars.map(b=>({ time:b.time, value:v }));
+}
+
+/* ---- indicator rendering: overlays on price chart, oscillators in synced panes ---- */
+let indOverlaySeries = [];
+const indPanes = {};
+let indSyncBound = false, lastIndBars = -1;
+function clearIndOverlays(){
+  if(!lw.chart) return;
+  indOverlaySeries.forEach(s=>{ try{ lw.chart.removeSeries(s); }catch(e){} });
+  indOverlaySeries = [];
+}
+function indSubLabel(def){
+  const c = indCfg[def.id];
+  if(def.id === "macd") return "("+c.p1+","+c.p2+","+c.p3+")";
+  if(def.id === "bb") return "("+c.p1+","+c.p2+")";
+  if(def.id === "stoch") return "("+c.p1+","+c.p2+","+c.p3+")";
+  return "("+c.p1+")";
+}
+function ensureIndPane(def){
+  if(indPanes[def.id]) return indPanes[def.id];
+  const host = $("indPanes"); if(!host || !LW()) return null;
+  const wrap = document.createElement("div");
+  wrap.className = "ind-pane";
+  wrap.innerHTML = '<div class="ind-pane-head"><b>'+def.name+'</b><span class="ind-pane-sub">'+indSubLabel(def)+'</span><span class="ind-val num"></span></div><div class="ind-host"></div>';
+  host.appendChild(wrap);
+  const el = wrap.querySelector(".ind-host");
+  const chart = LW().createChart(el, Object.assign({ width:el.clientWidth || 300, height:104 }, lwTheme(), {
+    timeScale:{ borderVisible:false }, rightPriceScale:{ borderVisible:false }
+  }));
+  const P = { wrap, chart, series:{}, valEl:wrap.querySelector(".ind-val") };
+  indPanes[def.id] = P;
+  new ResizeObserver(()=>{ const w = el.clientWidth; if(w) chart.resize(w, 104); }).observe(el);
+  return P;
+}
+function dropIndPane(id){
+  const P = indPanes[id]; if(!P) return;
+  try{ P.chart.remove(); }catch(e){}
+  if(P.wrap.parentNode) P.wrap.parentNode.removeChild(P.wrap);
+  delete indPanes[id];
+}
+/* Compute all indicator datasets (cheap: 240 bars). Rendering reuses series and
+   only pushes the newest point per tick; a full rebuild happens on symbol/TF/
+   settings change or when a new bar opens. */
+let indSig = "", indBuilt = null;
+function computeIndData(){
+  const bars = lw.bars, closes = bars.map(b=>b.close), L = LW();
+  const overlays = [], panes = {};
+  IND_DEFS.forEach(def=>{
+    const c = indCfg[def.id];
+    if(!c.on) return;
+    const p1 = Math.max(2, +c.p1 || def.def.p1);
+    if(!def.pane){
+      if(def.id === "bb"){
+        const r = indBB(closes, p1, Math.max(0.5, +c.p2 || 2));
+        overlays.push({ color:"rgba(34,197,94,0.55)", width:1, data:seriesData(bars, r.up) });
+        overlays.push({ color:def.color, width:1, data:seriesData(bars, r.mid) });
+        overlays.push({ color:"rgba(239,68,68,0.55)", width:1, data:seriesData(bars, r.lo) });
+      }else{
+        const fn = def.id.indexOf("ema") === 0 ? indEMA : indSMA;
+        overlays.push({ color:def.color, width:def.id === "emaFast" ? 2 : 1, data:seriesData(bars, fn(closes, p1)) });
+      }
+      return;
+    }
+    const items = [];
+    const line = (color, w, data)=>items.push({ kind:"line", color, width:w || 1, data });
+    const hband = v=>items.push({ kind:"band", value:v, data:levelLine(bars, v) });
+    let valTxt = "", valCls = "";
+    if(def.id === "rsi"){
+      const v = indRSI(closes, p1);
+      line(def.color, 2, seriesData(bars, v)); hband(70); hband(30);
+      const lv = v.filter(x=>x !== null).pop();
+      valTxt = lv != null ? "RSI "+lv.toFixed(1) : "—";
+      valCls = lv > 70 ? "down" : lv < 30 ? "up" : "";
+    }else if(def.id === "macd"){
+      const r = indMACD(closes, p1, Math.max(p1+1, +c.p2 || 26), Math.max(2, +c.p3 || 9));
+      items.push({ kind:"hist", data:bars.map((b,i)=> r.hist[i]===null ? null :
+        { time:b.time, value:+r.hist[i].toFixed(6), color:r.hist[i]>=0 ? "rgba(34,197,94,0.55)" : "rgba(239,68,68,0.55)" }).filter(Boolean) });
+      line("#2F80FF", 2, seriesData(bars, r.line));
+      line("#F59E0B", 1, seriesData(bars, r.signal));
+      const lv = r.hist.filter(x=>x !== null).pop();
+      valTxt = lv != null ? "Hist "+(lv>=0?"+":"")+lv.toFixed(4) : "—";
+      valCls = lv !== undefined && lv < 0 ? "down" : "up";
+    }else if(def.id === "stoch"){
+      const r = indStoch(bars, p1, Math.max(1, +c.p2 || 3), Math.max(2, +c.p3 || 9));
+      line("#2F80FF", 2, seriesData(bars, r.k));
+      line("#F59E0B", 1, seriesData(bars, r.d));
+      hband(80); hband(20);
+      const lv = r.k.filter(x=>x !== null).pop();
+      valTxt = lv != null ? "%K "+lv.toFixed(1) : "—";
+    }else if(def.id === "atr"){
+      const v = indATR(bars, p1);
+      line(def.color, 1, seriesData(bars, v));
+      const lv = v.filter(x=>x !== null).pop();
+      valTxt = lv != null ? "ATR "+fmtP(state.sym, lv) : "—";
+    }
+    panes[def.id] = { def, items, valTxt, valCls };
+  });
+  return { overlays, panes };
+}
+function fullRebuildInd(data){
+  const L = LW();
+  clearIndOverlays();
+  data.overlays.forEach(o=>{
+    const s = lw.chart.addLineSeries({ color:o.color, lineWidth:o.width, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+    s.setData(o.data); indOverlaySeries.push(s);
+  });
+  Object.keys(indPanes).forEach(id=>{ if(!data.panes[id]) dropIndPane(id); });
+  Object.values(data.panes).forEach(pd=>{
+    const P = ensureIndPane(pd.def); if(!P) return;
+    Object.values(P.series).forEach(s=>{ try{ P.chart.removeSeries(s); }catch(e){} });
+    P.series = {};
+    pd.items.forEach((it,i)=>{
+      let s;
+      if(it.kind === "hist") s = P.chart.addHistogramSeries({ priceLineVisible:false, lastValueVisible:false });
+      else if(it.kind === "band") s = P.chart.addLineSeries({ color:"rgba(148,163,184,0.45)", lineWidth:1, lineStyle:L.LineStyle.Dashed, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+      else s = P.chart.addLineSeries({ color:it.color, lineWidth:it.width, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+      s.setData(it.data); P.series["s"+i] = s;
+    });
+    P.valEl.textContent = pd.valTxt;
+    P.valEl.className = "ind-val num " + pd.valCls;
+    P.wrap.querySelector(".ind-pane-sub").textContent = indSubLabel(pd.def);
+    try{
+      const r = lw.chart.timeScale().getVisibleLogicalRange();
+      if(r) P.chart.timeScale().setVisibleLogicalRange(r);
+    }catch(e){}
+  });
+  indBuilt = { overlays:indOverlaySeries.slice(), panes:{} };
+  Object.keys(data.panes).forEach(id=>{
+    if(indPanes[id]) indBuilt.panes[id] = { P:indPanes[id], series:Object.values(indPanes[id].series) };
+  });
+}
+function renderIndicators(){
+  if(!lw.chart || !LW() || !lw.bars || lw.bars.length < 10) return;
+  const sig = state.sym+"|"+state.tf+"|"+lw.bars.length+"|"+JSON.stringify(indCfg);
+  const data = computeIndData();
+  if(sig !== indSig || !indBuilt){
+    fullRebuildInd(data);
+    indSig = sig;
+    return;
+  }
+  const lastOf = d => d.length ? d[d.length-1] : null;
+  indBuilt.overlays.forEach((s,i)=>{
+    const d = data.overlays[i]; const pt = d && lastOf(d.data);
+    if(pt){ try{ s.update(pt); }catch(e){} }
+  });
+  Object.keys(indBuilt.panes).forEach(id=>{
+    const b = indBuilt.panes[id], pd = data.panes[id];
+    if(!pd) return;
+    b.series.forEach((s,i)=>{
+      const it = pd.items[i]; const pt = it && lastOf(it.data);
+      if(pt){ try{ s.update(pt); }catch(e){} }
+    });
+    b.P.valEl.textContent = pd.valTxt;
+    b.P.valEl.className = "ind-val num " + pd.valCls;
+  });
+}
+function bindIndSync(){
+  if(indSyncBound || !lw.chart) return;
+  indSyncBound = true;
+  lw.chart.timeScale().subscribeVisibleLogicalRangeChange(r=>{
+    if(!r) return;
+    Object.values(indPanes).forEach(P=>{ try{ P.chart.timeScale().setVisibleLogicalRange(r); }catch(e){} });
+  });
+}
+
+/* ---- indicator settings sheet ---- */
+function buildIndSheet(){
+  const list = $("indList"); if(!list) return;
+  list.innerHTML = IND_DEFS.map(def=>{
+    const c = indCfg[def.id];
+    const params = def.params.map(([k,label])=>
+      '<label class="ind-param"><span>'+label+'</span><input type="number" class="field num" data-ind="'+def.id+'" data-pk="'+k+'" value="'+c[k]+'" min="2" max="500" step="1"></label>').join("");
+    return '<div class="ind-row"><label class="switch"><input type="checkbox" data-ind-toggle="'+def.id+'"'+(c.on?" checked":"")+'><span class="sw"></span></label>'+
+      '<span class="ind-dot" style="background:'+def.color+'"></span>'+
+      '<span class="ind-name">'+def.name+' <span class="fine">'+indSubLabel(def)+'</span></span>'+
+      '<span class="ind-params">'+params+'</span></div>';
+  }).join("");
+  list.querySelectorAll("[data-ind-toggle]").forEach(t=>t.addEventListener("change", ()=>{
+    indCfg[t.dataset.indToggle].on = t.checked; saveIndCfg(); renderIndicators();
+  }));
+  list.querySelectorAll("[data-ind]").forEach(inp=>inp.addEventListener("change", ()=>{
+    const v = Math.max(2, Math.min(500, +inp.value || 0));
+    if(v >= 2){ indCfg[inp.dataset.ind][inp.dataset.pk] = v; saveIndCfg(); buildIndSheet(); renderIndicators(); }
+  }));
+}
+
+/* ---- market status + data badges ---- */
+function updateDataBadges(){
+  const s = state.sym, open = mktOpen(s);
+  const pill = $("mktPill");
+  if(pill){
+    pill.className = "mkt-pill " + (open ? "open" : "closed");
+    pill.innerHTML = "<i></i>" + (open ? "LIVE" : "MARKET CLOSED");
+  }
+  const badge = $("dataBadge");
+  if(badge){
+    const kind = state.live[s];
+    if(!open){
+      badge.className = "data-badge sim";
+      badge.textContent = "Frozen · last price";
+    }else if(kind === "live"){
+      badge.className = "data-badge live";
+      badge.textContent = "Real-time";
+    }else if(kind === "daily"){
+      badge.className = "data-badge sim";
+      badge.textContent = "Daily indicative";
+    }else{
+      badge.className = "data-badge sim";
+      badge.textContent = "Simulated";
+    }
+  }
+  const note = $("mktNote");
+  if(note) note.hidden = open;
+  const inl = $("indDataNote");
+  if(inl){
+    const kind = state.live[s];
+    inl.textContent = state.dataReal[s]
+      ? "Computed live on real market candles."
+      : "Computed on simulated history — price feed is " +
+        (kind === "live" ? "real-time." : kind === "daily" ? "a daily indicative anchor." : "simulated.");
+  }
+}
+/* wire the indicator UI (elements exist: script runs at end of body) */
+(function initIndUI(){
+  const b = $("indBtn"); if(b) b.addEventListener("click", ()=>{ buildIndSheet(); $("indSheetWrap").hidden = false; updateDataBadges(); });
+  const bg = $("indSheetBg"); if(bg) bg.addEventListener("click", ()=>{ $("indSheetWrap").hidden = true; });
+  const x = $("indSheetX"); if(x) x.addEventListener("click", ()=>{ $("indSheetWrap").hidden = true; });
+  bindIndSync();
+  updateDataBadges(); /* paint market-open/closed + real-time/simulated state on first load */
 })();
