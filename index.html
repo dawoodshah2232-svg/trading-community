@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
 
@@ -264,7 +264,7 @@
               <h3><span class="ic sm" data-icon="reel"></span> Reels</h3>
               <span class="fine num" id="reelsHubCount"></span>
             </div>
-            <button class="ghost-btn wide new-reel-btn" id="hubNewReel"><span class="ic xs" data-icon="plus"></span> New reel (demo)</button>
+            <button class="ghost-btn wide new-reel-btn" id="hubNewReel"><span class="ic xs" data-icon="plus"></span> Upload reel</button>
             <div class="reel-grid" id="reelsHubGrid"></div>
             <p class="fine">Every reel from the community in one place — demo.</p>
           </div>
@@ -534,6 +534,7 @@
 <!-- ============ REEL VIEWER ============ -->
 <div class="reel-view" id="reelView" hidden role="dialog" aria-label="Reel">
   <canvas id="reelCanvas" width="540" height="960"></canvas>
+  <video id="reelVideo" playsinline controls hidden></video>
   <div class="reel-top"><span class="reel-prog"><i id="reelProg"></i></span><button class="icon-btn" id="reelClose" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>
   <div class="reel-side">
     <button class="reel-act" id="reelLike" aria-label="Like">♥<b class="num" id="reelLikeN">0</b></button>
@@ -541,6 +542,23 @@
     <button class="reel-act" id="reelShare" aria-label="Share">↗<b>Share</b></button>
   </div>
   <div class="reel-cap"><b id="reelTrader">@trader</b><p id="reelTitle"></p></div>
+</div>
+<input type="file" id="reelFileInput" accept="video/*" hidden>
+
+<!-- ============ REEL TITLE MODAL ============ -->
+<div class="modal-wrap" id="reelTitleModal" hidden role="dialog" aria-label="Name your reel">
+  <div class="modal-backdrop" id="reelTitleBg"></div>
+  <div class="modal">
+    <h3>Name your reel</h3>
+    <p class="modal-sub">Uploaded from your device — demo, stays on this device.</p>
+    <div class="fld"><label for="reelTitleInput">Title</label>
+      <input class="field" id="reelTitleInput" maxlength="80" placeholder="e.g. My gold scalp breakdown" autocomplete="off">
+    </div>
+    <div class="form-row">
+      <button class="ghost-btn" id="reelTitleCancel">Cancel</button>
+      <button class="primary-btn" id="reelTitleSave">Upload reel</button>
+    </div>
+  </div>
 </div>
 
 <!-- ============ POST IDEA SHEET ============ -->
@@ -571,6 +589,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>

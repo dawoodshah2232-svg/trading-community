@@ -1267,11 +1267,7 @@ function endLive(){
   toast("Live ended — demo");
 }
 $("goLiveBtn").addEventListener("click", openLiveSetup);
-$("hubNewReel").addEventListener("click", ()=>{
-  const you = TRADERS.find(t=>t.id==="you");
-  you.reels.unshift({ id:"you-r"+Date.now(), title:"My latest strategy breakdown", views:"0", likes:0, liked:false, seed:Math.floor(Math.random()*999) });
-  renderReelsHub(); toast("Reel added — demo");
-});
+$("hubNewReel").addEventListener("click", triggerReelUpload);
 $("endLiveBtn").addEventListener("click", endLive);
 $("lsClose").addEventListener("click", closeLiveSetup);
 $("lsCancel").addEventListener("click", closeLiveSetup);
@@ -1859,8 +1855,19 @@ function openReel(t, r){
   $("reelShare").onclick = ()=>{ shareReel(r); };
   $("reelView").hidden = false;
   document.body.classList.add("lock-scroll");
+  /* uploaded device video plays natively; seeded reels use the animated chart canvas */
+  const vid = $("reelVideo"), cv = $("reelCanvas");
+  if(r.videoUrl){
+    cancelAnimationFrame(reelRAF);
+    cv.hidden = true; vid.hidden = false;
+    vid.src = r.videoUrl;
+    vid.play().catch(()=>{});
+    $("reelProg").style.width = "100%";
+    return;
+  }
+  vid.pause(); vid.removeAttribute("src"); vid.hidden = true; cv.hidden = false;
   /* animated chart canvas */
-  const cv = $("reelCanvas"), ctx = cv.getContext("2d");
+  const ctx = cv.getContext("2d");
   const rnd = mulberry32(r.seed*331+7);
   const pts = []; let v = 0.45;
   for(let i=0;i<60;i++){ v += (rnd()-0.44)*0.1; v = Math.max(.1, Math.min(.9, v)); pts.push(v); }
@@ -1898,6 +1905,7 @@ function wrapText(ctx, text, x, y, maxW, lh){
 }
 function closeReel(){
   cancelAnimationFrame(reelRAF);
+  const vid = $("reelVideo"); if(vid){ vid.pause(); vid.hidden = true; }
   $("reelView").hidden = true;
   document.body.classList.remove("lock-scroll");
 }
@@ -2464,7 +2472,7 @@ function renderProfPosts(){
 function renderProfReels(){
   const el = $("profReels"); if(!el) return;
   const you = TRADERS.find(t=>t.id==="you");
-  el.innerHTML = '<button class="ghost-btn wide new-reel-btn" id="newReelBtn"><span class="ic xs" data-icon="plus"></span> New reel (demo)</button><div id="profReelGrid"></div>';
+  el.innerHTML = '<button class="ghost-btn wide new-reel-btn" id="newReelBtn"><span class="ic xs" data-icon="plus"></span> Upload reel</button><div id="profReelGrid"></div>';
   const g = $("profReelGrid");
   if(!you.reels.length){ g.innerHTML = '<div class="empty">No reels yet.</div>'; }
   else{
@@ -2475,12 +2483,40 @@ function renderProfReels(){
       const r = you.reels.find(x=>x.id===tile.dataset.reel); openReel(you, r);
     }));
   }
-  $("newReelBtn").addEventListener("click", ()=>{
-    you.reels.unshift({ id:"you-r"+Date.now(), title:"My latest strategy breakdown", views:"0", likes:0, liked:false, seed:Math.floor(Math.random()*999) });
-    renderProfReels(); toast("Reel added — demo");
-  });
+  $("newReelBtn").addEventListener("click", triggerReelUpload);
   injectIcons();
 }
+
+/* --- reel upload from profile (device video file; demo, stays local) --- */
+let pendingReelFile = null;
+function triggerReelUpload(){
+  const inp = $("reelFileInput"); if(!inp) return;
+  inp.value = "";
+  inp.click();
+}
+function cleanFileName(n){
+  return (n||"").replace(/\.[a-z0-9]+$/i,"").replace(/[_-]+/g," ").trim().slice(0,80) || "My new reel";
+}
+$("reelFileInput").addEventListener("change", ()=>{
+  const f = $("reelFileInput").files && $("reelFileInput").files[0];
+  if(!f) return;
+  pendingReelFile = f;
+  $("reelTitleInput").value = cleanFileName(f.name);
+  $("reelTitleModal").hidden = false;
+});
+$("reelTitleBg").addEventListener("click", ()=>{ $("reelTitleModal").hidden = true; pendingReelFile = null; });
+$("reelTitleCancel").addEventListener("click", ()=>{ $("reelTitleModal").hidden = true; pendingReelFile = null; });
+$("reelTitleSave").addEventListener("click", ()=>{
+  if(!pendingReelFile) return;
+  const title = ($("reelTitleInput").value || "").trim().slice(0,80) || cleanFileName(pendingReelFile.name);
+  const you = TRADERS.find(t=>t.id==="you");
+  you.reels.unshift({ id:"you-r"+Date.now(), title, views:"0", likes:0, liked:false,
+    seed:Math.floor(Math.random()*999), videoUrl:URL.createObjectURL(pendingReelFile) });
+  pendingReelFile = null;
+  $("reelTitleModal").hidden = true;
+  renderProfReels(); renderReelsHub();
+  toast("Reel uploaded — demo");
+});
 function renderProfTrades(){
   /* history + brokers already render via existing renderBrokers()/history; ensure equity */
   const el = $("profTrades"); if(!el) return;
