@@ -2915,24 +2915,27 @@ $("epPhotoInput").addEventListener("change", e=>{
 
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
 function bootApp(){
-injectIcons();
-renderWatchlist();
-renderAlerts();
-renderPoll();
-renderPosts();
-renderTraders();
-renderYouCard();
-renderBrokers();
-renderPositions();
-renderDepth(true);
-renderTape(true);
-setSymbol("XAUUSD");
+window.__bp = (s)=>{ try{ document.title = "BOOT:"+s; }catch(e){} };
+try{
+injectIcons(); __bp("injectIcons");
+renderWatchlist(); __bp("renderWatchlist");
+renderAlerts(); __bp("renderAlerts");
+renderPoll(); __bp("renderPoll");
+renderPosts(); __bp("renderPosts");
+renderTraders(); __bp("renderTraders");
+renderYouCard(); __bp("renderYouCard");
+renderBrokers(); __bp("renderBrokers");
+renderPositions(); __bp("renderPositions");
+renderDepth(true); __bp("renderDepth");
+renderTape(true); __bp("renderTape");
+setSymbol("XAUUSD"); __bp("setSymbol");
 setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } })());
 renderTicketTick();
 renderAccount();
 renderLiveNow();
 renderReelsHub();
-renderHome();
+renderHome(); __bp("renderHome");
+}catch(__e){ __bp("THROW@"+((__e&&__e.message)||__e)); console.error("[boot] failed:", __e); return; }
 try{ bootV15(); }catch(err){ console.error("[v15] boot failed:", err); }
 setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
 /* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */
