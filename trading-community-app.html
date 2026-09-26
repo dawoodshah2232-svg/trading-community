@@ -1242,6 +1242,109 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .cam-bg.bg-studio{ background:linear-gradient(135deg,#334155,#0ea5e9); }
 .face-cam > *:not(.cam-bg){ position:relative; z-index:1; }
 .ls-cam > *:not(.cam-bg){ position:relative; z-index:1; }
+
+/* ================= v19 REWORK: unified Home + reorganized Trade ================= */
+
+/* --- Home --- */
+.home-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin:2px 2px 4px; }
+.home-top h2{ font-size:22px; letter-spacing:-.01em; margin:0 0 4px; }
+#homeLiveStrip{ margin-bottom:4px; }
+#homeLiveStrip .ln-empty{ padding:14px 4px; }
+.qa-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0 4px; }
+.qa{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  padding:14px 8px; background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--r-lg); color:var(--text); font-size:13px; font-weight:700; min-height:88px;
+}
+.qa .ic{ color:var(--blue); }
+.qa:active{ transform:scale(.97); }
+.qa.go{ background:linear-gradient(135deg,#FF4D5E,#D61F2C); border-color:transparent; color:#fff; }
+.h-reels{ display:flex; gap:10px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:none; }
+.h-reels::-webkit-scrollbar{ display:none; }
+.h-reels .reel-tile{ flex:0 0 118px; }
+.idea-card{
+  width:100%; text-align:left; background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--r-lg); padding:14px; margin-bottom:10px; color:var(--text);
+}
+.idea-top{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.idea-top .avatar{ flex-shrink:0; }
+.idea-who{ flex:1; min-width:0; }
+.idea-who b{ display:block; font-size:13.5px; }
+.idea-who span{ font-size:12px; color:var(--faint); }
+.idea-dir{ font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; letter-spacing:.04em; }
+.idea-dir.buy{ background:var(--green-soft); color:var(--green); }
+.idea-dir.sell{ background:var(--red-soft); color:var(--red); }
+.idea-body{
+  font-size:14px; color:var(--muted); margin:0 0 10px; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+.idea-foot{ display:flex; align-items:center; gap:14px; font-size:12.5px; color:var(--faint); }
+.idea-foot .num{ font-weight:700; color:var(--muted); }
+.idea-like{ margin-left:auto; display:inline-flex; align-items:center; gap:6px; color:var(--faint); font-weight:700; font-size:13px; min-height:44px; padding:0 6px; }
+.idea-like.liked{ color:var(--red); }
+.h-traders{ display:flex; gap:10px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:none; }
+.h-traders::-webkit-scrollbar{ display:none; }
+.ht-card{
+  flex:0 0 148px; background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--r-lg); padding:14px 10px; display:flex; flex-direction:column;
+  align-items:center; gap:6px; text-align:center; color:var(--text);
+}
+.ht-card b{ font-size:13px; display:block; }
+.ht-card .handle{ font-size:11.5px; }
+.ht-card .tstat{ font-size:11.5px; color:var(--faint); }
+
+/* --- reorganized Trade --- */
+.chart-card{
+  background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--r-lg); padding:var(--sp4); margin-bottom:var(--sp4);
+}
+.trade-cols{ display:flex; flex-direction:column; gap:var(--sp4); }
+.ticket-card{
+  background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--r-lg); padding:var(--sp4);
+}
+.ticket-card .sec-head{ margin:0 0 12px; }
+.ticket-card .ticket{ background:none; border:0; padding:0; }
+.ticket-card .ticket .fine{ margin-top:10px; }
+.ticket-mid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; margin:12px 0; }
+.ticket-mid .fld{ margin:0; }
+.ticket-mid .switch-row{ margin:0; min-height:52px; }
+.trade-side{ display:flex; flex-direction:column; gap:var(--sp4); min-width:0; }
+.trade-side .sec-head{ margin-top:0; }
+.pos-card{
+  background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--r-lg); padding:var(--sp4); margin-top:var(--sp4);
+}
+.pos-card .sec-head{ margin:0 0 12px; }
+@media (min-width:1024px){
+  .trade-cols{ display:grid; grid-template-columns:minmax(360px,420px) minmax(0,1fr); align-items:start; }
+  .chart-card{ padding:20px; }
+}
+
+/* --- center Live FAB (mobile tab bar) --- */
+.tab-fab{ overflow:visible; }
+.live-fab{
+  width:54px; height:54px; border-radius:50%; margin-top:-20px;
+  background:linear-gradient(135deg,#FF4D5E,#C81E2B); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  border:3px solid var(--bg-soft); box-shadow:0 6px 18px rgba(255,60,80,.45);
+}
+.tab-fab .ic{ color:#fff; }
+.tab-fab.active{ color:var(--red); }
+.tab-fab.active .ic{ color:#fff; }
+
+/* --- traders discover --- */
+.trader-search{ margin:12px 0 2px; }
+#screen-traders .sec-head{ margin:20px 0 10px; }
+#screen-traders .sec-head:first-child{ margin-top:0; }
+
+/* --- profile / edit profile --- */
+.prof-av-btn{ background:none; border:0; padding:0; cursor:pointer; flex-shrink:0; }
+.prof-av-btn .avatar{ display:block; }
+.prof-actions{ display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 4px; }
+.ep-photo{ display:flex; align-items:center; gap:14px; margin:4px 0 14px; }
+#epAvatarPrev img, #profAvatar img{ width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
+
 </style>
 </head>
 <body>
@@ -1254,10 +1357,10 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
     <aside class="sidebar">
       <div class="side-brand"><div class="brand-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="blg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#22C55E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#blg1)"/><path d="M11 27v-7M11 15v-5M8.5 22.5h5M8.5 17h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M20 29V19M20 13V9M17.5 23.5h5M17.5 15h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M26.5 27.5l8-8M26.5 21h8v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Trading Community</b><span>Paper trading terminal</span></div></div>
       <nav class="side-nav" id="sideNav" aria-label="Primary">
-        <button class="snav active" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span></button>
-        <button class="snav" data-tab="positions"><span class="ic" data-icon="positions"></span><span>Positions</span><i class="tab-badge" id="posBadgeSide" hidden></i></button>
+        <button class="snav active" data-tab="home"><span class="ic" data-icon="home"></span><span>Home</span></button>
+        <button class="snav" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span><i class="tab-badge" id="posBadgeSide" hidden></i></button>
         <button class="snav" data-tab="live"><span class="ic" data-icon="live"></span><span>Live</span><i class="live-dot"></i></button>
-        <button class="snav" data-tab="community"><span class="ic" data-icon="community"></span><span>Community</span></button>
+        <button class="snav" data-tab="traders"><span class="ic" data-icon="community"></span><span>Traders</span></button>
         <button class="snav" data-tab="profile"><span class="ic" data-icon="profile"></span><span>Profile</span></button>
       </nav>
       <div class="side-foot">
@@ -1283,9 +1386,31 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 
       <main class="content">
 
+        <!-- ============ HOME ============ -->
+        <section class="screen active" id="screen-home" aria-label="Home">
+          <div class="home-top">
+            <div><h2 id="homeHello">Welcome back</h2><span class="fine">Live streams, reels &amp; trade ideas — one feed · demo</span></div>
+            <span class="demo-tag">Demo</span>
+          </div>
+          <div class="sec-head"><h3>Live now</h3><button class="link-btn" data-goto="live">Open Live</button></div>
+          <div class="live-now" id="homeLiveStrip" aria-label="Live now"></div>
+          <div class="qa-row">
+            <button class="qa" id="homePostIdea"><span class="ic" data-icon="send"></span><span>Post idea</span></button>
+            <button class="qa" id="homeUploadReel"><span class="ic" data-icon="reel"></span><span>Upload reel</span></button>
+            <button class="qa go" id="homeGoLive"><span class="golive-dot"></span><span>Go live</span></button>
+          </div>
+          <div class="sec-head"><h3>Reels</h3><button class="link-btn" data-goto="live">See all</button></div>
+          <div class="h-reels" id="homeReelsRow"></div>
+          <div class="sec-head"><h3>Trade ideas</h3><button class="link-btn" data-goto="traders">See all</button></div>
+          <div id="homeIdeas"></div>
+          <div class="sec-head"><h3>Top traders</h3><button class="link-btn" data-goto="traders">See all</button></div>
+          <div class="h-traders" id="homeTraders"></div>
+        </section>
+
         <!-- ============ TRADE TERMINAL ============ -->
-        <section class="screen active" id="screen-trade" aria-label="Trade">
+        <section class="screen" id="screen-trade" aria-label="Trade">
           <!-- Account strip -->
+
           <button class="acct-switch" id="acctSwitch" aria-label="Switch trading account"><span class="acct-dot" id="acctDot"></span><span><b id="acctName">Exness</b><span class="acct-type" id="acctType">Demo</span></span><span class="ic sm" data-icon="chev"></span></button>
           <div class="acct-strip" id="acctStrip" aria-label="Account summary">
             <div class="acct"><span>Equity</span><b class="num" id="acctEquity">$10,000.00</b></div>
@@ -1295,7 +1420,8 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
             <div class="acct"><span>Margin level</span><b class="num" id="acctLevel">—</b></div>
           </div>
 
-          <!-- Symbol header -->
+                    <!-- Symbol header -->
+
           <div class="sym-head">
             <div class="sym-title">
               <h2 id="symTitle">XAUUSD</h2>
@@ -1307,16 +1433,9 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
             </div>
           </div>
 
-          <div class="trade-grid">
-            <!-- Watchlist -->
-            <div class="col-watch">
-              <div class="sec-head"><h3>Watchlist</h3></div>
-              <div class="watchlist" id="watchList" role="listbox" aria-label="Watchlist"></div>
-            </div>
-
-            <!-- Chart + market data -->
-            <div class="col-chart">
-              <div class="chart-toprow">
+                    <!-- Chart -->
+          <div class="chart-card">
+            <div class="chart-toprow">
               <div class="tf-bar" id="tfBar" role="tablist" aria-label="Timeframe">
                 <button class="tf active" data-tf="1m" role="tab">1m</button>
                 <button class="tf" data-tf="5m" role="tab">5m</button>
@@ -1326,33 +1445,35 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
                 <button class="tf" data-tf="1D" role="tab">1D</button>
               </div>
               <button class="idea-fab" id="shareIdeaBtn"><span class="ic xs" data-icon="send"></span> Post idea</button>
-              </div>
-              <div class="chart-wrap" id="tradeChartWrap">
+            </div>
+            <div class="chart-wrap" id="tradeChartWrap">
                 <div class="lw-legend num" id="chartLegend"><b id="lgSym">XAUUSD</b><span class="lg-tf" id="lgTF">1m</span><span>O <i id="lgO">—</i></span><span>H <i id="lgH">—</i></span><span>L <i id="lgL">—</i></span><span>C <i id="lgC">—</i></span><span id="lgChg" class="num">—</span></div>
                 <div class="tv-host" id="tvChart"></div>
                 <div class="quick-trade">
                   <button class="qt buy" id="qtBuy">BUY</button>
                   <button class="qt sell" id="qtSell">SELL</button>
                 </div>
-              </div>
             </div>
-
-            <!-- Ticket + alerts -->
-            <div class="col-ticket">
+          </div>
+          <div class="trade-cols">
+            <!-- Order ticket -->
+            <div class="ticket-card">
+              <div class="sec-head"><h3>New order</h3><span class="fine">Demo execution</span></div>
               <div class="ticket" aria-label="Order ticket">
-                <div class="ttype-tabs" id="ttypeTabs" role="tablist" aria-label="Order type">
+              <div class="ttype-tabs" id="ttypeTabs" role="tablist" aria-label="Order type">
                   <button class="ttype active" data-ttype="market" role="tab">Market</button>
                   <button class="ttype" data-ttype="limit" role="tab">Limit</button>
                   <button class="ttype" data-ttype="stop" role="tab">Stop</button>
                 </div>
-                <div class="dir-toggle" id="dirToggle" role="tablist" aria-label="Direction">
+              <div class="dir-toggle" id="dirToggle" hidden>
                   <button class="dir-btn buy active" data-dir="buy" role="tab">Buy</button>
                   <button class="dir-btn sell" data-dir="sell" role="tab">Sell</button>
                 </div>
-                <div class="fld" id="tPriceWrap" hidden>
+              <div class="fld" id="tPriceWrap" hidden>
                   <label for="tPrice" id="tPriceLabel">Limit price</label>
                   <input class="field num" id="tPrice" inputmode="decimal" placeholder="0.00" autocomplete="off">
                 </div>
+              <div class="ticket-mid">
                 <div class="fld">
                   <label>Volume (lots)</label>
                   <div class="stepper">
@@ -1365,38 +1486,24 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
                   <span>Take profit / Stop loss</span>
                   <span class="switch" id="tpslSwitch"><i></i></span>
                 </button>
-                <div class="tpsl-grid" id="tpslWrap" hidden>
+              </div>
+              <div class="tpsl-grid" id="tpslWrap" hidden>
                   <div class="fld"><label for="tpPrice">Take profit</label><input class="field num" id="tpPrice" inputmode="decimal" placeholder="—" autocomplete="off"></div>
                   <div class="fld"><label for="slPrice">Stop loss</label><input class="field num" id="slPrice" inputmode="decimal" placeholder="—" autocomplete="off"></div>
                 </div>
-                <div class="risk-line">Est. margin <b class="num" id="estMargin">$0.00</b><span class="sep">·</span>Risk <b class="num" id="estRisk">—</b></div>
-                <div class="exec-row">
-                  <button class="exec buy" id="buyBtn"><span>Buy</span><b class="num" id="buyPx">—</b></button>
-                  <button class="exec sell" id="sellBtn"><span>Sell</span><b class="num" id="sellPx">—</b></button>
-                </div>
-                <p class="fine">Demo execution — no real orders are placed.</p>
+              <div class="exec-row">
+                <button class="exec sell" id="sellBtn"><span>Sell</span><b class="num" id="sellPx">—</b></button>
+                <button class="exec buy" id="buyBtn"><span>Buy</span><b class="num" id="buyPx">—</b></button>
               </div>
-
-              <div class="alerts-card" id="alertsCard">
-                <div class="sec-head"><h3>Price alerts</h3><button class="link-btn" id="alertAddBtn"><span class="ic xs" data-icon="plus"></span> New alert</button></div>
-                <div class="alert-form" id="alertForm" hidden>
-                  <div class="fld"><label for="afSym">Symbol</label><select class="field" id="afSym"></select></div>
-                  <div class="fld-row">
-                    <div class="fld"><label for="afCond">Condition</label>
-                      <select class="field" id="afCond"><option value="above">Price above</option><option value="below">Price below</option></select>
-                    </div>
-                    <div class="fld"><label for="afPrice">Price</label><input class="field num" id="afPrice" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
-                  </div>
-                  <div class="form-row">
-                    <button class="primary-btn sm" id="afSave">Create alert</button>
-                    <button class="ghost-btn sm" id="afCancel">Cancel</button>
-                  </div>
-                </div>
-                <div id="alertList"></div>
+              <div class="risk-line">Est. margin <b class="num" id="estMargin">$0.00</b><span class="sep">·</span>Risk <b class="num" id="estRisk">—</b></div>
+              <p class="fine">Demo execution — no real orders are placed.</p>
               </div>
             </div>
+            <div class="trade-side">
+              <div class="sec-head"><h3>Watchlist</h3><span class="fine">Tap to switch chart</span></div>
+              <div class="watchlist watch-strip" id="watchList" role="listbox" aria-label="Watchlist"></div>
+              <!-- Market data -->
 
-            <!-- Market data: order book + tape -->
             <div class="col-data">
               <div class="md-card">
                 <div class="md-tabs" id="mdTabs" role="tablist" aria-label="Market data">
@@ -1416,23 +1523,37 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
               </div>
             </div>
           </div>
-        </section>
-
-        <!-- ============ POSITIONS ============ -->
-        <section class="screen" id="screen-positions" aria-label="Positions">
-          <div class="sec-head">
-            <h3>Positions</h3>
-            <span class="eq-chip">Equity <b class="num" id="eqVal">$10,000.00</b></span>
-          </div>
-          <div class="subtabs" id="posTabs" role="tablist" aria-label="Position tabs">
+        </div>
+          <!-- Positions -->
+          <div class="pos-card">
+            <div class="sec-head"><h3>Positions</h3><span class="eq-chip">Equity <b class="num" id="eqVal">$10,000.00</b></span></div>
+            <div class="subtabs" id="posTabs" role="tablist" aria-label="Position tabs">
             <button class="subtab active" data-ptab="open" role="tab">Open <span class="cnt" id="openCount">0</span></button>
             <button class="subtab" data-ptab="pending" role="tab">Pending <span class="cnt" id="pendCount">0</span></button>
             <button class="subtab" data-ptab="history" role="tab">History</button>
           </div>
-          <div id="posOpen"></div>
-          <div id="posPending" hidden></div>
-          <div id="posHistory" hidden></div>
-        </section>
+            <div id="posOpen"></div>
+            <div id="posPending" hidden></div>
+            <div id="posHistory" hidden></div>
+          </div>
+          <!-- Alerts -->
+<div class="alerts-card" id="alertsCard">
+                <div class="sec-head"><h3>Price alerts</h3><button class="link-btn" id="alertAddBtn"><span class="ic xs" data-icon="plus"></span> New alert</button></div>
+                <div class="alert-form" id="alertForm" hidden>
+                  <div class="fld"><label for="afSym">Symbol</label><select class="field" id="afSym"></select></div>
+                  <div class="fld-row">
+                    <div class="fld"><label for="afCond">Condition</label>
+                      <select class="field" id="afCond"><option value="above">Price above</option><option value="below">Price below</option></select>
+                    </div>
+                    <div class="fld"><label for="afPrice">Price</label><input class="field num" id="afPrice" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+                  </div>
+                  <div class="form-row">
+                    <button class="primary-btn sm" id="afSave">Create alert</button>
+                    <button class="ghost-btn sm" id="afCancel">Cancel</button>
+                  </div>
+                </div>
+                <div id="alertList"></div>
+              </div>        </section>
 
         <!-- ============ LIVE ============ -->
         <section class="screen" id="screen-live" aria-label="Live">
@@ -1508,8 +1629,9 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
         </section>
 
         <!-- ============ COMMUNITY ============ -->
-        <section class="screen" id="screen-community" aria-label="Community">
+        <section class="screen" id="screen-traders" aria-label="Traders">
           <div class="you-card" id="youCard"></div>
+          <div class="sheet-search trader-search"><span class="ic sm" data-icon="search"></span><input class="field" id="traderSearch" placeholder="Search traders…" autocomplete="off" aria-label="Search traders"></div>
           <div class="sec-head"><h3>Leaderboard</h3><span class="fine">Top traders · demo</span></div>
           <div class="lb-tabs" id="lbTabs" role="tablist" aria-label="Leaderboard sort">
             <button class="lb-tab active" data-lb="profit" role="tab">Profit</button>
@@ -1552,11 +1674,12 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
         <!-- ============ PROFILE ============ -->
         <section class="screen" id="screen-profile" aria-label="Profile">
           <div class="prof-head">
-            <div class="avatar lg" id="profAvatar">AT</div>
+            <button class="prof-av-btn" id="profAvatarBtn" aria-label="Edit profile"><span class="avatar lg" id="profAvatar">AT</span></button>
             <div class="prof-id"><h3 id="profName">Alex Trader</h3><span class="handle" id="profHandle">@alextrader</span>
             <div class="prof-bio" id="profBio">Learning in public · XAUUSD &amp; majors · demo journey</div></div>
           </div>
           <div class="prof-actions">
+            <button class="primary-btn sm" id="editProfileBtn">Edit profile</button>
             <button class="ghost-btn sm kyc-btn" id="kycRow"><span class="ic xs" data-icon="check"></span><span id="kycLabel">Verify identity</span><b class="kyc-status" id="kycStatus">Not verified</b></button>
             <button class="ghost-btn sm" id="profAcctBtn"><span class="acct-dot" id="profAcctDot"></span><span id="profAcctName">Exness · Demo</span><span class="ic xs" data-icon="chev"></span></button>
           </div>
@@ -1587,10 +1710,10 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 
       <!-- Mobile bottom nav -->
       <nav class="bottomnav" id="bottomNav" aria-label="Primary">
-        <button class="tab active" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span></button>
-        <button class="tab" data-tab="positions"><span class="ic" data-icon="positions"></span><span>Positions</span><i class="tab-badge" id="posBadge" hidden></i></button>
-        <button class="tab" data-tab="live"><span class="ic" data-icon="live"></span><span>Live</span><i class="live-dot"></i></button>
-        <button class="tab" data-tab="community"><span class="ic" data-icon="community"></span><span>Community</span></button>
+        <button class="tab active" data-tab="home"><span class="ic" data-icon="home"></span><span>Home</span></button>
+        <button class="tab" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span><i class="tab-badge" id="posBadge" hidden></i></button>
+        <button class="tab tab-fab" data-tab="live"><span class="live-fab"><span class="ic" data-icon="live"></span></span><span>Live</span></button>
+        <button class="tab" data-tab="traders"><span class="ic" data-icon="community"></span><span>Traders</span></button>
         <button class="tab" data-tab="profile"><span class="ic" data-icon="profile"></span><span>Profile</span></button>
       </nav>
     </div>
@@ -1839,6 +1962,34 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
   </div>
 </div>
 
+<!-- ============ EDIT PROFILE ============ -->
+<div class="modal-wrap" id="editProfileModal" hidden role="dialog" aria-label="Edit profile">
+  <div class="modal-backdrop" id="editProfileBg"></div>
+  <div class="modal">
+    <button class="modal-x" id="editProfileX" aria-label="Close"><span class="ic sm" data-icon="x"></span></button>
+    <h3>Edit profile</h3>
+    <p class="modal-sub">Demo — changes stay on this device for this session.</p>
+    <div class="ep-photo">
+      <div class="avatar lg" id="epAvatarPrev">AT</div>
+      <button class="ghost-btn sm" id="epPhotoBtn" type="button">Change photo</button>
+      <input type="file" id="epPhotoInput" accept="image/*" hidden>
+    </div>
+    <div class="fld"><label for="epName">Name</label>
+      <input class="field" id="epName" maxlength="40" placeholder="Your display name" autocomplete="off">
+    </div>
+    <div class="fld"><label for="epHandle">Username</label>
+      <input class="field" id="epHandle" maxlength="30" placeholder="@username" autocomplete="off">
+    </div>
+    <div class="fld"><label for="epBio">Bio</label>
+      <textarea class="field" id="epBio" rows="3" maxlength="160" placeholder="Tell the community about your trading…"></textarea>
+    </div>
+    <div class="form-row">
+      <button class="ghost-btn" id="epCancel">Cancel</button>
+      <button class="primary-btn" id="epSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 /* ============================================================
@@ -1867,6 +2018,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 
 /* ---------------- ICONS (handcrafted 1.8px stroke set) ---------------- */
 const ICONS = {
+  home:'<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/>',
   trade:'<path d="M6 4v3M6 11v9M4 7h4M4 14h4M12 3v4M12 11v10M10 7h4M10 15h4M18 8v3M18 15v5M16 11h4M16 18h4"/>',
   positions:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
   live:'<circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>',
@@ -3123,7 +3275,7 @@ $("lsStart").addEventListener("click", ()=>{
 });
 $("liveHintOk").addEventListener("click", ()=>{ $("liveHint").hidden = true; clearTimeout(liveHintTimer); });
 
-/* live card published to the TOP of the Community tab while you are live */
+/* live card published to the TOP of the Traders tab while you are live */
 function renderYouLiveCard(){
   if(!youLive.active) return;
   let card = $("youLiveCard");
@@ -3131,7 +3283,7 @@ function renderYouLiveCard(){
     card = document.createElement("div");
     card.className = "card you-live-card";
     card.id = "youLiveCard";
-    const sc = $("screen-community");
+    const sc = $("screen-traders");
     sc.insertBefore(card, sc.firstChild);
   }
   const plCls = youLive.pl>=0 ? "pl-pos" : "pl-neg";
@@ -4300,7 +4452,7 @@ function publishIdea(){
   if(you) you.posts.unshift({ id:"p"+Date.now(), tid:"you", time:"now", likes:0, liked:false, body,
     comments:[], sym:state.sym, dir:ideaDir, pl:0, seed:Math.floor(Math.random()*999),
     idea:{ sym:state.sym, tf:state.tf, dir:ideaDir, price:pr.bid, win:isNaN(win)?0:win, n:isNaN(n)?0:n } });
-  renderPosts(); renderProfPosts(); closeIdeaSheet();
+  renderPosts(); renderProfPosts(); renderHomeIdeas(); closeIdeaSheet();
   toast("Idea published to the community — demo");
 }
 
@@ -4482,6 +4634,167 @@ function bootV15(){
   if(gl) gl.addEventListener("click", ()=>setTimeout(stopWatching, 50));
 }
 
+/* ================= v19 REWORK: unified Home, discover search, edit profile ================= */
+
+/* ---------------- HOME FEED ---------------- */
+function renderHome(){
+  const h = new Date().getHours();
+  const greet = h<5 ? "Up late" : h<12 ? "Good morning" : h<17 ? "Good afternoon" : "Good evening";
+  const you = TRADERS.find(t=>t.you);
+  $("homeHello").textContent = greet + (you ? ", " + you.name.split(" ")[0] : "");
+  renderHomeLive(); renderHomeReels(); renderHomeIdeas(); renderHomeTraders();
+}
+function renderHomeLive(){
+  const el = $("homeLiveStrip"); if(!el) return;
+  let html = "";
+  if(youLive.active){
+    html += '<button class="ln-item you" data-ln="you"><span class="ln-av" style="--g1:#2F80FF;--g2:#1B5FD6">'+esc((TRADERS.find(t=>t.you)||{ini:"AT"}).ini)+'</span><span class="ln-live">LIVE</span><span class="ln-name">You</span></button>';
+  }
+  TRADERS.filter(t=>!t.you && t.live).forEach(t=>{
+    const watching = watchingHost && watchingHost.id===t.id;
+    html += '<button class="ln-item'+(watching?' watching':'')+'" data-ln="'+t.id+'"><span class="ln-av" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+t.ini+'</span><span class="ln-live">LIVE</span><span class="ln-name">'+esc(t.name.split(" ")[0])+'</span></button>';
+  });
+  if(!html) html = '<span class="ln-empty">No one is live right now — be the first.</span>';
+  el.innerHTML = html;
+  el.querySelectorAll(".ln-item").forEach(b=>b.addEventListener("click", ()=>{
+    const id = b.dataset.ln;
+    if(id==="you"){ goTab("live"); return; }
+    if(watchingHost && watchingHost.id===id) stopWatching(); else watchTraderLive(id);
+  }));
+}
+function renderHomeReels(){
+  const row = $("homeReelsRow"); if(!row) return;
+  const items = allReels().filter(({r})=>r.visibility!=="private").slice(0,8);
+  if(!items.length){ row.innerHTML = '<span class="ln-empty">No reels yet — upload the first.</span>'; return; }
+  row.innerHTML = items.map(({t,r})=>
+    '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+    '<span class="rt-play"><i>▶</i></span>'+
+    '<span class="rt-handle">'+esc(t.handle)+'</span>'+
+    '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views||"0")+'</span></span></button>').join("");
+  row.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
+    const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
+    const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
+    openReel(t, r);
+  }));
+}
+function renderHomeIdeas(){
+  const el = $("homeIdeas"); if(!el) return;
+  const ideas = MOCK_POSTS.filter(p=>p.idea).slice(0,4);
+  if(!ideas.length){ el.innerHTML = '<div class="empty">No ideas yet — post one from the chart.</div>'; return; }
+  el.innerHTML = "";
+  ideas.forEach(p=>{
+    const t = traderOf(p), d = p.idea;
+    const c = document.createElement("article");
+    c.className = "idea-card";
+    c.innerHTML =
+      '<div class="idea-top"><span class="avatar sm" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+'</span>'+
+      '<div class="idea-who"><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+esc(p.time)+'</span></div>'+
+      '<span class="idea-dir '+(d.dir==="BUY"?"buy":"sell")+'">'+esc(d.dir)+'</span></div>'+
+      '<p class="idea-body">'+esc(p.body)+'</p>'+
+      '<div class="idea-foot"><span><b class="num">'+esc(d.sym)+'</b> · '+esc(d.tf)+'</span>'+
+      (d.n?'<span>Backtest <b class="num">'+d.win+'%</b> / '+d.n+'</span>':'')+
+      '<button class="idea-like'+(p.liked?" liked":"")+'" data-like="'+p.id+'" aria-pressed="'+p.liked+'">♥ <b class="num">'+p.likes+'</b></button></div>';
+    el.appendChild(c);
+  });
+}
+function renderHomeTraders(){
+  const el = $("homeTraders"); if(!el) return;
+  const top = TRADERS.filter(t=>!t.you).slice().sort((a,b)=>b.followers-a.followers).slice(0,6);
+  el.innerHTML = top.map(t=>
+    '<button class="ht-card" data-tprof="'+t.id+'">'+
+    '<span class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
+    (t.live?'<span class="trader-live">LIVE</span>':'')+'</span>'+
+    '<b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span>'+
+    '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></button>').join("");
+}
+/* home quick actions + see-all links */
+$("homePostIdea").addEventListener("click", openIdeaSheet);
+$("homeUploadReel").addEventListener("click", triggerReelUpload);
+$("homeGoLive").addEventListener("click", ()=>{ goTab("live"); setTimeout(()=>$("goLiveBtn").click(), 80); });
+document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.goto)));
+/* keep the home live strip fresh whenever the live strip re-renders */
+const _renderLiveNow = renderLiveNow;
+renderLiveNow = function(){ _renderLiveNow(); renderHomeLive(); };
+
+/* ---------------- TRADERS DISCOVER SEARCH ---------------- */
+$("traderSearch").addEventListener("input", renderTraders);
+const _renderTraders = renderTraders;
+renderTraders = function(){
+  const q = ($("traderSearch") && $("traderSearch").value || "").trim().toLowerCase();
+  if(!q){ _renderTraders(); return; }
+  const list = $("traderList"); list.innerHTML = "";
+  const rows = TRADERS.slice().sort((a,b)=>lbValue(b)-lbValue(a))
+    .filter(t=>t.name.toLowerCase().includes(q) || t.handle.toLowerCase().includes(q));
+  if(!rows.length){ list.innerHTML = '<div class="empty">No traders match "'+esc(q)+'".</div>'; return; }
+  rows.forEach((t,i)=>{
+    const c = document.createElement("div");
+    c.className = "trader-card lb-row";
+    c.dataset.tprof = t.id;
+    c.innerHTML =
+      rankBadge(i)+
+      '<div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
+      (t.live ? '<span class="trader-live">LIVE</span>' : '') + '</div>'+
+      '<div class="lb-info" data-tprof="'+t.id+'"><b>'+esc(t.name)+' <span class="handle">'+esc(t.handle)+'</span></b>'+
+      '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></div>'+
+      '<div class="lb-stat">'+lbStat(t)+'</div>'+
+      '<button class="follow-btn'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button>';
+    list.appendChild(c);
+  });
+};
+
+/* ---------------- EDIT PROFILE (Instagram-style) ---------------- */
+let epPhotoURL = null;
+function epInitials(nm){ return (nm||"A").trim().split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase(); }
+function renderEpPrev(){
+  const el = $("epAvatarPrev");
+  el.innerHTML = epPhotoURL ? '<img src="'+epPhotoURL+'" alt="Profile photo">' : esc(epInitials($("epName").value));
+}
+function openEditProfile(){
+  const you = TRADERS.find(t=>t.you); if(!you) return;
+  $("epName").value = you.name || "";
+  $("epHandle").value = you.handle || "";
+  $("epBio").value = you.bio || "";
+  epPhotoURL = you.photo || null;
+  renderEpPrev();
+  $("editProfileModal").hidden = false;
+  injectIcons();
+}
+function closeEditProfile(){ $("editProfileModal").hidden = true; }
+function saveEditProfile(){
+  const you = TRADERS.find(t=>t.you); if(!you) return;
+  const name = $("epName").value.trim() || "Alex Trader";
+  let handle = $("epHandle").value.trim() || "@alextrader";
+  if(handle[0] !== "@") handle = "@" + handle;
+  const bio = $("epBio").value.trim();
+  you.name = name; you.handle = handle; you.bio = bio;
+  you.ini = epInitials(name); you.photo = epPhotoURL;
+  $("profName").textContent = name;
+  $("profHandle").textContent = handle;
+  $("profBio").textContent = bio || "—";
+  const av = epPhotoURL ? '<img src="'+epPhotoURL+'" alt="">' : esc(you.ini);
+  $("profAvatar").innerHTML = av;
+  $("avatarBtn").innerHTML = av;
+  $("sideAvatar").innerHTML = av;
+  $("sideName").textContent = name;
+  renderYouCard(); renderHome(); renderTraders();
+  closeEditProfile();
+  toast("Profile updated — demo");
+}
+$("editProfileBtn").addEventListener("click", openEditProfile);
+$("profAvatarBtn").addEventListener("click", openEditProfile);
+$("editProfileX").addEventListener("click", closeEditProfile);
+$("editProfileBg").addEventListener("click", closeEditProfile);
+$("epCancel").addEventListener("click", closeEditProfile);
+$("epSave").addEventListener("click", saveEditProfile);
+$("epName").addEventListener("input", renderEpPrev);
+$("epPhotoBtn").addEventListener("click", ()=>$("epPhotoInput").click());
+$("epPhotoInput").addEventListener("change", e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  if(epPhotoURL && epPhotoURL.indexOf("blob:")===0) URL.revokeObjectURL(epPhotoURL);
+  epPhotoURL = URL.createObjectURL(f);
+  renderEpPrev();
+});
+
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
 function bootApp(){
 injectIcons();
@@ -4501,6 +4814,7 @@ renderTicketTick();
 renderAccount();
 renderLiveNow();
 renderReelsHub();
+renderHome();
 try{ bootV15(); }catch(err){ console.error("[v15] boot failed:", err); }
 setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
 /* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */
@@ -4535,6 +4849,7 @@ try{ buildMainChart(); }catch(err){ console.error("[chart] buildMainChart threw:
 })();
 
 })();
+
 </script>
 </body>
 </html>

@@ -24,6 +24,7 @@
 
 /* ---------------- ICONS (handcrafted 1.8px stroke set) ---------------- */
 const ICONS = {
+  home:'<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/>',
   trade:'<path d="M6 4v3M6 11v9M4 7h4M4 14h4M12 3v4M12 11v10M10 7h4M10 15h4M18 8v3M18 15v5M16 11h4M16 18h4"/>',
   positions:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
   live:'<circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>',
@@ -1280,7 +1281,7 @@ $("lsStart").addEventListener("click", ()=>{
 });
 $("liveHintOk").addEventListener("click", ()=>{ $("liveHint").hidden = true; clearTimeout(liveHintTimer); });
 
-/* live card published to the TOP of the Community tab while you are live */
+/* live card published to the TOP of the Traders tab while you are live */
 function renderYouLiveCard(){
   if(!youLive.active) return;
   let card = $("youLiveCard");
@@ -1288,7 +1289,7 @@ function renderYouLiveCard(){
     card = document.createElement("div");
     card.className = "card you-live-card";
     card.id = "youLiveCard";
-    const sc = $("screen-community");
+    const sc = $("screen-traders");
     sc.insertBefore(card, sc.firstChild);
   }
   const plCls = youLive.pl>=0 ? "pl-pos" : "pl-neg";
@@ -2457,7 +2458,7 @@ function publishIdea(){
   if(you) you.posts.unshift({ id:"p"+Date.now(), tid:"you", time:"now", likes:0, liked:false, body,
     comments:[], sym:state.sym, dir:ideaDir, pl:0, seed:Math.floor(Math.random()*999),
     idea:{ sym:state.sym, tf:state.tf, dir:ideaDir, price:pr.bid, win:isNaN(win)?0:win, n:isNaN(n)?0:n } });
-  renderPosts(); renderProfPosts(); closeIdeaSheet();
+  renderPosts(); renderProfPosts(); renderHomeIdeas(); closeIdeaSheet();
   toast("Idea published to the community — demo");
 }
 
@@ -2639,6 +2640,167 @@ function bootV15(){
   if(gl) gl.addEventListener("click", ()=>setTimeout(stopWatching, 50));
 }
 
+/* ================= v19 REWORK: unified Home, discover search, edit profile ================= */
+
+/* ---------------- HOME FEED ---------------- */
+function renderHome(){
+  const h = new Date().getHours();
+  const greet = h<5 ? "Up late" : h<12 ? "Good morning" : h<17 ? "Good afternoon" : "Good evening";
+  const you = TRADERS.find(t=>t.you);
+  $("homeHello").textContent = greet + (you ? ", " + you.name.split(" ")[0] : "");
+  renderHomeLive(); renderHomeReels(); renderHomeIdeas(); renderHomeTraders();
+}
+function renderHomeLive(){
+  const el = $("homeLiveStrip"); if(!el) return;
+  let html = "";
+  if(youLive.active){
+    html += '<button class="ln-item you" data-ln="you"><span class="ln-av" style="--g1:#2F80FF;--g2:#1B5FD6">'+esc((TRADERS.find(t=>t.you)||{ini:"AT"}).ini)+'</span><span class="ln-live">LIVE</span><span class="ln-name">You</span></button>';
+  }
+  TRADERS.filter(t=>!t.you && t.live).forEach(t=>{
+    const watching = watchingHost && watchingHost.id===t.id;
+    html += '<button class="ln-item'+(watching?' watching':'')+'" data-ln="'+t.id+'"><span class="ln-av" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+t.ini+'</span><span class="ln-live">LIVE</span><span class="ln-name">'+esc(t.name.split(" ")[0])+'</span></button>';
+  });
+  if(!html) html = '<span class="ln-empty">No one is live right now — be the first.</span>';
+  el.innerHTML = html;
+  el.querySelectorAll(".ln-item").forEach(b=>b.addEventListener("click", ()=>{
+    const id = b.dataset.ln;
+    if(id==="you"){ goTab("live"); return; }
+    if(watchingHost && watchingHost.id===id) stopWatching(); else watchTraderLive(id);
+  }));
+}
+function renderHomeReels(){
+  const row = $("homeReelsRow"); if(!row) return;
+  const items = allReels().filter(({r})=>r.visibility!=="private").slice(0,8);
+  if(!items.length){ row.innerHTML = '<span class="ln-empty">No reels yet — upload the first.</span>'; return; }
+  row.innerHTML = items.map(({t,r})=>
+    '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+    '<span class="rt-play"><i>▶</i></span>'+
+    '<span class="rt-handle">'+esc(t.handle)+'</span>'+
+    '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views||"0")+'</span></span></button>').join("");
+  row.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
+    const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
+    const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
+    openReel(t, r);
+  }));
+}
+function renderHomeIdeas(){
+  const el = $("homeIdeas"); if(!el) return;
+  const ideas = MOCK_POSTS.filter(p=>p.idea).slice(0,4);
+  if(!ideas.length){ el.innerHTML = '<div class="empty">No ideas yet — post one from the chart.</div>'; return; }
+  el.innerHTML = "";
+  ideas.forEach(p=>{
+    const t = traderOf(p), d = p.idea;
+    const c = document.createElement("article");
+    c.className = "idea-card";
+    c.innerHTML =
+      '<div class="idea-top"><span class="avatar sm" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+'</span>'+
+      '<div class="idea-who"><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+esc(p.time)+'</span></div>'+
+      '<span class="idea-dir '+(d.dir==="BUY"?"buy":"sell")+'">'+esc(d.dir)+'</span></div>'+
+      '<p class="idea-body">'+esc(p.body)+'</p>'+
+      '<div class="idea-foot"><span><b class="num">'+esc(d.sym)+'</b> · '+esc(d.tf)+'</span>'+
+      (d.n?'<span>Backtest <b class="num">'+d.win+'%</b> / '+d.n+'</span>':'')+
+      '<button class="idea-like'+(p.liked?" liked":"")+'" data-like="'+p.id+'" aria-pressed="'+p.liked+'">♥ <b class="num">'+p.likes+'</b></button></div>';
+    el.appendChild(c);
+  });
+}
+function renderHomeTraders(){
+  const el = $("homeTraders"); if(!el) return;
+  const top = TRADERS.filter(t=>!t.you).slice().sort((a,b)=>b.followers-a.followers).slice(0,6);
+  el.innerHTML = top.map(t=>
+    '<button class="ht-card" data-tprof="'+t.id+'">'+
+    '<span class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
+    (t.live?'<span class="trader-live">LIVE</span>':'')+'</span>'+
+    '<b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span>'+
+    '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></button>').join("");
+}
+/* home quick actions + see-all links */
+$("homePostIdea").addEventListener("click", openIdeaSheet);
+$("homeUploadReel").addEventListener("click", triggerReelUpload);
+$("homeGoLive").addEventListener("click", ()=>{ goTab("live"); setTimeout(()=>$("goLiveBtn").click(), 80); });
+document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.goto)));
+/* keep the home live strip fresh whenever the live strip re-renders */
+const _renderLiveNow = renderLiveNow;
+renderLiveNow = function(){ _renderLiveNow(); renderHomeLive(); };
+
+/* ---------------- TRADERS DISCOVER SEARCH ---------------- */
+$("traderSearch").addEventListener("input", renderTraders);
+const _renderTraders = renderTraders;
+renderTraders = function(){
+  const q = ($("traderSearch") && $("traderSearch").value || "").trim().toLowerCase();
+  if(!q){ _renderTraders(); return; }
+  const list = $("traderList"); list.innerHTML = "";
+  const rows = TRADERS.slice().sort((a,b)=>lbValue(b)-lbValue(a))
+    .filter(t=>t.name.toLowerCase().includes(q) || t.handle.toLowerCase().includes(q));
+  if(!rows.length){ list.innerHTML = '<div class="empty">No traders match "'+esc(q)+'".</div>'; return; }
+  rows.forEach((t,i)=>{
+    const c = document.createElement("div");
+    c.className = "trader-card lb-row";
+    c.dataset.tprof = t.id;
+    c.innerHTML =
+      rankBadge(i)+
+      '<div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
+      (t.live ? '<span class="trader-live">LIVE</span>' : '') + '</div>'+
+      '<div class="lb-info" data-tprof="'+t.id+'"><b>'+esc(t.name)+' <span class="handle">'+esc(t.handle)+'</span></b>'+
+      '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></div>'+
+      '<div class="lb-stat">'+lbStat(t)+'</div>'+
+      '<button class="follow-btn'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button>';
+    list.appendChild(c);
+  });
+};
+
+/* ---------------- EDIT PROFILE (Instagram-style) ---------------- */
+let epPhotoURL = null;
+function epInitials(nm){ return (nm||"A").trim().split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase(); }
+function renderEpPrev(){
+  const el = $("epAvatarPrev");
+  el.innerHTML = epPhotoURL ? '<img src="'+epPhotoURL+'" alt="Profile photo">' : esc(epInitials($("epName").value));
+}
+function openEditProfile(){
+  const you = TRADERS.find(t=>t.you); if(!you) return;
+  $("epName").value = you.name || "";
+  $("epHandle").value = you.handle || "";
+  $("epBio").value = you.bio || "";
+  epPhotoURL = you.photo || null;
+  renderEpPrev();
+  $("editProfileModal").hidden = false;
+  injectIcons();
+}
+function closeEditProfile(){ $("editProfileModal").hidden = true; }
+function saveEditProfile(){
+  const you = TRADERS.find(t=>t.you); if(!you) return;
+  const name = $("epName").value.trim() || "Alex Trader";
+  let handle = $("epHandle").value.trim() || "@alextrader";
+  if(handle[0] !== "@") handle = "@" + handle;
+  const bio = $("epBio").value.trim();
+  you.name = name; you.handle = handle; you.bio = bio;
+  you.ini = epInitials(name); you.photo = epPhotoURL;
+  $("profName").textContent = name;
+  $("profHandle").textContent = handle;
+  $("profBio").textContent = bio || "—";
+  const av = epPhotoURL ? '<img src="'+epPhotoURL+'" alt="">' : esc(you.ini);
+  $("profAvatar").innerHTML = av;
+  $("avatarBtn").innerHTML = av;
+  $("sideAvatar").innerHTML = av;
+  $("sideName").textContent = name;
+  renderYouCard(); renderHome(); renderTraders();
+  closeEditProfile();
+  toast("Profile updated — demo");
+}
+$("editProfileBtn").addEventListener("click", openEditProfile);
+$("profAvatarBtn").addEventListener("click", openEditProfile);
+$("editProfileX").addEventListener("click", closeEditProfile);
+$("editProfileBg").addEventListener("click", closeEditProfile);
+$("epCancel").addEventListener("click", closeEditProfile);
+$("epSave").addEventListener("click", saveEditProfile);
+$("epName").addEventListener("input", renderEpPrev);
+$("epPhotoBtn").addEventListener("click", ()=>$("epPhotoInput").click());
+$("epPhotoInput").addEventListener("change", e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  if(epPhotoURL && epPhotoURL.indexOf("blob:")===0) URL.revokeObjectURL(epPhotoURL);
+  epPhotoURL = URL.createObjectURL(f);
+  renderEpPrev();
+});
+
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
 function bootApp(){
 injectIcons();
@@ -2658,6 +2820,7 @@ renderTicketTick();
 renderAccount();
 renderLiveNow();
 renderReelsHub();
+renderHome();
 try{ bootV15(); }catch(err){ console.error("[v15] boot failed:", err); }
 setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
 /* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */
