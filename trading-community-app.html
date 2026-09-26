@@ -2392,19 +2392,28 @@ function stopCamera(){
 }
 async function enableCamera(){
   if(camStream) return;
+  const v = $("faceCamVideo");
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    toast("Camera unavailable — showing placeholder (demo)"); return;
+    toast("Camera not supported here — showing placeholder (demo)"); return;
   }
   try{
-    /* front camera on phones, default webcam on laptops */
-    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user" }, audio:false });
-    const v = $("faceCamVideo");
-    v.srcObject = camStream; v.hidden = false;
+    /* front camera preferred on phones (ideal, not required), default webcam on laptops */
+    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:"user" } }, audio:false });
+    v.srcObject = camStream;
+    v.hidden = false;
     $("faceCamEmpty").hidden = true;
+    try{ await v.play(); }catch(e){ /* mobile browsers need the explicit play() call */ }
     $("camToggleBtn").textContent = "Stop camera";
     toast("Camera on — preview only, nothing is streamed (demo)");
   }catch(err){
-    toast("Camera unavailable — showing placeholder (demo)");
+    camStream = null;
+    const n = (err && err.name) || "";
+    if(n === "NotAllowedError" || n === "SecurityError")
+      toast("Camera blocked — allow camera in your browser settings, then tap Enable camera");
+    else if(n === "NotFoundError" || n === "OverconstrainedError")
+      toast("No camera found on this device — showing placeholder (demo)");
+    else
+      toast("Camera unavailable — showing placeholder (demo)");
   }
 }
 $("camToggleBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stopCamera() : enableCamera(); });
