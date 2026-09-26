@@ -797,13 +797,14 @@ setTheme(savedTheme === "light" ? "light" : "dark");
 renderTradeTick();
 setInterval(tick, 700);
 
+// Demo mode: skip login for now (auth flow kept in code for later) — enter app directly.
+const DEMO_USER = { name:"Alex Trader", email:"demo.trader@example.com", via:"demo" };
 const savedSession = (() => { try{ return localStorage.getItem("tc_session_v1"); }catch(e){ return null; } })();
 if (savedSession){
   try{ finishAuth(JSON.parse(savedSession), false); }
-  catch(e){ showView("auth"); }
+  catch(e){ finishAuth(DEMO_USER, false); }
 }else{
-  showView("splash");
-  setTimeout(() => showView("auth"), 1400);
+  finishAuth(DEMO_USER, false);
 }
 
 })();
