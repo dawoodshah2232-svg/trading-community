@@ -79,6 +79,7 @@
 
             <!-- Chart + market data -->
             <div class="col-chart">
+              <div class="chart-toprow">
               <div class="tf-bar" id="tfBar" role="tablist" aria-label="Timeframe">
                 <button class="tf active" data-tf="1m" role="tab">1m</button>
                 <button class="tf" data-tf="5m" role="tab">5m</button>
@@ -87,10 +88,11 @@
                 <button class="tf" data-tf="4H" role="tab">4H</button>
                 <button class="tf" data-tf="1D" role="tab">1D</button>
               </div>
+              <button class="idea-fab" id="shareIdeaBtn"><span class="ic xs" data-icon="send"></span> Post idea</button>
+              </div>
               <div class="chart-wrap" id="tradeChartWrap">
                 <div class="lw-legend num" id="chartLegend"><b id="lgSym">XAUUSD</b><span class="lg-tf" id="lgTF">1m</span><span>O <i id="lgO">—</i></span><span>H <i id="lgH">—</i></span><span>L <i id="lgL">—</i></span><span>C <i id="lgC">—</i></span><span id="lgChg" class="num">—</span></div>
                 <div class="tv-host" id="tvChart"></div>
-                <button class="idea-fab" id="shareIdeaBtn"><span class="ic xs" data-icon="send"></span> Post idea</button>
                 <div class="quick-trade">
                   <button class="qt buy" id="qtBuy">BUY</button>
                   <button class="qt sell" id="qtSell">SELL</button>
