@@ -7,6 +7,9 @@
    Apple font stack for words, system mono for numbers.
    ============================================================ */
 
+/* hidden attribute must always win over display rules (modals, sheets) */
+[hidden]{ display:none !important; }
+
 /* ---------- theme tokens ---------- */
 :root, [data-theme="dark"]{
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
