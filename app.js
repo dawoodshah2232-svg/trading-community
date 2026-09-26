@@ -155,7 +155,10 @@ async function fetchRealPrices(full){
   jobs.push(fetchJSON("https://api.coingecko.com/api/v3/simple/price?ids="+ids+"&vs_currencies=usd&include_24hr_change=true").then(j=>{
     Object.entries(CG_IDS).forEach(([s,id])=>{
       const d = j && j[id];
-      if(d && d.usd > 0 && mktOpen(s)) anchorPrice(s, d.usd, d.usd_24h_change, full, "live");
+      if(d && d.usd > 0){
+        if(mktOpen(s)) anchorPrice(s, d.usd, d.usd_24h_change, full, "live");
+        else state.quoteAt[s] = Date.now(); /* market closed: price stays frozen, but record the fresh check honestly */
+      }
     });
   }).catch(()=>{}));
   if(full){
@@ -579,7 +582,7 @@ async function refreshMainData(){
   let data = null, real = false, bars = null, vols = null;
   try{ data = await fetchRealBars(s, tf); }catch(e){ data = null; }
   if(state.sym !== s || state.tf !== tf) return; /* user switched mid-fetch */
-  if(data && data.bars.length > 30){ real = true; bars = data.bars; vols = data.vols || []; }
+  if(data && data.bars.length > 30){ real = true; bars = data.bars; vols = []; /* CoinGecko total_volumes is not true per-candle volume — hidden for honesty */ }
   else { const d = genBars(s, tf); bars = d.bars; vols = d.vols; }
   state.dataReal[s] = real;
   lw.bars = bars; lw.vols = vols;
@@ -3335,25 +3338,31 @@ function updateDataBadges(){
     const kind = state.live[s];
     const age = quoteAge(s);
     const ageTxt = age ? " · "+age : "";
+    const ts = state.quoteAt[s] ? new Date(state.quoteAt[s]).toLocaleString() : "";
+    const src = kind === "live" ? "CoinGecko" : kind === "daily" ? "open.er-api.com" : "";
     if(!open){
       badge.className = "data-badge sim";
       badge.textContent = "Frozen · last price";
+      if(ts) badge.title = "Last real quote: "+ts+(src ? " via "+src : "");
     }else if(kind === "live"){
       badge.className = "data-badge live";
       badge.textContent = "Real-time"+ageTxt;
+      badge.title = "Source: CoinGecko"+(ts ? " · updated "+ts : "");
     }else if(kind === "daily"){
       badge.className = "data-badge sim";
       badge.textContent = "Daily indicative"+ageTxt;
+      badge.title = "Source: open.er-api.com"+(ts ? " · updated "+ts : "");
     }else{
       badge.className = "data-badge sim";
       badge.textContent = "Simulated";
+      badge.title = "Simulated demo feed — not real market data";
     }
   }
   const note = $("mktNote");
   if(note) note.hidden = open;
   /* PAXG proxy honesty: XAUUSD here tracks the PAXG gold token, not a broker feed */
-  const px = $("proxyNote");
-  if(px) px.hidden = (s !== "XAUUSD");
+  const pxNote = $("proxyNote");
+  if(pxNote) pxNote.hidden = (s !== "XAUUSD");
   const inl = $("indDataNote");
   if(inl){
     const kind = state.live[s];
