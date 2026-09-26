@@ -286,11 +286,20 @@
   </div>
 </div>
 
-<!-- Symbol picker sheet -->
+<!-- Asset picker sheet -->
 <div class="backdrop" id="backdrop" hidden></div>
-<div class="sheet" id="symbolSheet" hidden role="dialog" aria-label="Select symbol">
-  <div class="sheet-head"><h3>Select symbol</h3><button class="icon-btn" id="sheetX" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>
-  <div id="symbolList"></div>
+<div class="sheet" id="symbolSheet" hidden role="dialog" aria-label="Select asset">
+  <div class="sheet-head"><h3>Select asset</h3><button class="icon-btn" id="sheetX" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>
+  <div class="sheet-search"><span class="ic sm" data-icon="search"></span><input class="field" id="sheetSearch" placeholder="Search symbol or name…" autocomplete="off" aria-label="Search assets"></div>
+  <div class="sheet-cats" id="sheetCats" role="tablist" aria-label="Asset categories">
+    <button class="scat active" data-cat="Favorites" role="tab">Favorites</button>
+    <button class="scat" data-cat="Metals" role="tab">Metals</button>
+    <button class="scat" data-cat="Forex" role="tab">Forex</button>
+    <button class="scat" data-cat="Crypto" role="tab">Crypto</button>
+    <button class="scat" data-cat="Indices" role="tab">Indices</button>
+    <button class="scat" data-cat="Energy" role="tab">Energy</button>
+  </div>
+  <div id="symbolList" role="listbox" aria-label="Assets"></div>
 </div>
 
 <!-- Broker login modal -->

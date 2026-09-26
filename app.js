@@ -39,7 +39,9 @@ const ICONS = {
   link:'<path d="M10 14a5 5 0 007.1 0l2.4-2.4a5 5 0 00-7.1-7.1L11 5.9"/><path d="M14 10a5 5 0 00-7.1 0l-2.4 2.4a5 5 0 007.1 7.1L13 18.1"/>',
   trash:'<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>',
   send:'<path d="M4 12l16-7-7 16-2.5-6.5z"/><path d="M11.5 14.5L20 5"/>',
-  cam:'<rect x="3" y="7" width="13" height="12" rx="3"/><path d="M16 10.5l5-3v9l-5-3"/>'
+  cam:'<rect x="3" y="7" width="13" height="12" rx="3"/><path d="M16 10.5l5-3v9l-5-3"/>',
+  star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/>'
 };
 function injectIcons(){
   document.querySelectorAll("[data-icon]").forEach(el=>{
@@ -49,18 +51,29 @@ function injectIcons(){
   });
 }
 
-/* ---------------- MOCK SYMBOL UNIVERSE ---------------- */
+/* ---------------- MOCK SYMBOL UNIVERSE (18 assets, 5 categories) ---------------- */
 const SYMBOLS = {
-  XAUUSD: { tv:"OANDA:XAUUSD",    name:"Gold vs US Dollar",  ex:"OANDA",    base:2652.40, digits:2, spread:0.25,   vol:0.85,   perPoint:100,    contract:100,    chg:0.42 },
-  EURUSD: { tv:"OANDA:EURUSD",    name:"Euro vs US Dollar",  ex:"OANDA",    base:1.08420, digits:5, spread:0.00012, vol:0.00026, perPoint:100000, contract:100000, chg:-0.11 },
-  GBPUSD: { tv:"OANDA:GBPUSD",    name:"Pound vs US Dollar", ex:"OANDA",    base:1.29740, digits:5, spread:0.00018, vol:0.00032, perPoint:100000, contract:100000, chg:0.23 },
-  USDJPY: { tv:"OANDA:USDJPY",    name:"US Dollar vs Yen",   ex:"OANDA",    base:149.820, digits:3, spread:0.015,   vol:0.042,  perPoint:667,     contract:100000, chg:-0.31 },
-  BTCUSD: { tv:"BITSTAMP:BTCUSD", name:"Bitcoin vs Dollar",  ex:"BITSTAMP", base:97420,   digits:0, spread:18,      vol:95,     perPoint:1,       contract:1,      chg:1.84 },
-  ETHUSD: { tv:"BITSTAMP:ETHUSD", name:"Ethereum vs Dollar", ex:"BITSTAMP", base:3420.5,  digits:1, spread:1.4,     vol:6.2,    perPoint:10,      contract:10,     chg:2.12 },
-  US30:   { tv:"DJ:DJI",          name:"Dow Jones 30",       ex:"DJ",       base:42150,   digits:0, spread:2.4,     vol:13,     perPoint:5,       contract:1,      chg:0.35 },
-  NAS100: { tv:"NASDAQ:NDX",      name:"Nasdaq 100",         ex:"NASDAQ",   base:19280.5, digits:1, spread:1.6,    vol:8.5,    perPoint:5,       contract:1,      chg:0.62 }
+  XAUUSD: { cat:"Metals",  name:"Gold vs US Dollar",   ex:"OANDA",    base:2652.40, digits:2, spread:0.25,   vol:0.85,   perPoint:100,    contract:100,    chg:0.42 },
+  XAGUSD: { cat:"Metals",  name:"Silver vs US Dollar", ex:"OANDA",   base:31.20,   digits:2, spread:0.04,   vol:0.06,   perPoint:5000,   contract:5000,   chg:0.65 },
+  EURUSD: { cat:"Forex",   name:"Euro vs US Dollar",   ex:"OANDA",    base:1.08420, digits:5, spread:0.00012, vol:0.00026, perPoint:100000, contract:100000, chg:-0.11 },
+  GBPUSD: { cat:"Forex",   name:"Pound vs US Dollar",  ex:"OANDA",    base:1.29740, digits:5, spread:0.00018, vol:0.00032, perPoint:100000, contract:100000, chg:0.23 },
+  USDJPY: { cat:"Forex",   name:"US Dollar vs Yen",    ex:"OANDA",    base:149.820, digits:3, spread:0.015,   vol:0.042,  perPoint:667,    contract:100000, chg:-0.31 },
+  AUDUSD: { cat:"Forex",   name:"Aussie vs US Dollar", ex:"OANDA",    base:0.65800, digits:5, spread:0.00015, vol:0.00020, perPoint:100000, contract:100000, chg:0.18 },
+  USDCAD: { cat:"Forex",   name:"US Dollar vs CAD",    ex:"OANDA",    base:1.36500, digits:5, spread:0.00018, vol:0.00030, perPoint:100000, contract:100000, chg:-0.22 },
+  NZDUSD: { cat:"Forex",   name:"Kiwi vs US Dollar",   ex:"OANDA",    base:0.59800, digits:5, spread:0.00020, vol:0.00019, perPoint:100000, contract:100000, chg:0.05 },
+  USDCHF: { cat:"Forex",   name:"US Dollar vs Franc",  ex:"OANDA",    base:0.89500, digits:5, spread:0.00016, vol:0.00021, perPoint:100000, contract:100000, chg:-0.14 },
+  BTCUSD: { cat:"Crypto",  name:"Bitcoin vs Dollar",   ex:"BITSTAMP", base:97420.00, digits:2, spread:25,      vol:95,     perPoint:1,      contract:1,      chg:1.84 },
+  ETHUSD: { cat:"Crypto",  name:"Ethereum vs Dollar",  ex:"BITSTAMP", base:3420.50, digits:2, spread:2.2,     vol:6.2,    perPoint:10,     contract:10,     chg:2.12 },
+  SOLUSD: { cat:"Crypto",  name:"Solana vs Dollar",    ex:"BINANCE",  base:215.40,  digits:2, spread:0.35,    vol:0.9,    perPoint:100,    contract:100,    chg:3.05 },
+  BNBUSD: { cat:"Crypto",  name:"BNB vs Dollar",       ex:"BINANCE",  base:585.20,  digits:2, spread:0.60,    vol:1.8,    perPoint:20,     contract:20,     chg:1.12 },
+  XRPUSD: { cat:"Crypto",  name:"XRP vs Dollar",       ex:"BINANCE",  base:0.6250,  digits:4, spread:0.0020,  vol:0.004,  perPoint:20000,  contract:20000,  chg:-1.45 },
+  US30:   { cat:"Indices", name:"Dow Jones 30",        ex:"DJ",       base:42150.00, digits:2, spread:2.4,     vol:13,     perPoint:5,      contract:1,      chg:0.35 },
+  NAS100: { cat:"Indices", name:"Nasdaq 100",          ex:"NASDAQ",   base:19280.50, digits:2, spread:1.6,     vol:8.5,    perPoint:5,      contract:1,      chg:0.62 },
+  SPX500: { cat:"Indices", name:"S&P 500",             ex:"SP",       base:5980.25, digits:2, spread:0.45,    vol:2.2,    perPoint:25,     contract:1,      chg:0.28 },
+  USOIL:  { cat:"Energy",  name:"WTI Crude Oil",       ex:"NYMEX",    base:68.45,   digits:2, spread:0.04,    vol:0.12,   perPoint:1000,   contract:1000,   chg:-0.85 }
 };
-const SYM_ORDER = ["XAUUSD","EURUSD","GBPUSD","USDJPY","BTCUSD","ETHUSD","US30","NAS100"];
+const SYM_ORDER = ["XAUUSD","XAGUSD","EURUSD","GBPUSD","USDJPY","AUDUSD","USDCAD","NZDUSD","USDCHF",
+                   "BTCUSD","ETHUSD","SOLUSD","BNBUSD","XRPUSD","US30","NAS100","SPX500","USOIL"];
 const LEVERAGE = 100;
 const START_BALANCE = 10000;
 
@@ -81,6 +94,34 @@ SYM_ORDER.forEach(s=>{
 });
 /* seed one demo alert so the feature is visible */
 state.alerts.push({ id:"a"+(state.alertSeq++), sym:"XAUUSD", cond:"above", price:2660.00, triggered:false });
+
+/* ---------------- FAVORITES / WISHLIST (persisted) ---------------- */
+const FAV_KEY = "tc_favs_v1";
+const DEFAULT_FAVS = ["XAUUSD","EURUSD","BTCUSD"];
+function loadFavs(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(FAV_KEY)||"null");
+    if(Array.isArray(raw)) return raw.filter(s=>SYMBOLS[s]);
+  }catch(e){}
+  return DEFAULT_FAVS.slice();
+}
+state.favs = loadFavs();
+function saveFavs(){ try{ localStorage.setItem(FAV_KEY, JSON.stringify(state.favs)); }catch(e){} }
+function isFav(s){ return state.favs.includes(s); }
+function toggleFav(s){
+  if(!SYMBOLS[s]) return;
+  if(isFav(s)) state.favs = state.favs.filter(x=>x!==s);
+  else state.favs.push(s);
+  saveFavs();
+  renderWatchlist();
+  if(!$("symbolSheet").hidden) renderSymbolSheet(); /* refresh the open picker */
+  toast(s + (isFav(s) ? " added to" : " removed from") + " favorites — demo");
+}
+/* watchlist order: favorites first (in fav order), then everything else */
+function watchOrder(){
+  const favs = state.favs.filter(s=>SYMBOLS[s]);
+  return [...favs, ...SYM_ORDER.filter(s=>!favs.includes(s))];
+}
 
 /* ---------------- HELPERS ---------------- */
 const $ = id => document.getElementById(id);
@@ -148,6 +189,7 @@ function tick(){
   fillPending();
   checkTpSl();
   renderWatchlistTick();
+  renderSheetTick(); /* live prices inside the open asset picker */
   renderHeaderTick();
   renderDepth();
   renderTapeTick();
@@ -160,16 +202,18 @@ function tick(){
 /* ---------------- WATCHLIST ---------------- */
 function renderWatchlist(){
   const list = $("watchList"); list.innerHTML = "";
-  SYM_ORDER.forEach(s=>{
+  watchOrder().forEach(s=>{
     const b = document.createElement("button");
     b.className = "wl-item" + (s===state.sym ? " current" : "");
     b.dataset.sym = s; b.setAttribute("role","option");
     b.setAttribute("aria-selected", s===state.sym ? "true" : "false");
-    b.innerHTML = '<b>'+s+'</b><span class="wl-px"><span class="num" data-wl-px="'+s+'">—</span><br>'+
+    b.innerHTML = '<span class="wl-sym">'+(isFav(s)?'<span class="ic xs wl-star" data-icon="star"></span>':"")+'<b>'+s+'</b></span>'+
+      '<span class="wl-px"><span class="num" data-wl-px="'+s+'">—</span><br>'+
       '<span class="chg num" data-wl-chg="'+s+'">—</span></span>';
     b.addEventListener("click", ()=>setSymbol(s));
     list.appendChild(b);
   });
+  injectIcons(); /* star markers */
   renderWatchlistTick();
 }
 function renderWatchlistTick(){
@@ -218,21 +262,73 @@ function renderHeaderTick(){
   c.className = "chg-pill num " + (pr.chg>=0 ? "up" : "down");
   $("hdrSpread").textContent = fmtP(s, meta(s).spread);
 }
-$("symPicker").addEventListener("click", ()=>{ renderSymbolSheet(); openSheet(); });
+$("symPicker").addEventListener("click", ()=>{
+  sheetQuery = ""; $("sheetSearch").value = ""; /* fresh search each open */
+  renderSymbolSheet(); openSheet();
+});
 function openSheet(){ $("backdrop").hidden = false; $("symbolSheet").hidden = false; }
 function closeSheet(){ $("backdrop").hidden = true; $("symbolSheet").hidden = true; }
 $("backdrop").addEventListener("click", closeSheet);
 $("sheetX").addEventListener("click", closeSheet);
+
+/* ---------------- ASSET PICKER: search + category tabs + favorites ---------------- */
+let sheetCat = "Favorites", sheetQuery = "";
+function sheetSymbols(){
+  const q = sheetQuery.trim().toLowerCase();
+  if(q) return SYM_ORDER.filter(s=>s.toLowerCase().includes(q) || meta(s).name.toLowerCase().includes(q));
+  if(sheetCat==="Favorites") return state.favs.filter(s=>SYMBOLS[s]);
+  return SYM_ORDER.filter(s=>meta(s).cat===sheetCat);
+}
 function renderSymbolSheet(){
   const list = $("symbolList"); list.innerHTML = "";
-  SYM_ORDER.forEach(s=>{
+  const arr = sheetSymbols();
+  if(!arr.length){
+    list.innerHTML = '<div class="empty">'+(sheetQuery.trim() || sheetCat!=="Favorites"
+      ? "No assets match your search."
+      : "No favorites yet.<br>Tap the star on any asset to pin it here.")+'</div>';
+    return;
+  }
+  arr.forEach(s=>{
+    const pr = px(s), fav = isFav(s);
+    const row = document.createElement("div");
+    row.className = "sym-row" + (s===state.sym ? " current" : "");
+    row.setAttribute("role","option");
+    row.setAttribute("aria-selected", s===state.sym ? "true" : "false");
+    row.innerHTML =
+      '<button class="fav-star'+(fav?" on":"")+'" data-fav="'+s+'" aria-label="'+(fav?"Remove from":"Add to")+' favorites" aria-pressed="'+fav+'"><span class="ic sm" data-icon="star"></span></button>'+
+      '<span class="sym-id"><b>'+s+'</b><i>'+esc(meta(s).name)+'</i></span>'+
+      '<span class="sym-px"><span class="num" data-sh-px="'+s+'">'+fmtP(s,pr.bid)+'</span>'+
+      '<span class="chg num '+(pr.chg>=0?"up":"down")+'" data-sh-chg="'+s+'">'+(pr.chg>=0?"+":"")+pr.chg.toFixed(2)+'%</span></span>';
+    row.addEventListener("click", ()=>{ setSymbol(s); closeSheet(); });
+    list.appendChild(row);
+  });
+  injectIcons();
+}
+/* star toggles — delegated; stopPropagation keeps the row from selecting */
+$("symbolList").addEventListener("click", e=>{
+  const st = e.target.closest("[data-fav]");
+  if(st){ e.stopPropagation(); toggleFav(st.dataset.fav); }
+});
+$("sheetCats").addEventListener("click", e=>{
+  const b = e.target.closest(".scat"); if(!b) return;
+  sheetCat = b.dataset.cat;
+  document.querySelectorAll(".scat").forEach(x=>x.classList.toggle("active", x===b));
+  renderSymbolSheet();
+});
+$("sheetSearch").addEventListener("input", e=>{ sheetQuery = e.target.value; renderSymbolSheet(); });
+/* live ticking inside the open picker */
+function renderSheetTick(){
+  if($("symbolSheet").hidden) return;
+  sheetSymbols().forEach(s=>{
     const pr = px(s);
-    const b = document.createElement("button");
-    b.className = "sym-row" + (s===state.sym ? " current" : "");
-    b.innerHTML = '<b>'+s+'</b><span class="sp num">'+fmtP(s,pr.bid)+'</span>'+
-      '<span class="sc num '+(pr.chg>=0?"up":"down")+'">'+(pr.chg>=0?"+":"")+pr.chg.toFixed(2)+'%</span>';
-    b.addEventListener("click", ()=>{ setSymbol(s); closeSheet(); });
-    list.appendChild(b);
+    const p = document.querySelector('[data-sh-px="'+s+'"]');
+    const c = document.querySelector('[data-sh-chg="'+s+'"]');
+    if(p) p.textContent = fmtP(s, pr.bid);
+    if(c){
+      c.textContent = (pr.chg>=0?"+":"")+pr.chg.toFixed(2)+"%";
+      c.classList.toggle("up", pr.chg>=0);
+      c.classList.toggle("down", pr.chg<0);
+    }
   });
 }
 
