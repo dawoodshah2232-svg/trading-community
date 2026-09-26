@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05080F">
+<title>Trading Community</title>
+<style>
+/* ============================================================
+   Trading Community — static prototype styles
+   Dark premium fintech theme. Apple font stack only.
+   ============================================================ */
+:root{
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+          "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --bg:        #05080F;
+  --bg-soft:   #0A0F1C;
+  --surface:   #0E1526;
+  --surface-2: #141C31;
+  --surface-3: #1A2340;
+  --border:    rgba(255,255,255,.08);
+  --border-soft: rgba(255,255,255,.05);
+
+  --text:   #F2F5FA;
+  --muted:  #8A94A8;
+  --faint:  #5B6478;
+
+  --accent: #E8B34B;          /* gold — the single brand accent */
+  --accent-soft: rgba(232,179,75,.14);
+
+  --green: #22C55E;           /* semantic: profit / buy */
+  --red:   #F04452;           /* semantic: loss / sell / live */
+  --live:  #FF453A;
+
+  --radius: 18px;
+  --tabbar-h: 76px;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+html,body{ height:100%; }
+
+body{
+  font-family: var(--font);
+  background: #010204;
+  color: var(--text);
+  display:flex; align-items:center; justify-content:center;
+  background-image:
+    radial-gradient(900px 500px at 20% -10%, rgba(232,179,75,.06), transparent 60%),
+    radial-gradient(800px 500px at 90% 110%, rgba(34,197,94,.05), transparent 60%);
+  overflow:hidden;
+}
+
+/* ---------- App frame: phone-like on desktop, full-bleed on mobile ---------- */
+.app{
+  position:relative;
+  width:100%; max-width:430px;
+  height:100dvh;
+  background: linear-gradient(180deg, #070B15 0%, #05080F 100%);
+  overflow:hidden;
+  display:flex; flex-direction:column;
+}
+@media (min-width:480px){
+  .app{
+    height:min(92dvh, 920px);
+    border-radius:44px;
+    border:1px solid rgba(255,255,255,.1);
+    box-shadow: 0 40px 120px rgba(0,0,0,.7), 0 0 0 10px rgba(255,255,255,.02);
+  }
+}
+
+/* ---------- Fake status bar (app feel) ---------- */
+.statusbar{
+  position:absolute; top:0; left:0; right:0; z-index:60;
+  height:44px; padding:14px 26px 0;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:14px; font-weight:600;
+  pointer-events:none;
+  background:linear-gradient(180deg, rgba(5,8,15,.9), transparent);
+}
+.statusbar .sb-icons{ display:flex; gap:6px; align-items:center; opacity:.9; }
+
+/* ---------- Screens ---------- */
+.screen{
+  position:absolute; inset:0;
+  display:none;
+  flex-direction:column;
+  padding-top:44px;
+  background:transparent;
+}
+.screen.active{ display:flex; }
+.screen.scroll{ overflow-y:auto; overscroll-behavior:contain;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px); }
+.screen.scroll::-webkit-scrollbar{ display:none; }
+
+/* ---------- Headers ---------- */
+.app-header{
+  position:sticky; top:0; z-index:20;
+  padding:10px 18px 12px;
+  display:flex; align-items:center; gap:12px;
+  background:linear-gradient(180deg, #070B15 70%, transparent);
+}
+.brand{ display:flex; align-items:center; gap:10px; flex:1; }
+.brand-mark{
+  width:34px; height:34px; border-radius:11px;
+  background:linear-gradient(135deg, #E8B34B, #B97F1F);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 14px rgba(232,179,75,.35);
+}
+.brand-name{ font-size:17px; font-weight:700; letter-spacing:-.2px; }
+.brand-name span{ color:var(--accent); }
+.icon-btn{
+  width:38px; height:38px; border-radius:50%;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; position:relative; flex:none;
+}
+.icon-btn .dot{
+  position:absolute; top:9px; right:10px; width:8px; height:8px;
+  border-radius:50%; background:var(--red); border:2px solid #070B15;
+}
+.back-btn{ composes: icon-btn; }
+.screen-title{ font-size:20px; font-weight:700; letter-spacing:-.3px; flex:1; }
+
+/* ---------- Search ---------- */
+.search{
+  margin:2px 18px 14px; display:flex; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; padding:11px 14px; color:var(--faint); font-size:14px;
+}
+.search input{
+  background:none; border:none; outline:none; color:var(--text);
+  font-family:var(--font); font-size:14px; flex:1;
+}
+
+/* ---------- Section labels ---------- */
+.section-label{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 18px 12px;
+}
+.section-label h2{ font-size:16px; font-weight:700; letter-spacing:-.2px; }
+.section-label a{ font-size:13px; color:var(--accent); font-weight:600; text-decoration:none; }
+
+/* ---------- Live rail (horizontal) ---------- */
+.rail{ display:flex; gap:12px; overflow-x:auto; padding:0 18px 18px; }
+.rail::-webkit-scrollbar{ display:none; }
+.rail-card{
+  flex:none; width:128px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px; text-align:center; cursor:pointer;
+  transition:transform .15s ease;
+}
+.rail-card:active{ transform:scale(.96); }
+.rail-card .avatar{ margin:0 auto 8px; }
+.rail-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rail-pair{ font-size:11px; color:var(--muted); margin-top:2px; }
+.rail-viewers{
+  display:inline-flex; align-items:center; gap:5px; margin-top:8px;
+  font-size:11px; font-weight:700; color:#fff;
+  background:rgba(255,69,58,.16); border:1px solid rgba(255,69,58,.4);
+  padding:4px 9px; border-radius:20px;
+}
+.pulse{ width:7px; height:7px; border-radius:50%; background:var(--live); animation:pulse 1.4s infinite; }
+@keyframes pulse{ 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.4; transform:scale(.7);} }
+
+/* ---------- Avatars ---------- */
+.avatar{
+  width:48px; height:48px; border-radius:50%; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:17px; color:#0A0F1C;
+  background:linear-gradient(135deg, var(--g1,#E8B34B), var(--g2,#B97F1F));
+  border:2px solid rgba(255,255,255,.14);
+}
+.avatar.sm{ width:38px; height:38px; font-size:14px; }
+.avatar.lg{ width:84px; height:84px; font-size:30px; border-width:3px; }
+
+/* ---------- Creator cards ---------- */
+.creator-card{
+  margin:0 18px 14px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px;
+}
+.cc-top{ display:flex; align-items:center; gap:12px; }
+.cc-id{ flex:1; min-width:0; }
+.cc-name{ font-size:15px; font-weight:700; display:flex; align-items:center; gap:6px; }
+.cc-sub{ font-size:12.5px; color:var(--muted); margin-top:3px; }
+.verified{ color:var(--accent); flex:none; display:inline-flex; }
+.follow-btn{
+  border:1px solid var(--accent); color:var(--accent); background:transparent;
+  font-family:var(--font); font-weight:700; font-size:13px;
+  padding:8px 16px; border-radius:20px; cursor:pointer; flex:none;
+  transition:all .15s ease;
+}
+.follow-btn.following{ background:var(--accent-soft); border-color:transparent; color:var(--accent); }
+.cc-live-row{ display:flex; align-items:center; gap:8px; margin:12px 0; }
+.live-badge{
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--live); color:#fff; font-size:11px; font-weight:800;
+  letter-spacing:.6px; padding:5px 10px; border-radius:8px;
+}
+.cc-pair{ font-size:12.5px; color:var(--muted); font-weight:600; }
+.cc-stats{
+  display:flex; gap:0; margin:4px 0 14px;
+  background:var(--bg-soft); border:1px solid var(--border-soft);
+  border-radius:12px; overflow:hidden;
+}
+.cc-stat{ flex:1; text-align:center; padding:10px 4px; }
+.cc-stat + .cc-stat{ border-left:1px solid var(--border-soft); }
+.cc-stat b{ display:block; font-size:14px; letter-spacing:-.2px; }
+.cc-stat span{ font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+.pos{ color:var(--green); } .neg{ color:var(--red); }
+.watch-btn{
+  width:100%; padding:13px; border:none; border-radius:13px;
+  background:linear-gradient(135deg, #E8B34B, #C98F2B);
+  color:#1A1206; font-family:var(--font); font-size:14.5px; font-weight:800;
+  cursor:pointer; letter-spacing:-.1px;
+  box-shadow:0 6px 18px rgba(232,179,75,.28);
+}
+.watch-btn:active{ transform:scale(.98); }
+
+/* ---------- Live room ---------- */
+.live-header{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px; z-index:20;
+  background:linear-gradient(180deg, #070B15 80%, transparent);
+}
+.live-id{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+.live-name{ font-size:14.5px; font-weight:700; display:flex; align-items:center; gap:6px; }
+.live-sub{ font-size:12px; color:var(--muted); }
+.viewers-pill{
+  display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
+  background:rgba(0,0,0,.5); border:1px solid var(--border);
+  padding:7px 11px; border-radius:20px;
+}
+.chart-wrap{
+  position:relative; margin:2px 14px 0; flex:none;
+  height:300px; border-radius:var(--radius); overflow:hidden;
+  background:#070B15; border:1px solid var(--border);
+}
+.chart-wrap .tv{ position:absolute; inset:0; }
+.chart-fallback{
+  position:absolute; inset:0; display:none;
+  align-items:center; justify-content:center; text-align:center;
+  padding:24px; color:var(--muted); font-size:13px; line-height:1.6;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(255,255,255,.03) 30px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,.03) 40px);
+}
+.chart-fallback.show{ display:flex; }
+
+/* Face-cam overlay: draggable + resizable, snaps to corners */
+.facecam{
+  position:absolute; z-index:15;
+  width:112px; height:150px;
+  border-radius:14px; overflow:hidden;
+  background:linear-gradient(160deg, #1B2542, #0C1226);
+  border:2px solid rgba(232,179,75,.65);
+  box-shadow:0 10px 30px rgba(0,0,0,.6);
+  cursor:grab; touch-action:none; user-select:none;
+}
+.facecam:active{ cursor:grabbing; }
+.facecam.c-tl{ top:10px; left:10px; } .facecam.c-tr{ top:10px; right:10px; }
+.facecam.c-bl{ bottom:10px; left:10px; } .facecam.c-br{ bottom:10px; right:10px; }
+.facecam.free{ /* while dragging */ }
+.cam-body{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:6px; color:var(--muted);
+}
+.cam-body svg{ opacity:.7; }
+.cam-label{ font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; }
+.cam-hint{ font-size:9px; color:var(--faint); }
+.cam-tag{
+  position:absolute; top:6px; left:6px; z-index:2;
+  font-size:9px; font-weight:800; letter-spacing:.6px;
+  background:rgba(0,0,0,.55); padding:3px 7px; border-radius:6px; color:#fff;
+  display:flex; align-items:center; gap:4px;
+}
+.cam-handle{
+  position:absolute; right:2px; bottom:2px; width:22px; height:22px; z-index:3;
+  cursor:nwse-resize; display:flex; align-items:flex-end; justify-content:flex-end;
+  padding:4px; color:var(--accent); opacity:.9;
+}
+
+/* Floating like button */
+.like-fab{
+  position:absolute; right:12px; bottom:12px; z-index:16;
+  width:52px; height:52px; border-radius:50%;
+  background:rgba(10,15,28,.75); border:1px solid var(--border);
+  backdrop-filter:blur(8px); color:#fff;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; gap:1px;
+}
+.like-fab span{ font-size:10px; font-weight:700; }
+.like-fab.liked{ color:var(--red); border-color:rgba(240,68,82,.5); }
+.like-fab.pop svg{ animation:pop .35s ease; }
+@keyframes pop{ 40%{ transform:scale(1.45);} }
+
+/* Live lower panel */
+.live-panel{
+  flex:1; margin:12px 14px 0; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius) var(--radius) 0 0;
+  border-bottom:none; display:flex; flex-direction:column; min-height:0;
+  overflow:hidden;
+}
+.lp-tabs{ display:flex; padding:10px 12px 0; gap:6px; }
+.lp-tab{
+  flex:1; padding:10px; border:none; background:none; color:var(--muted);
+  font-family:var(--font); font-size:13.5px; font-weight:700; cursor:pointer;
+  border-bottom:2px solid transparent;
+}
+.lp-tab.active{ color:var(--text); border-bottom-color:var(--accent); }
+.lp-body{ flex:1; overflow-y:auto; min-height:0; padding:6px 14px 14px; }
+.lp-body::-webkit-scrollbar{ display:none; }
+.lp-pane{ display:none; } .lp-pane.active{ display:block; }
+
+/* Copy-trades bar */
+.copy-bar{
+  display:flex; align-items:center; gap:10px;
+  margin:10px 14px 0; padding:12px 14px;
+  background:var(--accent-soft); border:1px solid rgba(232,179,75,.35);
+  border-radius:14px;
+}
+.copy-bar .cb-text{ flex:1; }
+.copy-bar b{ font-size:13.5px; display:block; }
+.copy-bar small{ font-size:11.5px; color:var(--muted); }
+
+/* Switch */
+.switch{ position:relative; width:48px; height:28px; flex:none; cursor:pointer; }
+.switch input{ opacity:0; width:0; height:0; }
+.switch .sl{
+  position:absolute; inset:0; border-radius:20px;
+  background:#2A3350; transition:.2s;
+}
+.switch .sl:before{
+  content:""; position:absolute; width:22px; height:22px; border-radius:50%;
+  background:#fff; top:3px; left:3px; transition:.2s;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.switch input:checked + .sl{ background:var(--green); }
+.switch input:checked + .sl:before{ transform:translateX(20px); }
+
+/* Trade feed rows */
+.trade-row{
+  display:flex; align-items:center; gap:10px; padding:11px 2px;
+  border-bottom:1px solid var(--border-soft);
+  animation:slidein .3s ease;
+}
+@keyframes slidein{ from{ opacity:0; transform:translateY(-6px);} }
+.dir{
+  font-size:10.5px; font-weight:800; letter-spacing:.5px;
+  padding:5px 9px; border-radius:7px; flex:none;
+}
+.dir.buy{ background:rgba(34,197,94,.15); color:var(--green); }
+.dir.sell{ background:rgba(240,68,82,.15); color:var(--red); }
+.dir.close{ background:rgba(138,148,168,.15); color:var(--muted); }
+.trade-info{ flex:1; min-width:0; }
+.trade-info b{ font-size:13.5px; display:block; }
+.trade-info small{ font-size:11.5px; color:var(--muted); }
+.trade-pl{ font-size:13.5px; font-weight:800; }
+
+/* Chat */
+.chat-feed{ display:flex; flex-direction:column; gap:9px; padding:8px 0 4px; }
+.chat-msg{ font-size:13px; line-height:1.45; animation:slidein .25s ease; }
+.chat-msg b{ color:var(--accent); font-weight:700; }
+.chat-msg .cm-text{ color:#D6DCE8; }
+.chat-input-row{ display:flex; gap:8px; padding:10px 14px 14px; }
+.chat-input-row input{
+  flex:1; background:var(--bg-soft); border:1px solid var(--border);
+  border-radius:12px; padding:11px 13px; color:var(--text);
+  font-family:var(--font); font-size:13.5px; outline:none;
+}
+.chat-input-row input:focus{ border-color:var(--accent); }
+.send-btn{
+  width:44px; height:44px; border-radius:12px; border:none; cursor:pointer;
+  background:linear-gradient(135deg,#E8B34B,#C98F2B); color:#1A1206;
+  display:flex; align-items:center; justify-content:center; flex:none;
+}
+
+/* ---------- Go Live ---------- */
+.form-card{
+  margin:0 18px 14px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius); padding:16px;
+}
+.form-card h3{ font-size:14px; font-weight:700; margin-bottom:4px; }
+.form-card p{ font-size:12.5px; color:var(--muted); margin-bottom:12px; line-height:1.5; }
+.text-input{
+  width:100%; background:var(--bg-soft); border:1px solid var(--border);
+  border-radius:12px; padding:13px; color:var(--text);
+  font-family:var(--font); font-size:14px; outline:none;
+}
+.text-input:focus{ border-color:var(--accent); }
+.chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
+.chip{
+  padding:9px 16px; border-radius:20px; font-size:13px; font-weight:700;
+  background:var(--bg-soft); border:1px solid var(--border); color:var(--muted);
+  cursor:pointer; font-family:var(--font);
+}
+.chip.active{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+.dest-row{
+  display:flex; align-items:center; gap:12px; padding:12px 0;
+  border-bottom:1px solid var(--border-soft);
+}
+.dest-row:last-child{ border-bottom:none; }
+.dest-ic{
+  width:42px; height:42px; border-radius:12px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:15px; color:#fff;
+}
+.dest-row b{ font-size:14px; display:block; }
+.dest-row small{ font-size:12px; color:var(--muted); }
+.dest-row .grow{ flex:1; }
+.cam-picker{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.campick{
+  position:relative; height:86px; border-radius:12px; cursor:pointer;
+  background:var(--bg-soft); border:1px solid var(--border);
+  font-family:var(--font);
+}
+.campick .mini-cam{
+  position:absolute; width:26px; height:34px; border-radius:6px;
+  background:linear-gradient(135deg,#E8B34B,#B97F1F); opacity:.35;
+  transition:all .15s ease;
+}
+.campick[data-corner="tl"] .mini-cam{ top:8px; left:8px; }
+.campick[data-corner="tr"] .mini-cam{ top:8px; right:8px; }
+.campick[data-corner="bl"] .mini-cam{ bottom:8px; left:8px; }
+.campick[data-corner="br"] .mini-cam{ bottom:8px; right:8px; }
+.campick.active{ border-color:var(--accent); }
+.campick.active .mini-cam{ opacity:1; box-shadow:0 0 12px rgba(232,179,75,.5); }
+.campick small{
+  position:absolute; bottom:8px; left:0; right:0; text-align:center;
+  font-size:11px; color:var(--muted); font-weight:600;
+}
+.start-live-btn{
+  margin:6px 18px 0; width:calc(100% - 36px); padding:17px; border:none;
+  border-radius:16px; cursor:pointer;
+  background:linear-gradient(135deg,#FF5147,#D92D20);
+  color:#fff; font-family:var(--font); font-size:16px; font-weight:800;
+  letter-spacing:.2px; box-shadow:0 10px 28px rgba(255,69,58,.35);
+  display:flex; align-items:center; justify-content:center; gap:10px;
+}
+.start-live-btn:active{ transform:scale(.98); }
+.mock-note{
+  margin:14px 18px 0; padding:12px 14px; border-radius:12px;
+  background:rgba(138,148,168,.08); border:1px dashed rgba(138,148,168,.35);
+  font-size:12px; color:var(--muted); line-height:1.55;
+}
+
+/* ---------- Community ---------- */
+.poll-card{
+  margin:0 18px 14px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius); padding:18px;
+}
+.poll-card h3{ font-size:15.5px; font-weight:700; letter-spacing:-.2px; }
+.poll-card .poll-sub{ font-size:12.5px; color:var(--muted); margin:4px 0 16px; }
+.poll-opt{ margin-bottom:14px; }
+.poll-btns{ display:flex; gap:10px; margin-bottom:8px; }
+.poll-vote{
+  flex:1; padding:12px; border-radius:12px; cursor:pointer;
+  font-family:var(--font); font-size:14px; font-weight:800;
+  border:1px solid var(--border); background:var(--bg-soft); color:var(--text);
+}
+.poll-vote.buy{ border-color:rgba(34,197,94,.5); color:var(--green); }
+.poll-vote.sell{ border-color:rgba(240,68,82,.5); color:var(--red); }
+.poll-vote:disabled{ opacity:.55; cursor:default; }
+.poll-bar{ height:10px; border-radius:6px; background:var(--bg-soft); overflow:hidden; }
+.poll-bar i{ display:block; height:100%; width:0; border-radius:6px; transition:width .8s cubic-bezier(.2,.8,.2,1); }
+.poll-bar.buy i{ background:linear-gradient(90deg,#16A34A,#22C55E); }
+.poll-bar.sell i{ background:linear-gradient(90deg,#D92D20,#F04452); }
+.poll-meta{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px; font-weight:600; }
+.post-card{
+  margin:0 18px 14px; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius); padding:16px;
+}
+.post-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.post-head .grow{ flex:1; }
+.post-head b{ font-size:14px; display:flex; align-items:center; gap:5px; }
+.post-head small{ font-size:11.5px; color:var(--muted); }
+.post-text{ font-size:13.5px; line-height:1.6; color:#D6DCE8; }
+.post-pair{
+  display:inline-block; margin-top:10px; font-size:11px; font-weight:800;
+  letter-spacing:.5px; color:var(--accent); background:var(--accent-soft);
+  padding:5px 10px; border-radius:8px;
+}
+.post-actions{ display:flex; gap:18px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft); }
+.post-actions button{
+  background:none; border:none; color:var(--muted); font-family:var(--font);
+  font-size:12.5px; font-weight:600; display:flex; align-items:center; gap:6px; cursor:pointer;
+}
+.post-actions button.liked{ color:var(--red); }
+
+/* ---------- Profile ---------- */
+.cover{
+  height:150px; margin:0; position:relative; flex:none;
+  background:
+    radial-gradient(300px 120px at 80% 20%, rgba(232,179,75,.25), transparent 60%),
+    radial-gradient(400px 160px at 10% 90%, rgba(34,197,94,.14), transparent 60%),
+    linear-gradient(160deg, #131B33, #080C18);
+  border-bottom:1px solid var(--border);
+  overflow:hidden;
+}
+.cover svg{ position:absolute; inset:0; width:100%; height:100%; opacity:.5; }
+.pf-body{ padding:0 18px; }
+.pf-top{ display:flex; align-items:flex-end; gap:14px; margin-top:-42px; }
+.pf-id{ flex:1; padding-top:44px; }
+.pf-name{ font-size:19px; font-weight:800; letter-spacing:-.3px; display:flex; align-items:center; gap:7px; }
+.pf-handle{ font-size:13px; color:var(--muted); margin-top:2px; }
+.pf-bio{ font-size:13px; color:#C6CDDB; line-height:1.55; margin:12px 0 4px; }
+.pf-stats{ display:flex; margin:14px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.pf-stat{ flex:1; text-align:center; padding:13px 4px; }
+.pf-stat + .pf-stat{ border-left:1px solid var(--border-soft); }
+.pf-stat b{ display:block; font-size:16px; letter-spacing:-.3px; }
+.pf-stat span{ font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+.pf-actions{ display:flex; gap:10px; margin-bottom:6px; }
+.btn-gold{
+  flex:1; padding:13px; border-radius:13px; cursor:pointer;
+  background:linear-gradient(135deg,#E8B34B,#C98F2B); border:none;
+  color:#1A1206; font-family:var(--font); font-size:14px; font-weight:800;
+}
+.btn-ghost{
+  flex:1; padding:13px; border-radius:13px; cursor:pointer;
+  background:transparent; border:1px solid var(--border); color:var(--text);
+  font-family:var(--font); font-size:14px; font-weight:700;
+}
+.pf-tabs{ display:flex; gap:6px; margin:14px 0 4px; }
+.hist-row{
+  display:flex; align-items:center; gap:12px; padding:13px 2px;
+  border-bottom:1px solid var(--border-soft);
+}
+.hist-row .grow{ flex:1; }
+.hist-row b{ font-size:13.5px; display:block; }
+.hist-row small{ font-size:11.5px; color:var(--muted); }
+
+/* ---------- Brokers ---------- */
+.broker-row{
+  display:flex; align-items:center; gap:13px; margin:0 18px 12px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:14px 16px;
+}
+.broker-ic{
+  width:46px; height:46px; border-radius:13px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:17px; color:#fff;
+}
+.broker-row .grow{ flex:1; }
+.broker-row b{ font-size:14.5px; display:block; }
+.broker-row small{ font-size:12px; color:var(--muted); }
+.connect-btn{
+  padding:9px 18px; border-radius:11px; border:none; cursor:pointer;
+  background:var(--accent-soft); color:var(--accent);
+  font-family:var(--font); font-size:13px; font-weight:800;
+  border:1px solid rgba(232,179,75,.4); flex:none;
+}
+.connect-btn.connected{ background:rgba(34,197,94,.13); color:var(--green); border-color:rgba(34,197,94,.4); }
+.add-broker{
+  margin:0 18px; border:1.5px dashed rgba(255,255,255,.22);
+  border-radius:var(--radius); padding:18px; text-align:center;
+  color:var(--muted); font-size:13.5px; font-weight:700; cursor:pointer;
+  background:transparent; width:calc(100% - 36px); font-family:var(--font);
+}
+.add-broker:active{ transform:scale(.98); }
+
+/* ---------- Tab bar ---------- */
+.tabbar{
+  position:absolute; left:0; right:0; bottom:0; z-index:50;
+  height:calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding:10px 8px calc(10px + env(safe-area-inset-bottom));
+  display:flex; align-items:stretch;
+  background:rgba(7,11,21,.86); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+}
+.tab{
+  flex:1; background:none; border:none; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  color:var(--faint); font-family:var(--font); font-size:10.5px; font-weight:600;
+  letter-spacing:.2px;
+}
+.tab svg{ width:23px; height:23px; }
+.tab.active{ color:var(--accent); }
+.tab-fab-wrap{ flex:1; display:flex; justify-content:center; align-items:flex-start; }
+.tab-fab{
+  width:58px; height:58px; border-radius:50%; margin-top:-26px;
+  border:4px solid #070B15; cursor:pointer;
+  background:linear-gradient(135deg,#FF5147,#D92D20); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 10px 26px rgba(255,69,58,.45);
+  font-family:var(--font);
+}
+.tab-fab:active{ transform:scale(.94); }
+.tab-fab-label{ font-size:10.5px; font-weight:600; color:var(--faint); margin-top:2px; }
+.tab-fab-wrap.active .tab-fab-label{ color:var(--accent); }
+
+/* ---------- Toast ---------- */
+.toast{
+  position:absolute; left:50%; bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 18px);
+  transform:translateX(-50%) translateY(20px); z-index:100;
+  background:#1A2340; border:1px solid var(--border); color:var(--text);
+  font-size:13px; font-weight:600; padding:12px 18px; border-radius:14px;
+  opacity:0; pointer-events:none; transition:all .25s ease;
+  max-width:86%; text-align:center; box-shadow:0 12px 32px rgba(0,0,0,.5);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ---------- Bottom sheet ---------- */
+.sheet-backdrop{
+  position:absolute; inset:0; z-index:90; background:rgba(0,0,0,.6);
+  opacity:0; pointer-events:none; transition:opacity .25s ease;
+}
+.sheet-backdrop.show{ opacity:1; pointer-events:auto; }
+.sheet{
+  position:absolute; left:0; right:0; bottom:0; z-index:95;
+  background:var(--surface-2); border:1px solid var(--border);
+  border-bottom:none; border-radius:24px 24px 0 0;
+  padding:12px 20px calc(22px + env(safe-area-inset-bottom));
+  transform:translateY(105%); transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  max-height:70%; overflow-y:auto;
+}
+.sheet.show{ transform:translateY(0); }
+.sheet-grab{ width:42px; height:5px; border-radius:3px; background:#2A3350; margin:0 auto 14px; }
+.sheet h3{ font-size:16px; font-weight:800; margin-bottom:8px; letter-spacing:-.2px; }
+.sheet p{ font-size:13.5px; color:var(--muted); line-height:1.6; margin-bottom:14px; }
+.sheet .mock-tag{
+  display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.8px;
+  color:var(--accent); background:var(--accent-soft); border:1px solid rgba(232,179,75,.4);
+  padding:4px 10px; border-radius:7px; margin-bottom:12px; text-transform:uppercase;
+}
+.sheet-actions{ display:flex; gap:10px; }
+
+/* Sub-screens (e.g. brokers) slide over with their own header */
+.subscreen{ background:linear-gradient(180deg,#070B15,#05080F); z-index:40; }
+.sub-header{
+  display:flex; align-items:center; gap:12px;
+  padding:10px 14px 12px; position:sticky; top:0; z-index:20;
+  background:linear-gradient(180deg,#070B15 75%, transparent);
+}
+
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- MOCK: fake OS status bar for native app feel -->
+  <div class="statusbar">
+    <span id="sbTime">9:41</span>
+    <span class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="#fff"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="4.5" width="3" height="6.5" rx="1"/><rect x="9" y="2" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1" opacity=".4"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#fff" opacity=".5"/><rect x="2.5" y="2.5" width="14" height="7" rx="2" fill="#fff"/><rect x="23" y="4" width="2" height="4" rx="1" fill="#fff" opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <!-- ==================== HOME ==================== -->
+  <section class="screen scroll active" id="screen-home">
+    <div class="app-header">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="3" y="6" width="3" height="7" rx="1" fill="#1A1206"/>
+            <rect x="4.2" y="3" width=".7" height="13" fill="#1A1206"/>
+            <rect x="8" y="3" width="3" height="7" rx="1" fill="#1A1206"/>
+            <rect x="9.2" y="1" width=".7" height="12" fill="#1A1206"/>
+            <rect x="13" y="8" width="3" height="6" rx="1" fill="#1A1206"/>
+            <rect x="14.2" y="5" width=".7" height="12" fill="#1A1206"/>
+          </svg>
+        </div>
+        <div class="brand-name">Trading <span>Community</span></div>
+      </div>
+      <button class="icon-btn" data-toast="Notifications are mocked in this prototype.">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span class="dot"></span>
+      </button>
+    </div>
+
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" placeholder="Search traders, pairs…" data-toast="Search is mocked in this prototype.">
+    </div>
+
+    <div class="section-label"><h2>Live now</h2><a href="#" data-goto="live">View all</a></div>
+    <!-- MOCK: rail rendered from MOCK_CREATORS in app.js -->
+    <div class="rail" id="liveRail"></div>
+
+    <div class="section-label"><h2>Top traders</h2><a href="#" data-toast="Leaderboard is mocked in this prototype.">Leaderboard</a></div>
+    <!-- MOCK: feed rendered from MOCK_CREATORS in app.js -->
+    <div id="creatorFeed"></div>
+  </section>
+
+  <!-- ==================== LIVE ROOM ==================== -->
+  <section class="screen" id="screen-live">
+    <div class="live-header">
+      <button class="icon-btn" id="liveBack">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="live-id">
+        <div class="avatar sm" id="liveAvatar" style="--g1:#E8B34B;--g2:#8A5A17">DR</div>
+        <div>
+          <div class="live-name"><span id="liveName">Daud</span>
+            <span class="verified"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 2.4 3.4-.5.9 3.3 3 1.7-1.5 3.1 1.5 3.1-3 1.7-.9 3.3-3.4-.5L12 22l-2.4-2.4-3.4.5-.9-3.3-3-1.7L3.8 12 2.3 8.9l3-1.7.9-3.3 3.4.5z"/><path d="M10.6 14.6l-2.1-2.1-1.4 1.4 3.5 3.5 7.1-7.1-1.4-1.4z" fill="#05080F"/></svg></span>
+          </div>
+          <div class="live-sub" id="livePair">XAUUSD · London session</div>
+        </div>
+      </div>
+      <span class="live-badge"><span class="pulse"></span>LIVE</span>
+      <div class="viewers-pill">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span id="liveViewers">2,418</span>
+      </div>
+    </div>
+
+    <!-- REAL (when online): TradingView Advanced Real-Time Chart widget.
+         MOCK fallback message is shown if the widget cannot load. -->
+    <div class="chart-wrap" id="chartWrap">
+      <div class="tv tradingview-widget-container" style="height:100%;width:100%">
+        <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+        {
+          "autosize": true,
+          "symbol": "OANDA:XAUUSD",
+          "interval": "15",
+          "timezone": "Asia/Dubai",
+          "theme": "dark",
+          "style": "1",
+          "locale": "en",
+          "backgroundColor": "rgba(7, 11, 21, 1)",
+          "gridColor": "rgba(255, 255, 255, 0.04)",
+          "hide_top_toolbar": false,
+          "hide_legend": false,
+          "allow_symbol_change": true,
+          "save_image": false,
+          "calendar": false,
+          "support_host": "https://www.tradingview.com"
+        }
+        </script>
+      </div>
+      <div class="chart-fallback" id="chartFallback">
+        <div>Chart could not load (needs internet for the TradingView widget).<br>In the prototype this area hosts the advanced XAUUSD chart.</div>
+      </div>
+
+      <!-- MOCK: face-cam overlay placeholder. Drag to move, drag corner handle to resize.
+           Position persists via localStorage. No real camera in prototype. -->
+      <div class="facecam c-br" id="facecam">
+        <div class="cam-tag"><span class="pulse"></span>YOU</div>
+        <div class="cam-body">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          <div class="cam-label">Face cam</div>
+          <div class="cam-hint">drag to move</div>
+        </div>
+        <div class="cam-handle" id="camHandle">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 1L1 11M11 5v6H5"/></svg>
+        </div>
+      </div>
+
+      <button class="like-fab" id="likeBtn" aria-label="Like">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        <span id="likeCount">8.2k</span>
+      </button>
+    </div>
+
+    <!-- MOCK: copy-trading toggle is UI only in the prototype -->
+    <div class="copy-bar">
+      <div class="cb-text"><b>Copy this trader's trades</b><small>Mirror entries &amp; exits automatically · mock</small></div>
+      <label class="switch"><input type="checkbox" id="copyToggle"><span class="sl"></span></label>
+    </div>
+
+    <div class="live-panel">
+      <div class="lp-tabs">
+        <button class="lp-tab active" data-panel="trades">Live trades</button>
+        <button class="lp-tab" data-panel="chat">Chat</button>
+      </div>
+      <div class="lp-body">
+        <!-- MOCK: simulated live trade feed -->
+        <div class="lp-pane active" id="panel-trades"><div id="tradeFeed"></div></div>
+        <div class="lp-pane" id="panel-chat">
+          <div class="chat-feed" id="chatFeed"></div>
+        </div>
+      </div>
+      <div class="chat-input-row" id="chatInputRow" style="display:none">
+        <input type="text" id="chatInput" placeholder="Say something…" maxlength="140">
+        <button class="send-btn" id="chatSend">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== GO LIVE ==================== -->
+  <section class="screen scroll" id="screen-golive">
+    <div class="app-header">
+      <div class="screen-title">Go Live</div>
+      <button class="icon-btn" data-toast="Stream settings are mocked in this prototype.">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+
+    <div class="form-card">
+      <h3>Stream title</h3>
+      <input class="text-input" id="glTitle" value="London session — scalping Gold live" maxlength="80">
+    </div>
+
+    <div class="form-card">
+      <h3>Trading pair</h3>
+      <p>Pick what you'll trade on this stream.</p>
+      <div class="chip-row" id="glPairs">
+        <button class="chip active">XAUUSD</button>
+        <button class="chip">BTCUSD</button>
+        <button class="chip">EURUSD</button>
+        <button class="chip">GBPUSD</button>
+        <button class="chip">US30</button>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h3>Multistream destinations</h3>
+      <p>Go live here and automatically on every connected platform. <b style="color:var(--accent)">Mock toggles.</b></p>
+      <div class="dest-row">
+        <div class="dest-ic" style="background:linear-gradient(135deg,#E8B34B,#8A5A17)">TC</div>
+        <div class="grow"><b>Trading Community</b><small>Always on</small></div>
+        <label class="switch"><input type="checkbox" checked disabled><span class="sl"></span></label>
+      </div>
+      <div class="dest-row">
+        <div class="dest-ic" style="background:#FF0000">YT</div>
+        <div class="grow"><b>YouTube</b><small>RTMP multistream</small></div>
+        <label class="switch"><input type="checkbox" class="dest-toggle" checked><span class="sl"></span></label>
+      </div>
+      <div class="dest-row">
+        <div class="dest-ic" style="background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)">IG</div>
+        <div class="grow"><b>Instagram</b><small>Live Producer</small></div>
+        <label class="switch"><input type="checkbox" class="dest-toggle" checked><span class="sl"></span></label>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h3>Face-cam position</h3>
+      <p>Choose where your camera sits on the stream. You can also drag it live in the room.</p>
+      <div class="cam-picker" id="camPicker">
+        <button class="campick" data-corner="tl"><span class="mini-cam"></span><small>Top left</small></button>
+        <button class="campick" data-corner="tr"><span class="mini-cam"></span><small>Top right</small></button>
+        <button class="campick" data-corner="bl"><span class="mini-cam"></span><small>Bottom left</small></button>
+        <button class="campick active" data-corner="br"><span class="mini-cam"></span><small>Bottom right</small></button>
+      </div>
+    </div>
+
+    <button class="start-live-btn" id="startLiveBtn">
+      <span class="pulse" style="width:10px;height:10px"></span>
+      Start Live
+    </button>
+
+    <div class="mock-note"><b style="color:var(--text)">Prototype note:</b> no real streaming happens. Tapping Start Live opens the live room in "You are live" mock mode.</div>
+  </section>
+
+  <!-- ==================== COMMUNITY ==================== -->
+  <section class="screen scroll" id="screen-community">
+    <div class="app-header">
+      <div class="screen-title">Community</div>
+      <button class="icon-btn" data-toast="Posting is mocked in this prototype.">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+
+    <!-- MOCK: prediction poll, votes stored in memory only -->
+    <div class="poll-card">
+      <h3>NFP Friday — where does Gold go?</h3>
+      <div class="poll-sub">Non-Farm Payrolls drop in 2 days. Cast your bias.</div>
+      <div class="poll-opt">
+        <div class="poll-btns">
+          <button class="poll-vote buy" id="pollBuy">▲ Buy</button>
+          <button class="poll-vote sell" id="pollSell">▼ Sell</button>
+        </div>
+        <div class="poll-bar buy"><i id="buyBar"></i></div>
+        <div class="poll-meta"><span id="buyPct">—</span><span>Buy bias</span></div>
+      </div>
+      <div class="poll-opt">
+        <div class="poll-bar sell"><i id="sellBar"></i></div>
+        <div class="poll-meta"><span id="sellPct">—</span><span>Sell bias</span></div>
+      </div>
+      <div class="poll-meta"><span id="pollVotes">10,057 votes</span><span id="pollMsg">Tap to vote</span></div>
+    </div>
+
+    <div class="section-label"><h2>Latest analysis</h2><a href="#" data-toast="Filters are mocked in this prototype.">Filters</a></div>
+    <!-- MOCK: analysis posts rendered from MOCK_POSTS in app.js -->
+    <div id="analysisList"></div>
+  </section>
+
+  <!-- ==================== PROFILE ==================== -->
+  <section class="screen scroll" id="screen-profile">
+    <div class="cover">
+      <svg viewBox="0 0 400 150" preserveAspectRatio="none">
+        <polyline points="0,120 40,110 70,118 100,95 130,105 160,80 190,92 220,70 250,82 280,55 310,68 340,45 370,58 400,35"
+          fill="none" stroke="#E8B34B" stroke-width="2.5" opacity=".8"/>
+        <polygon points="0,120 40,110 70,118 100,95 130,105 160,80 190,92 220,70 250,82 280,55 310,68 340,45 370,58 400,35 400,150 0,150"
+          fill="url(#cg)" opacity=".25"/>
+        <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#E8B34B"/><stop offset="1" stop-color="#E8B34B" stop-opacity="0"/>
+        </linearGradient></defs>
+      </svg>
+    </div>
+    <div class="pf-body">
+      <div class="pf-top">
+        <div class="avatar lg" style="--g1:#E8B34B;--g2:#8A5A17">DR</div>
+        <div class="pf-id">
+          <div class="pf-name">Daud
+            <span class="verified"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 2.4 3.4-.5.9 3.3 3 1.7-1.5 3.1 1.5 3.1-3 1.7-.9 3.3-3.4-.5L12 22l-2.4-2.4-3.4.5-.9-3.3-3-1.7L3.8 12 2.3 8.9l3-1.7.9-3.3 3.4.5z"/><path d="M10.6 14.6l-2.1-2.1-1.4 1.4 3.5 3.5 7.1-7.1-1.4-1.4z" fill="#05080F"/></svg></span>
+          </div>
+          <div class="pf-handle">@daudtradefx · Dubai, UAE</div>
+        </div>
+      </div>
+      <p class="pf-bio">Gold scalper. Live every London &amp; New York session. Every trade on stream — wins and losses. No signals sold, ever.</p>
+
+      <div class="pf-stats">
+        <div class="pf-stat"><b class="pos">67%</b><span>Win rate</span></div>
+        <div class="pf-stat"><b>312</b><span>Live trades</span></div>
+        <div class="pf-stat"><b>48.2K</b><span>Followers</span></div>
+      </div>
+
+      <div class="pf-actions">
+        <button class="btn-gold" id="connectBrokerBtn">Connect broker</button>
+        <button class="btn-ghost" data-toast="Sharing is mocked in this prototype.">Share</button>
+      </div>
+
+      <div class="pf-tabs">
+        <button class="lp-tab pf-tab active" data-ppanel="ptrades">Trade history</button>
+        <button class="lp-tab pf-tab" data-ppanel="panalysis">Analysis</button>
+      </div>
+      <!-- MOCK: trade history rendered from MOCK_HISTORY in app.js -->
+      <div class="lp-pane active" id="ptrades"><div id="tradeHistory"></div></div>
+      <div class="lp-pane" id="panalysis"><div id="profileAnalysis"></div></div>
+    </div>
+  </section>
+
+  <!-- ==================== BROKERS (sub-screen) ==================== -->
+  <section class="screen scroll subscreen" id="screen-brokers">
+    <div class="sub-header">
+      <button class="icon-btn" id="brokerBack">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="screen-title">Connect broker</div>
+    </div>
+    <div class="mock-note" style="margin-top:2px"><b style="color:var(--text)">UI mock only.</b> No real authentication happens in this prototype.</div>
+    <!-- MOCK: broker list rendered from MOCK_BROKERS in app.js -->
+    <div id="brokerList" style="margin-top:14px"></div>
+    <button class="add-broker" id="addBrokerRow">+ Add new broker</button>
+  </section>
+
+  <!-- ==================== TAB BAR ==================== -->
+  <nav class="tabbar">
+    <button class="tab active" data-screen="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+      Home
+    </button>
+    <button class="tab" data-screen="live">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="13" height="12" rx="2"/><path d="M15 10.5l7-3.5v10l-7-3.5"/></svg>
+      Live
+    </button>
+    <div class="tab-fab-wrap" id="fabWrap">
+      <button class="tab-fab" data-screen="golive" aria-label="Go live">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="#fff" stroke-width="2" opacity=".55"/></svg>
+      </button>
+    </div>
+    <button class="tab" data-screen="community">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Community
+    </button>
+    <button class="tab" data-screen="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profile
+    </button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-grab"></div>
+    <div class="mock-tag">UI mock</div>
+    <h3 id="sheetTitle">Title</h3>
+    <p id="sheetBody">Body</p>
+    <div id="sheetExtra"></div>
+    <div class="sheet-actions">
+      <button class="btn-ghost" id="sheetClose">Close</button>
+      <button class="btn-gold" id="sheetPrimary">Got it</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   Trading Community — static prototype logic
+   EVERYTHING below is mock data / simulated behavior.
+   No real broker, streaming, or auth integrations exist here.
+   ============================================================ */
+(function(){
+"use strict";
+
+/* ---------------- MOCK DATA ---------------- */
+const MOCK_CREATORS = [
+  { id:1, name:"Daud",      handle:"@daudtradefx", pair:"XAUUSD", live:true,  viewers:"2.4k", pl:"+18.2%", win:"67%", trades:312, g1:"#E8B34B", g2:"#8A5A17", initials:"DR" },
+  { id:2, name:"Arjun Rao", handle:"@arjunfx",     pair:"BTCUSD", live:true,  viewers:"1.1k", pl:"+24.7%", win:"71%", trades:486, g1:"#5B8DEF", g2:"#2B4A8A", initials:"AR" },
+  { id:3, name:"Sara Malik",handle:"@saramalik",   pair:"EURUSD", live:true,  viewers:"860",  pl:"+9.4%",  win:"63%", trades:198, g1:"#B678F0", g2:"#5E2B8A", initials:"SM" },
+  { id:4, name:"Vikram",    handle:"@viktrade",    pair:"XAUUSD", live:false, viewers:"",     pl:"+31.5%", win:"69%", trades:521, g1:"#4ADE80", g2:"#166534", initials:"VK" },
+  { id:5, name:"Layla H.",  handle:"@laylahfx",    pair:"GBPUSD", live:false, viewers:"",     pl:"+12.8%", win:"65%", trades:264, g1:"#F472B6", g2:"#831843", initials:"LH" },
+];
+
+const MOCK_CHAT = [
+  ["goldrush_99","That entry was clean 🔥"],
+  ["fxnoob","how do you set your stop loss?"],
+  ["DubaiTrader","buy the dip let's gooo"],
+  ["sniperfx","TP hit already?? insane"],
+  ["Ayesha","watching from Abu Dhabi 👋"],
+  ["pipmaster","this is why live > signals"],
+  ["omar_trades","spread widening a bit careful"],
+  ["NFP_queen","holding my buy from 2648"],
+  ["chartwizard","double bottom on M5 forming"],
+  ["riyadhfx","copied, let's eat 📈"],
+  ["quietstorm","risk 1% only guys"],
+  ["trendrider","that wick rejection though"],
+];
+
+const MOCK_POSTS = [
+  { name:"Daud", handle:"@daudtradefx", time:"2h", pair:"XAUUSD", g1:"#E8B34B", g2:"#8A5A17", ini:"DR",
+    text:"Gold holding above 2,648 into NFP. My base case: a hot print flushes weak longs first, then real buyers step in. I will NOT chase the first spike — waiting for the flush, then looking for longs on the live stream." },
+  { name:"Arjun Rao", handle:"@arjunfx", time:"5h", pair:"BTCUSD", g1:"#5B8DEF", g2:"#2B4A8A", ini:"AR",
+    text:"BTC funding rates are flat while price grinds up — that's healthy. Break and hold above the range high and I start scaling into momentum longs. Invalidation is a daily close back inside." },
+  { name:"Sara Malik", handle:"@saramalik", time:"8h", pair:"EURUSD", g1:"#B678F0", g2:"#5E2B8A", ini:"SM",
+    text:"ECB speakers all week and nobody moved the needle. EURUSD is a range until NFP reprices the dollar. Playing edges only, 0.5% risk per idea." },
+];
+
+const MOCK_HISTORY = [
+  { pair:"XAUUSD", dir:"BUY",  entry:"2,641.20", exit:"2,653.80", pl:"+$126.00", t:"Today · 14:32" },
+  { pair:"XAUUSD", dir:"SELL", entry:"2,659.40", exit:"2,651.10", pl:"+$83.00",  t:"Today · 11:05" },
+  { pair:"BTCUSD", dir:"BUY",  entry:"97,410",   exit:"98,220",   pl:"+$162.00", t:"Yesterday" },
+  { pair:"XAUUSD", dir:"BUY",  entry:"2,647.90", exit:"2,644.30", pl:"−$36.00",  t:"Yesterday", loss:true },
+  { pair:"EURUSD", dir:"SELL", entry:"1.0842",   exit:"1.0801",   pl:"+$41.00",  t:"2 days ago" },
+];
+
+const MOCK_BROKERS = [
+  { name:"Exness",    sub:"MetaTrader 4 · MetaTrader 5",       c1:"#FFD200", c2:"#B78A00", ini:"EX" },
+  { name:"Vantage",   sub:"MetaTrader 4 · MetaTrader 5",       c1:"#E31837", c2:"#7A0E1D", ini:"VA" },
+  { name:"IC Markets",sub:"MetaTrader 4 · cTrader",            c1:"#00A651", c2:"#005C2E", ini:"IC" },
+  { name:"XM",        sub:"MetaTrader 4 · MetaTrader 5",       c1:"#D22630", c2:"#6E1219", ini:"XM" },
+  { name:"OctaFX",    sub:"MetaTrader 4 · MetaTrader 5",       c1:"#1E88E5", c2:"#0D3C66", ini:"OC" },
+  { name:"FBS",       sub:"MetaTrader 4 · MetaTrader 5 · FBS app", c1:"#7B1FA2", c2:"#3E0F52", ini:"FB" },
+];
+
+/* ---------------- helpers ---------------- */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let toastTimer;
+function toast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 2400);
+}
+
+function openSheet(title, body, extraHTML){
+  $("#sheetTitle").textContent = title;
+  $("#sheetBody").textContent = body;
+  $("#sheetExtra").innerHTML = extraHTML || "";
+  $("#sheetBackdrop").classList.add("show");
+  $("#sheet").classList.add("show");
+}
+function closeSheet(){
+  $("#sheetBackdrop").classList.remove("show");
+  $("#sheet").classList.remove("show");
+}
+$("#sheetClose").addEventListener("click", closeSheet);
+$("#sheetBackdrop").addEventListener("click", closeSheet);
+$("#sheetPrimary").addEventListener("click", closeSheet);
+
+const verifiedBadge = '<span class="verified"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 2.4 3.4-.5.9 3.3 3 1.7-1.5 3.1 1.5 3.1-3 1.7-.9 3.3-3.4-.5L12 22l-2.4-2.4-3.4.5-.9-3.3-3-1.7L3.8 12 2.3 8.9l3-1.7.9-3.3 3.4.5z"/><path d="M10.6 14.6l-2.1-2.1-1.4 1.4 3.5 3.5 7.1-7.1-1.4-1.4z" fill="#05080F"/></svg></span>';
+
+/* ---------------- status bar clock (mock) ---------------- */
+function tickClock(){
+  const d = new Date();
+  let h = d.getHours(), m = String(d.getMinutes()).padStart(2,"0");
+  const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+  $("#sbTime").textContent = h + ":" + m + " " + ap;
+}
+tickClock(); setInterval(tickClock, 30000);
+
+/* ---------------- navigation ---------------- */
+const TABS = ["home","live","golive","community","profile"];
+let currentScreen = "home";
+let liveTimers = [];
+
+function showScreen(name){
+  currentScreen = name;
+  $$(".screen").forEach(s => s.classList.remove("active"));
+  const el = $("#screen-" + name);
+  if(el) el.classList.add("active");
+  $$(".tab[data-screen]").forEach(t => t.classList.toggle("active", t.dataset.screen === name));
+  $("#fabWrap").classList.toggle("active", name === "golive");
+  if(name === "live") startLiveSim(); else stopLiveSim();
+  if(name === "live") $("#app").scrollTop = 0;
+  const scr = $("#screen-" + name);
+  if(scr && scr.classList.contains("scroll")) scr.scrollTop = 0;
+}
+$$(".tab[data-screen], .tab-fab[data-screen]").forEach(b =>
+  b.addEventListener("click", () => showScreen(b.dataset.screen))
+);
+$$("[data-goto]").forEach(a => a.addEventListener("click", e => {
+  e.preventDefault(); showScreen(a.dataset.goto);
+}));
+$$("[data-toast]").forEach(el => el.addEventListener("click", e => {
+  if(el.tagName === "A") e.preventDefault();
+  toast(el.dataset.toast);
+}));
+$("#liveBack").addEventListener("click", () => showScreen("home"));
+$("#brokerBack").addEventListener("click", () => showScreen("profile"));
+
+/* ---------------- HOME: rail + feed (mock) ---------------- */
+function renderHome(){
+  const rail = $("#liveRail");
+  rail.innerHTML = MOCK_CREATORS.filter(c => c.live).map(c => `
+    <div class="rail-card" data-open-live="${c.id}">
+      <div class="avatar" style="--g1:${c.g1};--g2:${c.g2}">${c.initials}</div>
+      <div class="rail-name">${esc(c.name)}</div>
+      <div class="rail-pair">${c.pair}</div>
+      <div class="rail-viewers"><span class="pulse"></span>${c.viewers}</div>
+    </div>`).join("");
+
+  const feed = $("#creatorFeed");
+  feed.innerHTML = MOCK_CREATORS.map(c => `
+    <div class="creator-card">
+      <div class="cc-top">
+        <div class="avatar sm" style="--g1:${c.g1};--g2:${c.g2}">${c.initials}</div>
+        <div class="cc-id">
+          <div class="cc-name">${esc(c.name)} ${verifiedBadge}</div>
+          <div class="cc-sub">${esc(c.handle)} · ${c.pair}</div>
+        </div>
+        <button class="follow-btn" data-follow>Follow</button>
+      </div>
+      <div class="cc-live-row">
+        ${c.live ? '<span class="live-badge"><span class="pulse"></span>LIVE</span><span class="cc-pair">' + c.viewers + ' watching</span>'
+                 : '<span class="cc-pair">Last live 3h ago</span>'}
+      </div>
+      <div class="cc-stats">
+        <div class="cc-stat"><b class="pos">${c.pl}</b><span>P/L 30d</span></div>
+        <div class="cc-stat"><b>${c.win}</b><span>Win rate</span></div>
+        <div class="cc-stat"><b>${c.trades}</b><span>Live trades</span></div>
+      </div>
+      ${c.live ? `<button class="watch-btn" data-open-live="${c.id}">Watch live</button>` : ""}
+    </div>`).join("");
+
+  $$("[data-open-live]", feed).concat($$("[data-open-live]", rail)).forEach(b =>
+    b.addEventListener("click", () => openLiveRoom(Number(b.dataset.openLive)))
+  );
+  $$("[data-follow]").forEach(b => b.addEventListener("click", () => {
+    b.classList.toggle("following");
+    b.textContent = b.classList.contains("following") ? "Following" : "Follow";
+  }));
+}
+
+function openLiveRoom(id){
+  const c = MOCK_CREATORS.find(x => x.id === id) || MOCK_CREATORS[0];
+  $("#liveAvatar").textContent = c.initials;
+  $("#liveAvatar").style.setProperty("--g1", c.g1);
+  $("#liveAvatar").style.setProperty("--g2", c.g2);
+  $("#liveName").textContent = c.name;
+  $("#livePair").textContent = c.pair + " · live session";
+  $("#liveViewers").textContent = c.viewers === "" ? "1,204" : c.viewers.replace("k",",") .replace("2,","2,").replace("1,","1,") + "";
+  showScreen("live");
+}
+
+/* ---------------- LIVE ROOM simulation (mock) ---------------- */
+let basePrice = 2652.40;
+function fmt(n){ return n.toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function pushTrade(){
+  const feed = $("#tradeFeed");
+  const isClose = Math.random() < 0.3;
+  const dir = Math.random() < 0.55 ? "BUY" : "SELL";
+  basePrice += (Math.random() - 0.5) * 3.2;
+  const price = fmt(basePrice);
+  let html;
+  if(isClose){
+    const win = Math.random() < 0.65;
+    const amt = "$" + (20 + Math.random()*140).toFixed(2);
+    html = `<div class="trade-row"><span class="dir close">CLOSE</span>
+      <div class="trade-info"><b>XAUUSD ${dir} closed @ ${price}</b><small>just now · 0.50 lots</small></div>
+      <span class="trade-pl ${win?"pos":"neg"}">${win?"+":"−"}${amt.slice(1)}</span></div>`;
+  } else {
+    html = `<div class="trade-row"><span class="dir ${dir.toLowerCase()}">${dir}</span>
+      <div class="trade-info"><b>XAUUSD ${dir} @ ${price}</b><small>just now · 0.50 lots</small></div>
+      <span class="trade-pl" style="color:var(--muted)">open</span></div>`;
+  }
+  feed.insertAdjacentHTML("afterbegin", html);
+  while(feed.children.length > 18) feed.lastElementChild.remove();
+}
+
+function pushChat(){
+  const feed = $("#chatFeed");
+  const [u, m] = MOCK_CHAT[Math.floor(Math.random()*MOCK_CHAT.length)];
+  feed.insertAdjacentHTML("beforeend",
+    `<div class="chat-msg"><b>${esc(u)}</b> <span class="cm-text">${esc(m)}</span></div>`);
+  while(feed.children.length > 30) feed.firstElementChild.remove();
+  const pane = $("#panel-chat");
+  if(pane.classList.contains("active")){
+    const body = pane.closest(".lp-body");
+    body.scrollTop = body.scrollHeight;
+  }
+}
+
+function tickViewers(){
+  const el = $("#liveViewers");
+  const n = parseInt(el.textContent.replace(/[^0-9]/g,"")) || 2400;
+  el.textContent = (n + Math.floor(Math.random()*14 - 5)).toLocaleString();
+}
+
+function startLiveSim(){
+  stopLiveSim();
+  if(!$("#tradeFeed").children.length){ for(let i=0;i<5;i++) pushTrade(); }
+  if(!$("#chatFeed").children.length){ for(let i=0;i<8;i++) pushChat(); }
+  liveTimers.push(setInterval(pushTrade, 7000));
+  liveTimers.push(setInterval(pushChat, 4200));
+  liveTimers.push(setInterval(tickViewers, 5000));
+}
+function stopLiveSim(){ liveTimers.forEach(clearInterval); liveTimers = []; }
+
+/* live panel tabs */
+$$(".lp-tab[data-panel]").forEach(t => t.addEventListener("click", () => {
+  $$(".lp-tab[data-panel]").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  $$("#screen-live .lp-pane").forEach(p => p.classList.remove("active"));
+  $("#panel-" + t.dataset.panel).classList.add("active");
+  const isChat = t.dataset.panel === "chat";
+  $("#chatInputRow").style.display = isChat ? "flex" : "none";
+}));
+
+/* like button (mock) */
+let likes = 8200, liked = false;
+$("#likeBtn").addEventListener("click", function(){
+  liked = !liked; likes += liked ? 1 : -1;
+  this.classList.toggle("liked", liked);
+  this.classList.remove("pop"); void this.offsetWidth; this.classList.add("pop");
+  $("#likeCount").textContent = (likes/1000).toFixed(1) + "k";
+});
+
+/* copy trades toggle (mock) */
+$("#copyToggle").addEventListener("change", function(){
+  toast(this.checked
+    ? "Mock: copy-trading ON — no real orders are placed."
+    : "Mock: copy-trading OFF.");
+});
+
+/* chat send (mock, local only) */
+function sendChat(){
+  const inp = $("#chatInput"), v = inp.value.trim();
+  if(!v) return;
+  $("#chatFeed").insertAdjacentHTML("beforeend",
+    `<div class="chat-msg"><b style="color:#fff">you</b> <span class="cm-text">${esc(v)}</span></div>`);
+  inp.value = "";
+  const body = $("#panel-chat").closest(".lp-body");
+  body.scrollTop = body.scrollHeight;
+}
+$("#chatSend").addEventListener("click", sendChat);
+$("#chatInput").addEventListener("keydown", e => { if(e.key === "Enter") sendChat(); });
+
+/* TradingView fallback: if the widget iframe never appears, show mock notice */
+setTimeout(() => {
+  if(!$("#chartWrap").querySelector("iframe")) $("#chartFallback").classList.add("show");
+}, 8000);
+
+/* ---------------- face-cam: drag + resize + persist (mock placeholder) ---------------- */
+const cam = $("#facecam"), wrap = $("#chartWrap");
+const CORNERS = ["tl","tr","bl","br"];
+function setCorner(c){
+  cam.classList.remove("free", ...CORNERS.map(x => "c-"+x));
+  cam.classList.add("c-" + c);
+  cam.style.left = cam.style.top = cam.style.right = cam.style.bottom = "";
+  saveCam({ corner:c });
+}
+function saveCam(patch){
+  const cur = loadCam();
+  localStorage.setItem("tc_cam", JSON.stringify(Object.assign(cur, patch)));
+}
+function loadCam(){
+  try { return JSON.parse(localStorage.getItem("tc_cam")) || { corner:"br", w:112, h:150 }; }
+  catch(e){ return { corner:"br", w:112, h:150 }; }
+}
+(function initCam(){
+  const s = loadCam();
+  cam.style.width = s.w + "px"; cam.style.height = s.h + "px";
+  setCorner(CORNERS.includes(s.corner) ? s.corner : "br");
+})();
+
+let dragState = null;
+cam.addEventListener("pointerdown", e => {
+  if(e.target.closest("#camHandle")) return;           // resize handled separately
+  e.preventDefault();
+  const wr = wrap.getBoundingClientRect(), cr = cam.getBoundingClientRect();
+  cam.classList.remove(...CORNERS.map(x => "c-"+x));
+  cam.classList.add("free");
+  cam.style.left = (cr.left - wr.left) + "px";
+  cam.style.top  = (cr.top  - wr.top)  + "px";
+  cam.style.right = cam.style.bottom = "auto";
+  dragState = {
+    dx: e.clientX - cr.left, dy: e.clientY - cr.top,
+    wrapRect: wr, w: cr.width, h: cr.height
+  };
+  cam.setPointerCapture(e.pointerId);
+});
+cam.addEventListener("pointermove", e => {
+  if(!dragState || dragState.resize) return;
+  const wr = wrap.getBoundingClientRect();
+  let x = e.clientX - wr.left - dragState.dx;
+  let y = e.clientY - wr.top  - dragState.dy;
+  x = Math.max(4, Math.min(x, wr.width  - dragState.w - 4));
+  y = Math.max(4, Math.min(y, wr.height - dragState.h - 4));
+  cam.style.left = x + "px"; cam.style.top = y + "px";
+});
+cam.addEventListener("pointerup", e => {
+  if(dragState && dragState.resize){ dragState = null; return; }
+  if(!dragState) return;
+  dragState = null;
+  // snap to nearest corner
+  const wr = wrap.getBoundingClientRect(), cr = cam.getBoundingClientRect();
+  const cx = cr.left + cr.width/2 - wr.left, cy = cr.top + cr.height/2 - wr.top;
+  const corner = (cy < wr.height/2 ? "t" : "b") + (cx < wr.width/2 ? "l" : "r");
+  setCorner(corner);
+  syncCamPicker();
+});
+
+/* resize via handle */
+$("#camHandle").addEventListener("pointerdown", e => {
+  e.preventDefault(); e.stopPropagation();
+  dragState = { resize:true, startX:e.clientX, startY:e.clientY,
+                w:cam.offsetWidth, h:cam.offsetHeight };
+  cam.setPointerCapture(e.pointerId);
+  const move = ev => {
+    if(!dragState || !dragState.resize) return;
+    const w = Math.max(80, Math.min(200, dragState.w + ev.clientX - dragState.startX));
+    const h = Math.max(100, Math.min(260, dragState.h + ev.clientY - dragState.startY));
+    cam.style.width = w + "px"; cam.style.height = h + "px";
+  };
+  const up = () => {
+    saveCam({ w:cam.offsetWidth, h:cam.offsetHeight });
+    cam.removeEventListener("pointermove", move);
+    cam.removeEventListener("pointerup", up);
+    dragState = null;
+  };
+  cam.addEventListener("pointermove", move);
+  cam.addEventListener("pointerup", up);
+});
+
+/* ---------------- GO LIVE setup (mock) ---------------- */
+$$("#glPairs .chip").forEach(ch => ch.addEventListener("click", () => {
+  $$("#glPairs .chip").forEach(x => x.classList.remove("active"));
+  ch.classList.add("active");
+}));
+function syncCamPicker(){
+  const { corner } = loadCam();
+  $$("#camPicker .campick").forEach(b =>
+    b.classList.toggle("active", b.dataset.corner === corner));
+}
+$$("#camPicker .campick").forEach(b => b.addEventListener("click", () => {
+  setCorner(b.dataset.corner); syncCamPicker();
+}));
+$$(".dest-toggle").forEach(t => t.addEventListener("change", () => {
+  toast(t.checked ? "Mock: destination connected." : "Mock: destination disconnected.");
+}));
+$("#startLiveBtn").addEventListener("click", () => {
+  const title = $("#glTitle").value.trim() || "Live trading session";
+  const pair = ($$("#glPairs .chip.active")[0] || {}).textContent || "XAUUSD";
+  $("#liveName").textContent = "You";
+  $("#liveAvatar").textContent = "YOU";
+  $("#livePair").textContent = pair + " · " + title.slice(0, 34);
+  toast("Mock: you are now LIVE (no real stream).");
+  showScreen("live");
+});
+
+/* ---------------- COMMUNITY: poll + posts (mock) ---------------- */
+const poll = { buy: 6842, sell: 3215, voted: null };
+function renderPoll(){
+  const total = poll.buy + poll.sell;
+  const bp = Math.round(poll.buy/total*100), sp = 100 - bp;
+  $("#buyBar").style.width = bp + "%";
+  $("#sellBar").style.width = sp + "%";
+  $("#buyPct").textContent = bp + "%";
+  $("#sellPct").textContent = sp + "%";
+  $("#pollVotes").textContent = total.toLocaleString() + " votes";
+}
+$("#pollBuy").addEventListener("click", () => vote("buy"));
+$("#pollSell").addEventListener("click", () => vote("sell"));
+function vote(side){
+  if(poll.voted){ toast("Mock: vote already counted."); return; }
+  poll.voted = side; poll[side]++;
+  $("#pollBuy").disabled = $("#pollSell").disabled = true;
+  $("#pollMsg").textContent = "You voted " + side.toUpperCase() + " · mock";
+  renderPoll();
+}
+setTimeout(renderPoll, 400);
+
+function postCard(p){
+  return `<div class="post-card">
+    <div class="post-head">
+      <div class="avatar sm" style="--g1:${p.g1};--g2:${p.g2}">${p.ini}</div>
+      <div class="grow"><b>${esc(p.name)} ${verifiedBadge}</b><small>${esc(p.handle)} · ${p.time} ago</small></div>
+    </div>
+    <p class="post-text">${esc(p.text)}</p>
+    <span class="post-pair">${p.pair}</span>
+    <div class="post-actions">
+      <button data-like>♡ <span>0</span></button>
+      <button data-toast="Comments are mocked in this prototype.">💬 Comment</button>
+      <button data-toast="Sharing is mocked in this prototype.">↗ Share</button>
+    </div>
+  </div>`;
+}
+function renderCommunity(){
+  $("#analysisList").innerHTML = MOCK_POSTS.map(postCard).join("");
+  $("#profileAnalysis").innerHTML = MOCK_POSTS.slice(0,1).map(postCard).join("");
+  $$("[data-like]").forEach(b => b.addEventListener("click", () => {
+    const s = b.querySelector("span");
+    const on = b.classList.toggle("liked");
+    s.textContent = Number(s.textContent) + (on ? 1 : -1);
+    b.firstChild.textContent = on ? "♥ " : "♡ ";
+  }));
+}
+
+/* ---------------- PROFILE: trade history (mock) ---------------- */
+function renderHistory(){
+  $("#tradeHistory").innerHTML = MOCK_HISTORY.map(h => `
+    <div class="hist-row">
+      <span class="dir ${h.dir.toLowerCase()}">${h.dir}</span>
+      <div class="grow"><b>${h.pair} · ${h.entry} → ${h.exit}</b><small>${h.t}</small></div>
+      <span class="trade-pl ${h.loss ? "neg" : "pos"}">${h.pl}</span>
+    </div>`).join("");
+}
+$$(".pf-tab").forEach(t => t.addEventListener("click", () => {
+  $$(".pf-tab").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  $("#ptrades").classList.toggle("active", t.dataset.ppanel === "ptrades");
+  $("#panalysis").classList.toggle("active", t.dataset.ppanel === "panalysis");
+}));
+$("#connectBrokerBtn").addEventListener("click", () => showScreen("brokers"));
+
+/* ---------------- BROKERS (mock) ---------------- */
+function renderBrokers(){
+  $("#brokerList").innerHTML = MOCK_BROKERS.map((b,i) => `
+    <div class="broker-row">
+      <div class="broker-ic" style="background:linear-gradient(135deg,${b.c1},${b.c2})">${b.ini}</div>
+      <div class="grow"><b>${esc(b.name)}</b><small>${esc(b.sub)}</small></div>
+      <button class="connect-btn" data-broker="${i}">Connect</button>
+    </div>`).join("");
+  $$("[data-broker]").forEach(btn => btn.addEventListener("click", () => {
+    const b = MOCK_BROKERS[Number(btn.dataset.broker)];
+    if(btn.classList.contains("connected")){
+      btn.classList.remove("connected"); btn.textContent = "Connect";
+      toast("Mock: " + b.name + " disconnected.");
+      return;
+    }
+    openSheet(b.name + " connection",
+      "In the real app this opens the broker's secure OAuth login. This prototype only simulates the UI — no credentials are asked for and nothing is connected.",
+      "");
+    $("#sheetPrimary").onclick = () => {
+      btn.classList.add("connected"); btn.textContent = "Connected";
+      closeSheet(); toast("Mock: " + b.name + " marked as connected.");
+      $("#sheetPrimary").onclick = closeSheet;
+    };
+  }));
+}
+$("#addBrokerRow").addEventListener("click", () => {
+  openSheet("Add new broker",
+    "Request a broker integration. In the real app the team reviews requests and adds an official connector.",
+    `<input class="text-input" id="nbName" placeholder="Broker name, e.g. Axi" style="margin-bottom:14px">`);
+  $("#sheetPrimary").onclick = () => {
+    const v = ($("#nbName") || {}).value || "";
+    if(v.trim()){
+      MOCK_BROKERS.push({ name:v.trim(), sub:"Pending connector", c1:"#5B6478", c2:"#2A3350", ini:v.trim().slice(0,2).toUpperCase() });
+      renderBrokers(); toast("Mock: broker request added.");
+    }
+    closeSheet(); $("#sheetPrimary").onclick = closeSheet;
+  };
+});
+
+/* ---------------- boot ---------------- */
+renderHome();
+renderCommunity();
+renderHistory();
+renderBrokers();
+syncCamPicker();
+
+})();
+
+</script>
+</body>
+</html>
