@@ -18,8 +18,8 @@
   --muted:  #8A94A8;
   --faint:  #5B6478;
 
-  --accent: #E8B34B;          /* gold — the single brand accent */
-  --accent-soft: rgba(232,179,75,.14);
+  --accent: #2F80FF;          /* fintech blue — the single brand accent */
+  --accent-soft: rgba(47,128,255,.14);
 
   --green: #22C55E;           /* semantic: profit / buy */
   --red:   #F04452;           /* semantic: loss / sell / live */
@@ -39,7 +39,7 @@ body{
   color: var(--text);
   display:flex; align-items:center; justify-content:center;
   background-image:
-    radial-gradient(900px 500px at 20% -10%, rgba(232,179,75,.06), transparent 60%),
+    radial-gradient(900px 500px at 20% -10%, rgba(47,128,255,.07), transparent 60%),
     radial-gradient(800px 500px at 90% 110%, rgba(34,197,94,.05), transparent 60%);
   overflow:hidden;
 }
@@ -96,9 +96,9 @@ body{
 .brand{ display:flex; align-items:center; gap:10px; flex:1; }
 .brand-mark{
   width:34px; height:34px; border-radius:11px;
-  background:linear-gradient(135deg, #E8B34B, #B97F1F);
+  background:linear-gradient(135deg, #2F80FF, #1B5FD6);
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 4px 14px rgba(232,179,75,.35);
+  box-shadow:0 4px 14px rgba(47,128,255,.35);
 }
 .brand-name{ font-size:17px; font-weight:700; letter-spacing:-.2px; }
 .brand-name span{ color:var(--accent); }
@@ -161,7 +161,7 @@ body{
   width:48px; height:48px; border-radius:50%; flex:none;
   display:flex; align-items:center; justify-content:center;
   font-weight:800; font-size:17px; color:#0A0F1C;
-  background:linear-gradient(135deg, var(--g1,#E8B34B), var(--g2,#B97F1F));
+  background:linear-gradient(135deg, var(--g1,#2F80FF), var(--g2,#1B5FD6));
   border:2px solid rgba(255,255,255,.14);
 }
 .avatar.sm{ width:38px; height:38px; font-size:14px; }
@@ -204,10 +204,10 @@ body{
 .pos{ color:var(--green); } .neg{ color:var(--red); }
 .watch-btn{
   width:100%; padding:13px; border:none; border-radius:13px;
-  background:linear-gradient(135deg, #E8B34B, #C98F2B);
-  color:#1A1206; font-family:var(--font); font-size:14.5px; font-weight:800;
+  background:linear-gradient(135deg, #2F80FF, #1F6BEE);
+  color:#FFFFFF; font-family:var(--font); font-size:14.5px; font-weight:800;
   cursor:pointer; letter-spacing:-.1px;
-  box-shadow:0 6px 18px rgba(232,179,75,.28);
+  box-shadow:0 6px 18px rgba(47,128,255,.30);
 }
 .watch-btn:active{ transform:scale(.98); }
 
@@ -247,7 +247,7 @@ body{
   width:112px; height:150px;
   border-radius:14px; overflow:hidden;
   background:linear-gradient(160deg, #1B2542, #0C1226);
-  border:2px solid rgba(232,179,75,.65);
+  border:2px solid rgba(47,128,255,.65);
   box-shadow:0 10px 30px rgba(0,0,0,.6);
   cursor:grab; touch-action:none; user-select:none;
 }
@@ -310,7 +310,7 @@ body{
 .copy-bar{
   display:flex; align-items:center; gap:10px;
   margin:10px 14px 0; padding:12px 14px;
-  background:var(--accent-soft); border:1px solid rgba(232,179,75,.35);
+  background:var(--accent-soft); border:1px solid rgba(47,128,255,.35);
   border-radius:14px;
 }
 .copy-bar .cb-text{ flex:1; }
@@ -365,7 +365,7 @@ body{
 .chat-input-row input:focus{ border-color:var(--accent); }
 .send-btn{
   width:44px; height:44px; border-radius:12px; border:none; cursor:pointer;
-  background:linear-gradient(135deg,#E8B34B,#C98F2B); color:#1A1206;
+  background:linear-gradient(135deg,#2F80FF,#1F6BEE); color:#FFFFFF;
   display:flex; align-items:center; justify-content:center; flex:none;
 }
 
@@ -410,7 +410,7 @@ body{
 }
 .campick .mini-cam{
   position:absolute; width:26px; height:34px; border-radius:6px;
-  background:linear-gradient(135deg,#E8B34B,#B97F1F); opacity:.35;
+  background:linear-gradient(135deg,#2F80FF,#1B5FD6); opacity:.35;
   transition:all .15s ease;
 }
 .campick[data-corner="tl"] .mini-cam{ top:8px; left:8px; }
@@ -418,7 +418,7 @@ body{
 .campick[data-corner="bl"] .mini-cam{ bottom:8px; left:8px; }
 .campick[data-corner="br"] .mini-cam{ bottom:8px; right:8px; }
 .campick.active{ border-color:var(--accent); }
-.campick.active .mini-cam{ opacity:1; box-shadow:0 0 12px rgba(232,179,75,.5); }
+.campick.active .mini-cam{ opacity:1; box-shadow:0 0 12px rgba(47,128,255,.5); }
 .campick small{
   position:absolute; bottom:8px; left:0; right:0; text-align:center;
   font-size:11px; color:var(--muted); font-weight:600;
@@ -485,7 +485,7 @@ body{
 .cover{
   height:150px; margin:0; position:relative; flex:none;
   background:
-    radial-gradient(300px 120px at 80% 20%, rgba(232,179,75,.25), transparent 60%),
+    radial-gradient(300px 120px at 80% 20%, rgba(47,128,255,.25), transparent 60%),
     radial-gradient(400px 160px at 10% 90%, rgba(34,197,94,.14), transparent 60%),
     linear-gradient(160deg, #131B33, #080C18);
   border-bottom:1px solid var(--border);
@@ -504,10 +504,10 @@ body{
 .pf-stat b{ display:block; font-size:16px; letter-spacing:-.3px; }
 .pf-stat span{ font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
 .pf-actions{ display:flex; gap:10px; margin-bottom:6px; }
-.btn-gold{
+.btn-primary{
   flex:1; padding:13px; border-radius:13px; cursor:pointer;
-  background:linear-gradient(135deg,#E8B34B,#C98F2B); border:none;
-  color:#1A1206; font-family:var(--font); font-size:14px; font-weight:800;
+  background:linear-gradient(135deg,#2F80FF,#1F6BEE); border:none;
+  color:#FFFFFF; font-family:var(--font); font-size:14px; font-weight:800;
 }
 .btn-ghost{
   flex:1; padding:13px; border-radius:13px; cursor:pointer;
@@ -541,7 +541,7 @@ body{
   padding:9px 18px; border-radius:11px; border:none; cursor:pointer;
   background:var(--accent-soft); color:var(--accent);
   font-family:var(--font); font-size:13px; font-weight:800;
-  border:1px solid rgba(232,179,75,.4); flex:none;
+  border:1px solid rgba(47,128,255,.4); flex:none;
 }
 .connect-btn.connected{ background:rgba(34,197,94,.13); color:var(--green); border-color:rgba(34,197,94,.4); }
 .add-broker{
@@ -614,7 +614,7 @@ body{
 .sheet p{ font-size:13.5px; color:var(--muted); line-height:1.6; margin-bottom:14px; }
 .sheet .mock-tag{
   display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.8px;
-  color:var(--accent); background:var(--accent-soft); border:1px solid rgba(232,179,75,.4);
+  color:var(--accent); background:var(--accent-soft); border:1px solid rgba(47,128,255,.4);
   padding:4px 10px; border-radius:7px; margin-bottom:12px; text-transform:uppercase;
 }
 .sheet-actions{ display:flex; gap:10px; }

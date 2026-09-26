@@ -8,7 +8,7 @@
 
 /* ---------------- MOCK DATA ---------------- */
 const MOCK_CREATORS = [
-  { id:1, name:"Daud",      handle:"@daudtradefx", pair:"XAUUSD", live:true,  viewers:"2.4k", pl:"+18.2%", win:"67%", trades:312, g1:"#E8B34B", g2:"#8A5A17", initials:"DR" },
+  { id:1, name:"Daud",      handle:"@daudtradefx", pair:"XAUUSD", live:true,  viewers:"2.4k", pl:"+18.2%", win:"67%", trades:312, g1:"#2F80FF", g2:"#1B5FD6", initials:"DR" },
   { id:2, name:"Arjun Rao", handle:"@arjunfx",     pair:"BTCUSD", live:true,  viewers:"1.1k", pl:"+24.7%", win:"71%", trades:486, g1:"#5B8DEF", g2:"#2B4A8A", initials:"AR" },
   { id:3, name:"Sara Malik",handle:"@saramalik",   pair:"EURUSD", live:true,  viewers:"860",  pl:"+9.4%",  win:"63%", trades:198, g1:"#B678F0", g2:"#5E2B8A", initials:"SM" },
   { id:4, name:"Vikram",    handle:"@viktrade",    pair:"XAUUSD", live:false, viewers:"",     pl:"+31.5%", win:"69%", trades:521, g1:"#4ADE80", g2:"#166534", initials:"VK" },
@@ -31,7 +31,7 @@ const MOCK_CHAT = [
 ];
 
 const MOCK_POSTS = [
-  { name:"Daud", handle:"@daudtradefx", time:"2h", pair:"XAUUSD", g1:"#E8B34B", g2:"#8A5A17", ini:"DR",
+  { name:"Daud", handle:"@daudtradefx", time:"2h", pair:"XAUUSD", g1:"#2F80FF", g2:"#1B5FD6", ini:"DR",
     text:"Gold holding above 2,648 into NFP. My base case: a hot print flushes weak longs first, then real buyers step in. I will NOT chase the first spike — waiting for the flush, then looking for longs on the live stream." },
   { name:"Arjun Rao", handle:"@arjunfx", time:"5h", pair:"BTCUSD", g1:"#5B8DEF", g2:"#2B4A8A", ini:"AR",
     text:"BTC funding rates are flat while price grinds up — that's healthy. Break and hold above the range high and I start scaling into momentum longs. Invalidation is a daily close back inside." },
