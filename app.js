@@ -1064,7 +1064,8 @@ function renderHistory(el){
     d.innerHTML =
       '<div class="pos-top"><span class="pos-sym">'+h.sym+'</span>'+
       '<span class="dir '+(h.dir==="BUY"?"buy":"sell")+'">'+h.dir+'</span>'+
-      '<span class="pos-lots">'+h.lots.toFixed(2)+' lots</span>'+(h.copy?'<span class="copy-badge">📋 copied</span>':"")+'</div>'+
+      '<span class="pos-lots">'+h.lots.toFixed(2)+' lots</span></div>'+
+      (h.copy?'<div class="copy-badge">📋 copied</div>':"")+
       '<div class="pos-grid">'+
       '<div class="pos-col"><span>Entry</span><b>'+fmtP(h.sym,h.entry)+'</b></div>'+
       '<div class="pos-col"><span>Exit</span><b>'+fmtP(h.sym,h.exit)+'</b></div>'+
