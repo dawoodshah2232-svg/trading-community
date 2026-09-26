@@ -2935,7 +2935,7 @@ renderAccount();
 renderLiveNow();
 renderReelsHub();
 renderHome(); __bp("renderHome");
-}catch(__e){ __bp("THROW@"+((__e&&__e.message)||__e)); console.error("[boot] failed:", __e); return; }
+}catch(__e){ __bp("THROW@"+((__e&&__e.message)||__e)+"|"+((__e&&__e.stack||"").split("\n").slice(0,3).join("~").slice(0,220))); console.error("[boot] failed:", __e); return; }
 try{ bootV15(); }catch(err){ console.error("[v15] boot failed:", err); }
 setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
 /* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */
