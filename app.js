@@ -113,6 +113,7 @@ function mktOpen(sym){
   return true;
 }
 state.live = {};   /* sym -> "live" (real-time quote) | "daily" (daily indicative anchor) */
+state.quoteAt = {}; /* sym -> timestamp of the last real quote (for freshness display) */
 state.dataReal = {}; /* sym -> true once the chart holds REAL candles */
 
 /* ---------------- REAL MARKET FEEDS (free, no key, CORS-ok; fail-soft) ---------------- */
@@ -133,8 +134,18 @@ function anchorPrice(sym, price, chg, hard, kind){
   const pr = state.prices[sym];
   if(hard || kind){ pr.bid = price; pr.ask = price + m.spread; }
   pr.chg = m.chg;
-  if(kind) state.live[sym] = kind;
+  if(kind){ state.live[sym] = kind; state.quoteAt[sym] = Date.now(); }
   const h = state.hist[sym]; h.push(pr.bid); if(h.length > 140) h.shift();
+}
+/* how old the last real quote for a symbol is — shown next to the feed badge */
+function quoteAge(sym){
+  const t = state.quoteAt[sym]; if(!t) return "";
+  const s = Math.round((Date.now()-t)/1000);
+  if(s < 5) return "just now";
+  if(s < 60) return s+"s ago";
+  const m = Math.round(s/60);
+  if(m < 60) return m+"m ago";
+  return Math.round(m/60)+"h ago";
 }
 async function fetchRealPrices(full){
   const jobs = [];
@@ -148,7 +159,8 @@ async function fetchRealPrices(full){
     });
   }).catch(()=>{}));
   if(full){
-    /* forex — free, no key, CORS-enabled (daily anchor; intraday stays simulated) */
+    /* forex — free, no key, CORS-enabled (daily anchor; the price holds the
+       anchor between refreshes — no invented intraday movement) */
     jobs.push(fetchJSON("https://open.er-api.com/v6/latest/USD").then(f=>{
       const r = f && f.rates; if(!r || f.result !== "success") return;
       const conv = { EURUSD:1/r.EUR, GBPUSD:1/r.GBP, USDJPY:r.JPY, AUDUSD:1/r.AUD,
@@ -162,6 +174,7 @@ async function fetchRealPrices(full){
 fetchRealPrices(true);
 setInterval(()=>fetchRealPrices(false), 60000);
 setInterval(()=>fetchRealPrices(true), 15*60000);
+setInterval(()=>{ try{ updateDataBadges(); }catch(e){} }, 10000); /* keep the quote-age label fresh */
 /* seed one demo alert so the feature is visible */
 state.alerts.push({ id:"a"+(state.alertSeq++), sym:"XAUUSD", cond:"above", price:2660.00, triggered:false });
 
@@ -529,10 +542,25 @@ function bucketBars(pts, mins){
   });
   return [...map.values()].sort((a,b)=>a.time-b.time);
 }
+function bucketVols(vpts, mins, bars){
+  /* real per-bucket volume from CoinGecko total_volumes — never invented */
+  if(!Array.isArray(vpts) || !vpts.length) return [];
+  const bucket = mins*60*1000, map = new Map();
+  vpts.forEach(pt=>{
+    const t = pt[0], v = pt[1]; if(!(v >= 0)) return;
+    const b = Math.floor(t/bucket)*bucket;
+    map.set(b, (map.get(b) || 0) + v);
+  });
+  return bars.map(b=>{
+    const v = map.get(b.time*1000);
+    return v == null ? null : { time:b.time, value:+v.toFixed(2),
+      color: b.close >= b.open ? "rgba(34,197,94,0.32)" : "rgba(239,68,68,0.32)" };
+  }).filter(Boolean);
+}
 async function fetchRealBars(sym, tf){
   const id = CG_IDS[sym]; if(!id) return null;
   const key = sym+"|"+tf, now = Date.now(), c = realBarsCache[key];
-  if(c && now - c.t < 5*60000) return c.bars;
+  if(c && now - c.t < 5*60000) return c;
   const mins = TF_MIN[tf] || 1, days = mins >= 240 ? 30 : 2;
   try{
     const j = await fetchJSON("https://api.coingecko.com/api/v3/coins/"+id+"/market_chart?vs_currency=usd&days="+days+(days <= 2 ? "&interval=minutely" : ""), 12000);
@@ -540,23 +568,18 @@ async function fetchRealBars(sym, tf){
     if(!Array.isArray(pts) || pts.length < 20) return null;
     const bars = bucketBars(pts, mins).slice(-N_BARS);
     if(bars.length < 30) return null;
-    realBarsCache[key] = { t:now, bars };
-    return bars;
+    const out = { t:now, bars, vols:bucketVols(j.total_volumes, mins, bars) };
+    realBarsCache[key] = out;
+    return out;
   }catch(e){ return null; }
-}
-function genVols(bars){
-  const rnd = mulberry32(hashStr("vol|"+bars.length));
-  return bars.map(b=>({ time:b.time, value:+(0.4+rnd()*2.2).toFixed(2),
-    color: b.close >= b.open ? "rgba(34,197,94,0.32)" : "rgba(239,68,68,0.32)" }));
 }
 async function refreshMainData(){
   if(!lw.candles) return;
   const s = state.sym, tf = state.tf;
-  let bars = null, real = false;
-  try{ bars = await fetchRealBars(s, tf); }catch(e){ bars = null; }
+  let data = null, real = false, bars = null, vols = null;
+  try{ data = await fetchRealBars(s, tf); }catch(e){ data = null; }
   if(state.sym !== s || state.tf !== tf) return; /* user switched mid-fetch */
-  let vols;
-  if(bars && bars.length > 30){ real = true; vols = genVols(bars); }
+  if(data && data.bars.length > 30){ real = true; bars = data.bars; vols = data.vols || []; }
   else { const d = genBars(s, tf); bars = d.bars; vols = d.vols; }
   state.dataReal[s] = real;
   lw.bars = bars; lw.vols = vols;
@@ -3194,6 +3217,7 @@ function renderIndicators(){
   if(sig !== indSig || !indBuilt){
     fullRebuildInd(data);
     indSig = sig;
+    renderIndReadout();
     return;
   }
   const lastOf = d => d.length ? d[d.length-1] : null;
@@ -3211,6 +3235,63 @@ function renderIndicators(){
     b.P.valEl.textContent = pd.valTxt;
     b.P.valEl.className = "ind-val num " + pd.valCls;
   });
+  renderIndReadout();
+}
+/* ---- neutral indicator readings (describe only — never trading signals) ---- */
+function lastVal(arr){ for(let i = arr.length-1; i >= 0; i--) if(arr[i] !== null && arr[i] !== undefined && isFinite(arr[i])) return arr[i]; return null; }
+function renderIndReadout(){
+  const host = $("indReadout"); if(!host || !lw.bars || lw.bars.length < 10) return;
+  const bars = lw.bars, closes = bars.map(b=>b.close), close = closes[closes.length-1];
+  const rows = [];
+  const emaF = indCfg.emaFast.on ? lastVal(indEMA(closes, Math.max(2, +indCfg.emaFast.p1 || 9))) : null;
+  const emaS = indCfg.emaSlow.on ? lastVal(indEMA(closes, Math.max(2, +indCfg.emaSlow.p1 || 21))) : null;
+  if(emaF !== null && emaS !== null){
+    const d = (emaF-emaS)/emaS*100;
+    rows.push(["EMA "+indCfg.emaFast.p1+"/"+indCfg.emaSlow.p1,
+      d > 0.05 ? "Fast above slow — short-term trend up" : d < -0.05 ? "Fast below slow — short-term trend down" : "Fast and slow overlapping — trend flat"]);
+  }else if(emaF !== null){
+    rows.push(["EMA "+indCfg.emaFast.p1, close > emaF ? "Price above the EMA" : close < emaF ? "Price below the EMA" : "Price on the EMA"]);
+  }
+  const sma50 = indCfg.sma50.on ? lastVal(indSMA(closes, Math.max(2, +indCfg.sma50.p1 || 50))) : null;
+  const sma200 = indCfg.sma200.on ? lastVal(indSMA(closes, Math.max(2, +indCfg.sma200.p1 || 200))) : null;
+  if(sma50 !== null && sma200 !== null){
+    rows.push(["SMA 50/200", sma50 > sma200 ? "50 above 200 — long-term trend up" : sma50 < sma200 ? "50 below 200 — long-term trend down" : "50 and 200 overlapping — trend flat"]);
+  }else{
+    const one = sma50 !== null ? ["SMA "+indCfg.sma50.p1, sma50] : sma200 !== null ? ["SMA "+indCfg.sma200.p1, sma200] : null;
+    if(one) rows.push([one[0], close > one[1] ? "Price above the SMA" : close < one[1] ? "Price below the SMA" : "Price on the SMA"]);
+  }
+  if(indCfg.bb.on){
+    const r = indBB(closes, Math.max(2, +indCfg.bb.p1 || 20), Math.max(0.5, +indCfg.bb.p2 || 2));
+    const up = lastVal(r.up), lo = lastVal(r.lo);
+    if(up !== null && lo !== null && up > lo){
+      const pos = (close-lo)/(up-lo);
+      rows.push(["Bollinger", pos > 0.85 ? "Price near the upper band" : pos < 0.15 ? "Price near the lower band" : "Price inside the bands"]);
+    }
+  }
+  if(indCfg.rsi.on){
+    const v = lastVal(indRSI(closes, Math.max(2, +indCfg.rsi.p1 || 14)));
+    if(v !== null) rows.push(["RSI "+v.toFixed(1), v > 70 ? "Overbought zone" : v < 30 ? "Oversold zone" : "Neutral"]);
+  }
+  if(indCfg.macd.on){
+    const r = indMACD(closes, Math.max(2, +indCfg.macd.p1 || 12), Math.max(3, +indCfg.macd.p2 || 26), Math.max(2, +indCfg.macd.p3 || 9));
+    const h = lastVal(r.hist);
+    if(h !== null) rows.push(["MACD", h > 0 ? "Histogram positive — bullish momentum" : h < 0 ? "Histogram negative — bearish momentum" : "Histogram flat — momentum neutral"]);
+  }
+  if(indCfg.stoch.on){
+    const r = indStoch(bars, Math.max(2, +indCfg.stoch.p1 || 14), Math.max(1, +indCfg.stoch.p2 || 3), Math.max(2, +indCfg.stoch.p3 || 9));
+    const k = lastVal(r.k);
+    if(k !== null) rows.push(["Stochastic "+k.toFixed(1), k > 80 ? "Overbought zone" : k < 20 ? "Oversold zone" : "Neutral"]);
+  }
+  if(indCfg.atr.on){
+    const v = lastVal(indATR(bars, Math.max(2, +indCfg.atr.p1 || 14)));
+    if(v !== null) rows.push(["ATR "+fmtP(state.sym, v), "Current volatility range"]);
+  }
+  if(!rows.length){ host.hidden = true; host.innerHTML = ""; return; }
+  host.hidden = false;
+  host.innerHTML = '<div class="ir-head"><span class="ic xs" data-icon="info"></span><b>What the indicators show</b></div>' +
+    rows.map(r=>'<div class="ir-row"><span>'+esc(r[0])+'</span><b>'+esc(r[1])+'</b></div>').join("") +
+    '<div class="ir-fine">Readings describe the indicator only — not trading advice.</div>';
+  injectIcons();
 }
 function bindIndSync(){
   if(indSyncBound || !lw.chart) return;
@@ -3253,15 +3334,17 @@ function updateDataBadges(){
   const badge = $("dataBadge");
   if(badge){
     const kind = state.live[s];
+    const age = quoteAge(s);
+    const ageTxt = age ? " · "+age : "";
     if(!open){
       badge.className = "data-badge sim";
       badge.textContent = "Frozen · last price";
     }else if(kind === "live"){
       badge.className = "data-badge live";
-      badge.textContent = "Real-time";
+      badge.textContent = "Real-time"+ageTxt;
     }else if(kind === "daily"){
       badge.className = "data-badge sim";
-      badge.textContent = "Daily indicative";
+      badge.textContent = "Daily indicative"+ageTxt;
     }else{
       badge.className = "data-badge sim";
       badge.textContent = "Simulated";
@@ -3269,6 +3352,9 @@ function updateDataBadges(){
   }
   const note = $("mktNote");
   if(note) note.hidden = open;
+  /* PAXG proxy honesty: XAUUSD here tracks the PAXG gold token, not a broker feed */
+  const px = $("proxyNote");
+  if(px) px.hidden = (s !== "XAUUSD");
   const inl = $("indDataNote");
   if(inl){
     const kind = state.live[s];
