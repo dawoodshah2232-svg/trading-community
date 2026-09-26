@@ -1,484 +1,729 @@
 /* ============================================================
-   Trading Community — app logic (BEST-UI pass)
-   MOCK / SIMULATED: auth, price engine (random walk), order
-   execution, P/L, brokers, mirror latency, community, chat.
-   REAL: TradingView chart widget (needs internet).
-   No real money, no real broker connection.
+   Trading Community — trading terminal (FULL REBUILD)
+   *** EVERYTHING IS MOCK / SIMULATED ***
+   Random-walk price engine, mock fills, mock brokers, mock
+   chat/feed/alerts. No real market data, no real broker, no
+   real auth. The only real external piece is the TradingView
+   chart widget (needs internet); an offline canvas fallback
+   is built in.
    ============================================================ */
 (function(){
 "use strict";
 
-/* ---------------- icons ----------------
-   Uniform handcrafted set: 1.8px strokes, round caps/joins,
-   drawn to read clearly at 22px. */
+/* ============================================================
+   AUTH DISABLED for demo — re-enable later.
+   The app opens straight into the terminal. The old auth flow
+   (splash / welcome / social buttons / session) is preserved
+   below in dormant form for the real rollout.
+
+   function showView(name){ ... }
+   function finishAuth(user){ ... localStorage tc_session_v1 ... }
+   socialLogin("google"|"facebook"|"apple") -> finishAuth(...)
+   logout() -> clears session, shows auth view
+   ============================================================ */
+
+/* ---------------- ICONS (handcrafted 1.8px stroke set) ---------------- */
 const ICONS = {
-  trade: '<path d="M7 4v13"/><path d="M7 7.5h4"/><path d="M7 11.5h4"/><path d="M5 4h4"/><path d="M5 17h4"/><path d="M17 7v13"/><path d="M17 10.5h4"/><path d="M17 14.5h4"/><path d="M15 7h4"/><path d="M15 20h4"/>',
-  positions: '<path d="m12 2 9 4.9-9 4.9-9-4.9z"/><path d="m3 11.9 9 4.9 9-4.9"/><path d="m3 16.8 9 4.9 9-4.9"/>',
-  live: '<circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/>',
-  community: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  profile: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-  bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
-  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
-  heart: '<path d="M19.8 5.1a5 5 0 0 0-7.1 0L12 5.8l-.7-.7a5 5 0 0 0-7.1 7.1l.7.7L12 20l7.1-7.1.7-.7a5 5 0 0 0 0-7.1z"/>',
-  send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
-  chev: '<path d="m6 9 6 6 6-6"/>',
-  chevR: '<path d="m9 6 6 6-6 6"/>',
-  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
-  minus: '<path d="M5 12h14"/>',
-  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
-  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
-  theme: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" style="fill:currentColor;stroke:none"/>'
+  trade:'<path d="M6 4v3M6 11v9M4 7h4M4 14h4M12 3v4M12 11v10M10 7h4M10 15h4M18 8v3M18 15v5M16 11h4M16 18h4"/>',
+  positions:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+  live:'<circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>',
+  community:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.8.3 5 2.6 5 5.8"/>',
+  profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
+  theme:'<path d="M20 13.5A8 8 0 1110.5 4 6.5 6.5 0 0020 13.5z"/>',
+  bell:'<path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 004 0"/>',
+  chev:'<path d="M6 9l6 6 6-6"/>',
+  check:'<path d="M4 12.5l5 5L20 6.5"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  minus:'<path d="M5 12h14"/>',
+  link:'<path d="M10 14a5 5 0 007.1 0l2.4-2.4a5 5 0 00-7.1-7.1L11 5.9"/><path d="M14 10a5 5 0 00-7.1 0l-2.4 2.4a5 5 0 007.1 7.1L13 18.1"/>',
+  trash:'<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>',
+  send:'<path d="M4 12l16-7-7 16-2.5-6.5z"/><path d="M11.5 14.5L20 5"/>'
 };
-document.querySelectorAll(".ic[data-icon]").forEach(elm => {
-  const svg = ICONS[elm.dataset.icon];
-  if (svg) elm.innerHTML = '<svg viewBox="0 0 24 24">' + svg + '</svg>';
-});
+function injectIcons(){
+  document.querySelectorAll("[data-icon]").forEach(el=>{
+    const p = ICONS[el.dataset.icon];
+    if(!p) return;
+    el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+  });
+}
 
 /* ---------------- MOCK SYMBOL UNIVERSE ---------------- */
 const SYMBOLS = {
-  XAUUSD: { tv:"OANDA:XAUUSD",    base:2652.40, digits:2, spread:0.25,  vol:0.85,  perPoint:100,    contract:100,    chg:0.42 },
-  EURUSD: { tv:"OANDA:EURUSD",    base:1.08420, digits:5, spread:0.00012, vol:0.00026, perPoint:100000, contract:100000, chg:-0.11 },
-  GBPUSD: { tv:"OANDA:GBPUSD",    base:1.29740, digits:5, spread:0.00018, vol:0.00032, perPoint:100000, contract:100000, chg:0.23 },
-  USDJPY: { tv:"OANDA:USDJPY",    base:149.820, digits:3, spread:0.015,  vol:0.042,  perPoint:667,     contract:100000, chg:-0.31 },
-  BTCUSD: { tv:"BITSTAMP:BTCUSD", base:97420,   digits:0, spread:18,     vol:95,     perPoint:1,      contract:1,      chg:1.84 },
-  ETHUSD: { tv:"BITSTAMP:ETHUSD", base:3420.5,  digits:1, spread:1.4,    vol:6.2,    perPoint:10,     contract:10,     chg:2.12 },
-  US30:   { tv:"DJ:DJI",         base:42150,   digits:0, spread:2.4,    vol:13,     perPoint:5,      contract:1,      chg:0.35 },
-  NAS100: { tv:"NASDAQ:NDX",     base:19280.5, digits:1, spread:1.6,    vol:8.5,    perPoint:5,      contract:1,      chg:0.62 }
+  XAUUSD: { tv:"OANDA:XAUUSD",    name:"Gold vs US Dollar",  ex:"OANDA",    base:2652.40, digits:2, spread:0.25,   vol:0.85,   perPoint:100,    contract:100,    chg:0.42 },
+  EURUSD: { tv:"OANDA:EURUSD",    name:"Euro vs US Dollar",  ex:"OANDA",    base:1.08420, digits:5, spread:0.00012, vol:0.00026, perPoint:100000, contract:100000, chg:-0.11 },
+  GBPUSD: { tv:"OANDA:GBPUSD",    name:"Pound vs US Dollar", ex:"OANDA",    base:1.29740, digits:5, spread:0.00018, vol:0.00032, perPoint:100000, contract:100000, chg:0.23 },
+  USDJPY: { tv:"OANDA:USDJPY",    name:"US Dollar vs Yen",   ex:"OANDA",    base:149.820, digits:3, spread:0.015,   vol:0.042,  perPoint:667,     contract:100000, chg:-0.31 },
+  BTCUSD: { tv:"BITSTAMP:BTCUSD", name:"Bitcoin vs Dollar",  ex:"BITSTAMP", base:97420,   digits:0, spread:18,      vol:95,     perPoint:1,       contract:1,      chg:1.84 },
+  ETHUSD: { tv:"BITSTAMP:ETHUSD", name:"Ethereum vs Dollar", ex:"BITSTAMP", base:3420.5,  digits:1, spread:1.4,     vol:6.2,    perPoint:10,      contract:10,     chg:2.12 },
+  US30:   { tv:"DJ:DJI",          name:"Dow Jones 30",       ex:"DJ",       base:42150,   digits:0, spread:2.4,     vol:13,     perPoint:5,       contract:1,      chg:0.35 },
+  NAS100: { tv:"NASDAQ:NDX",      name:"Nasdaq 100",         ex:"NASDAQ",   base:19280.5, digits:1, spread:1.6,    vol:8.5,    perPoint:5,       contract:1,      chg:0.62 }
 };
 const SYM_ORDER = ["XAUUSD","EURUSD","GBPUSD","USDJPY","BTCUSD","ETHUSD","US30","NAS100"];
-const TF_MAP = { "1m":"1", "5m":"5", "15m":"15", "1H":"60", "4H":"240", "1D":"D" };
 const LEVERAGE = 100;
-const START_EQUITY = 10000;
+const START_BALANCE = 10000;
 
 /* ---------------- STATE (all mock) ---------------- */
 const state = {
-  sym:"XAUUSD", tf:"1m", lots:0.10,
-  prices:{}, hist:{},
+  sym:"XAUUSD", tf:"1m",
+  ttype:"market", dir:"buy", lots:0.10, tpslOn:false,
+  prices:{}, hist:{}, depth:{},
   open:[], pending:[], history:[],
-  realized:0, orderSeq:1,
-  liveBuilt:false
+  alerts:[], alertSeq:1, orderSeq:1,
+  balance:START_BALANCE,
+  liveBuilt:false, voted:null
 };
-SYM_ORDER.forEach(s => {
+SYM_ORDER.forEach(s=>{
   const m = SYMBOLS[s];
-  state.prices[s] = { bid:m.base, ask:m.base + m.spread, chg:m.chg };
+  state.prices[s] = { bid:m.base, ask:m.base+m.spread, chg:m.chg };
   state.hist[s] = [m.base];
 });
-/* seed mock pending + history */
-state.pending = [
-  { id:"p1", sym:"XAUUSD", dir:"BUY",  type:"Buy Limit", lots:0.20, price:2640.00 },
-  { id:"p2", sym:"BTCUSD", dir:"SELL", type:"Sell Stop", lots:0.05, price:98200 }
-];
-state.history = [
-  { sym:"XAUUSD", dir:"BUY",  lots:0.10, entry:2648.20, exit:2652.45, pl:42.50 },
-  { sym:"EURUSD", dir:"SELL", lots:0.25, entry:1.08620,  exit:1.08695, pl:-18.75 },
-  { sym:"BTCUSD", dir:"BUY",  lots:0.02, entry:96100,    exit:96880,  pl:15.60 }
-];
-
-/* Mock brokers — simulated connections only */
-const BROKERS = [
-  { name:"Exness",     ini:"EX", g:["#2F80FF","#1B5FD6"], server:"Exness-MT5Real",            connected:false },
-  { name:"Vantage",    ini:"VA", g:["#22C55E","#15803D"], server:"VantageInternational-Live", connected:false },
-  { name:"IC Markets", ini:"IC", g:["#5B8DEF","#2B4A8A"], server:"ICMarkets-Live",            connected:false },
-  { name:"XM",         ini:"XM", g:["#B678F0","#5E2B8A"], server:"XMGlobal-MT5",              connected:false },
-  { name:"OctaFX",     ini:"OC", g:["#F59E0B","#B45309"], server:"OctaFX-Live",               connected:false },
-  { name:"FBS",        ini:"FB", g:["#10B981","#065F46"], server:"FBS-Real",                  connected:false }
-];
-
-/* Mock community influencers — demo content */
-const MOCK_TRADERS = [
-  { name:"Marcus Cole", handle:"@marcus_fx",     followers:"128K", winRate:"74%", live:true,  g:["#F04452","#B91C1C"] },
-  { name:"Ava Chen",    handle:"@ava_trades",    followers:"96K",  winRate:"71%", live:false, g:["#2F80FF","#1B5FD6"] },
-  { name:"Omar Farouk", handle:"@omar.gold",     followers:"84K",  winRate:"69%", live:false, g:["#22C55E","#15803D"] },
-  { name:"Sofia Rossi", handle:"@sofia_signals", followers:"61K",  winRate:"68%", live:false, g:["#B678F0","#6D28D9"] }
-];
-const follows = {};
+/* seed one demo alert so the feature is visible */
+state.alerts.push({ id:"a"+(state.alertSeq++), sym:"XAUUSD", cond:"above", price:2660.00, triggered:false });
 
 /* ---------------- HELPERS ---------------- */
 const $ = id => document.getElementById(id);
 const meta = s => SYMBOLS[s];
 const px = s => state.prices[s];
 const fmtP = (s,v) => v.toFixed(meta(s).digits);
-const fmt$ = v => (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
-const plClass = v => v >= 0 ? "pl-pos" : "pl-neg";
-const initials = n => n.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase();
+const fmt$ = v => (v<0?"-$":"$") + Math.abs(v).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+const plClass = v => v>=0 ? "pl-pos" : "pl-neg";
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 let toastTimer = null;
 function toast(msg){
   const t = $("toast");
   t.textContent = msg; t.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+  toastTimer = setTimeout(()=>{ t.hidden = true; }, 2400);
 }
-
-/* P/L of an open mock position at current mock prices */
-function positionPL(p){
-  const pr = px(p.sym);
-  const closePx = p.dir === "BUY" ? pr.bid : pr.ask;
-  const diff = p.dir === "BUY" ? (closePx - p.entry) : (p.entry - closePx);
-  return diff * meta(p.sym).perPoint * p.lots;
+/* 150ms tick flash on a price element */
+function flash(el, up){
+  if(!el) return;
+  el.classList.remove("flash-up","flash-down");
+  void el.offsetWidth;
+  el.classList.add(up ? "flash-up" : "flash-down");
 }
-function openPL(){ return state.open.reduce((a,p) => a + positionPL(p), 0); }
-function equity(){ return START_EQUITY + state.realized + openPL(); }
 
 /* ---------------- THEME ---------------- */
 function theme(){ return document.documentElement.dataset.theme || "dark"; }
 function setTheme(t){
   document.documentElement.dataset.theme = t;
-  try{ localStorage.setItem("tc_theme_v1", t); }catch(e){}
   $("themeNameSide").textContent = t === "dark" ? "Dark" : "Light";
-  $("themeNameRow").textContent = t === "dark" ? "Dark" : "Light";
-  loadTV("tvChart", meta(state.sym).tv, TF_MAP[state.tf]);
-  if (state.liveBuilt) loadTV("tvChartLive", SYMBOLS.XAUUSD.tv, "5");
+  try{ localStorage.setItem("tc_theme_v1", t); }catch(e){}
+  loadTV("tvChart", meta(state.sym).tv, state.tf); /* reload chart in new theme */
+  if(state.liveBuilt) loadTV("tvChartLive", SYMBOLS.XAUUSD.tv, "5m");
 }
-$("themeBtn").addEventListener("click", () => setTheme(theme() === "dark" ? "light" : "dark"));
-$("themeToggleSide").addEventListener("click", () => setTheme(theme() === "dark" ? "light" : "dark"));
-$("themeRowBtn").addEventListener("click", () => setTheme(theme() === "dark" ? "light" : "dark"));
-
-/* ---------------- AUTH (mock) ---------------- */
-let authMode = "signin";
-function showView(name){
-  $("view-splash").classList.toggle("active", name === "splash");
-  $("view-auth").classList.toggle("active", name === "auth");
-  $("view-app").classList.toggle("active", name === "app");
-}
-function setAuthMode(mode){
-  authMode = mode;
-  const up = mode === "signup";
-  $("authTitle").textContent = up ? "Create your account" : "Welcome back";
-  $("authNameWrap").hidden = !up;
-  $("authPassWrap").hidden = !up;
-  $("authEmailGo").textContent = up ? "Sign up" : "Continue";
-  $("authToggle").innerHTML = up
-    ? 'Already have an account? <b>Log in</b>'
-    : 'New to Trading Community? <b>Create account</b>';
-  $("authErr").hidden = true;
-}
-function finishAuth(user, isNew){
-  try{ localStorage.setItem("tc_session_v1", JSON.stringify(user)); }catch(e){}
-  const handle = "@" + user.name.toLowerCase().replace(/[^a-z0-9]+/g, "");
-  $("profName").textContent = user.name;
-  $("profHandle").textContent = handle;
-  $("profAvatar").textContent = initials(user.name);
-  $("sideName").textContent = user.name;
-  $("sideEmail").textContent = user.email;
-  $("sideAvatar").textContent = initials(user.name);
-  $("avatarBtn").textContent = initials(user.name);
-  showView("app");
-  updateBrokerPrompt();
-  if (isNew) toast("Welcome, " + user.name.split(" ")[0] + " — demo");
-}
-function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
-function authError(msg){
-  $("authErr").textContent = msg; $("authErr").hidden = false;
-}
-$("authEmailGo").addEventListener("click", () => {
-  const name = $("authName").value.trim();
-  let email = $("authEmail").value.trim();
-  if (!validEmail(email)) email = "demo.trader@example.com"; // demo: never block entry
-  const display = (authMode === "signup" && name.length >= 2) ? name
-    : email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  finishAuth({ name: display, email: email, via: "email" }, true); // mock sign-in
-});
-$("authToggle").addEventListener("click", () => setAuthMode(authMode === "signup" ? "signin" : "signup"));
-function socialLogin(label){
-  toast("Continue with " + label + " — demo"); // mock: no real OAuth
-  finishAuth({ name: "Alex Trader", email: "alex.trader@example.com", via: label.toLowerCase() }, true);
-}
-$("btnGoogle").addEventListener("click", () => socialLogin("Google"));
-$("btnFacebook").addEventListener("click", () => socialLogin("Facebook"));
-$("btnApple").addEventListener("click", () => socialLogin("Apple"));
-function logout(){
-  try{ localStorage.removeItem("tc_session_v1"); }catch(e){}
-  showView("auth"); setAuthMode("signin");
-}
-$("logoutBtn").addEventListener("click", logout);
-$("logoutSide").addEventListener("click", logout);
+$("themeBtn").addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
+$("themeToggleSide").addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
 
 /* ---------------- TABS ---------------- */
 function goTab(tab){
-  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  $("screen-" + tab).classList.add("active");
+  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("screen-"+tab).classList.add("active");
   document.querySelector(".content").scrollTop = 0;
-  if (tab === "live" && !state.liveBuilt){ state.liveBuilt = true; buildLive(); }
+  if(tab==="live" && !state.liveBuilt){ state.liveBuilt = true; buildLive(); }
 }
-document.querySelectorAll("[data-tab]").forEach(b =>
-  b.addEventListener("click", () => goTab(b.dataset.tab)));
-$("avatarBtn").addEventListener("click", () => goTab("profile"));
-$("bellBtn").addEventListener("click", () => toast("Price alerts — demo"));
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.tab)));
+$("avatarBtn").addEventListener("click", ()=>goTab("profile"));
+$("bellBtn").addEventListener("click", ()=>{
+  goTab("trade");
+  setTimeout(()=>{ $("alertsCard").scrollIntoView({behavior:"smooth", block:"center"}); }, 60);
+});
 
 /* ---------------- PRICE ENGINE (simulated random walk) ---------------- */
+let prevBid = {};
 function tick(){
-  SYM_ORDER.forEach(s => {
+  SYM_ORDER.forEach(s=>{
     const m = meta(s), pr = px(s);
-    pr.bid += (m.base - pr.bid) * 0.002 + (Math.random() - 0.5) * 2 * m.vol;
+    prevBid[s] = pr.bid;
+    pr.bid += (m.base - pr.bid)*0.002 + (Math.random()-0.5)*2*m.vol;
     pr.ask = pr.bid + m.spread;
-    pr.chg += (Math.random() - 0.5) * 0.02;
-    const h = state.hist[s]; h.push(pr.bid); if (h.length > 140) h.shift();
+    pr.chg += (Math.random()-0.5)*0.02;
+    const h = state.hist[s]; h.push(pr.bid); if(h.length>140) h.shift();
   });
-  renderTradeTick();
+  checkAlerts();
+  fillPending();
+  checkTpSl();
+  renderWatchlistTick();
+  renderHeaderTick();
+  renderDepth();
+  renderTapeTick();
+  renderTicketTick();
   renderPositionsTick();
+  renderAccount();
   drawFallbacks();
 }
-function renderTradeTick(){
-  const s = state.sym, pr = px(s);
-  const hp = $("hdrPrice");
-  const prev = hp.textContent;
-  hp.textContent = fmtP(s, pr.bid);
-  hp.classList.remove("tick-up", "tick-down");
-  void hp.offsetWidth;
-  hp.classList.add(pr.bid >= parseFloat(prev.replace(/,/g, "")) || prev === "—" ? "tick-up" : "tick-down");
-  const c = $("hdrChg");
-  c.textContent = (pr.chg >= 0 ? "+" : "") + pr.chg.toFixed(2) + "%";
-  c.className = "chg num " + (pr.chg >= 0 ? "up" : "down");
-  $("bidPx").textContent = fmtP(s, pr.bid);
-  $("askPx").textContent = fmtP(s, pr.ask);
-  $("spreadVal").textContent = fmtP(s, meta(s).spread);
-  const margin = state.lots * meta(s).contract * pr.ask / LEVERAGE;
-  $("marginVal").textContent = fmt$(margin);
-  const risk = 20 * Math.pow(10, -meta(s).digits) * meta(s).perPoint * state.lots;
-  $("riskLine").innerHTML = "Est. risk at 20 pt stop: <b>" + fmt$(risk) + "</b>";
+
+/* ---------------- WATCHLIST ---------------- */
+function renderWatchlist(){
+  const list = $("watchList"); list.innerHTML = "";
+  SYM_ORDER.forEach(s=>{
+    const b = document.createElement("button");
+    b.className = "wl-item" + (s===state.sym ? " current" : "");
+    b.dataset.sym = s; b.setAttribute("role","option");
+    b.setAttribute("aria-selected", s===state.sym ? "true" : "false");
+    b.innerHTML = '<b>'+s+'</b><span class="wl-px"><span class="num" data-wl-px="'+s+'">—</span><br>'+
+      '<span class="chg num" data-wl-chg="'+s+'">—</span></span>';
+    b.addEventListener("click", ()=>setSymbol(s));
+    list.appendChild(b);
+  });
+  renderWatchlistTick();
+}
+function renderWatchlistTick(){
+  SYM_ORDER.forEach(s=>{
+    const pr = px(s);
+    const pxEl = document.querySelector('[data-wl-px="'+s+'"]');
+    const chgEl = document.querySelector('[data-wl-chg="'+s+'"]');
+    if(pxEl){
+      const up = pr.bid >= (prevBid[s] ?? pr.bid);
+      pxEl.textContent = fmtP(s, pr.bid);
+      flash(pxEl, up);
+    }
+    if(chgEl){
+      chgEl.textContent = (pr.chg>=0?"+":"") + pr.chg.toFixed(2) + "%";
+      chgEl.classList.toggle("up", pr.chg>=0);
+      chgEl.classList.toggle("down", pr.chg<0);
+    }
+  });
 }
 
-/* ---------------- SYMBOL SHEET ---------------- */
+/* ---------------- SYMBOL HEADER + SHEET ---------------- */
+function setSymbol(s){
+  if(!SYMBOLS[s]) return;
+  state.sym = s;
+  $("symName").textContent = s;
+  $("symTitle").textContent = s;
+  $("symSub").textContent = meta(s).name + " · " + meta(s).ex;
+  document.querySelectorAll(".wl-item").forEach(el=>{
+    const cur = el.dataset.sym === s;
+    el.classList.toggle("current", cur);
+    el.setAttribute("aria-selected", cur ? "true" : "false");
+  });
+  loadTV("tvChart", meta(s).tv, state.tf);
+  renderDepth(true); renderTape(true);
+  renderHeaderTick(); renderTicketTick();
+  $("tPrice").value = "";
+}
+function renderHeaderTick(){
+  const s = state.sym, pr = px(s);
+  const hp = $("hdrPrice"), sp = $("symPrice");
+  const up = pr.bid >= (prevBid[s] ?? pr.bid);
+  hp.textContent = fmtP(s, pr.bid); flash(hp, up);
+  sp.textContent = fmtP(s, pr.bid); flash(sp, up);
+  const c = $("hdrChg");
+  c.textContent = (pr.chg>=0?"+":"") + pr.chg.toFixed(2) + "%";
+  c.className = "chg-pill num " + (pr.chg>=0 ? "up" : "down");
+  $("hdrSpread").textContent = fmtP(s, meta(s).spread);
+}
+$("symPicker").addEventListener("click", ()=>{ renderSymbolSheet(); openSheet(); });
 function openSheet(){ $("backdrop").hidden = false; $("symbolSheet").hidden = false; }
 function closeSheet(){ $("backdrop").hidden = true; $("symbolSheet").hidden = true; }
-$("symPicker").addEventListener("click", () => { renderSymbolList(); openSheet(); });
 $("backdrop").addEventListener("click", closeSheet);
-function renderSymbolList(){
+$("sheetX").addEventListener("click", closeSheet);
+function renderSymbolSheet(){
   const list = $("symbolList"); list.innerHTML = "";
-  SYM_ORDER.forEach(s => {
+  SYM_ORDER.forEach(s=>{
     const pr = px(s);
     const b = document.createElement("button");
-    b.className = "sym-row" + (s === state.sym ? " current" : "");
-    b.innerHTML = "<b>" + s + '</b><span class="sp num">' + fmtP(s, pr.bid) + "</span>" +
-      '<span class="sc num ' + (pr.chg >= 0 ? "up" : "down") + '">' +
-      (pr.chg >= 0 ? "+" : "") + pr.chg.toFixed(2) + "%</span>";
-    b.addEventListener("click", () => { setSymbol(s); closeSheet(); });
+    b.className = "sym-row" + (s===state.sym ? " current" : "");
+    b.innerHTML = '<b>'+s+'</b><span class="sp num">'+fmtP(s,pr.bid)+'</span>'+
+      '<span class="sc num '+(pr.chg>=0?"up":"down")+'">'+(pr.chg>=0?"+":"")+pr.chg.toFixed(2)+'%</span>';
+    b.addEventListener("click", ()=>{ setSymbol(s); closeSheet(); });
     list.appendChild(b);
   });
 }
-function setSymbol(s){
-  state.sym = s;
-  $("symName").textContent = s;
-  loadTV("tvChart", meta(s).tv, TF_MAP[state.tf]);
-  renderTradeTick();
-}
 
-/* ---------------- TRADINGVIEW (real embed) + canvas fallback ---------------- */
+/* ---------------- TRADINGVIEW WIDGET + CANVAS FALLBACK ---------------- */
 function loadTV(containerId, tvSymbol, interval){
   const host = $(containerId);
-  if (!host) return;
+  if(!host) return;
   host.innerHTML = "";
-  if (typeof TradingView === "undefined"){ showFallback(containerId); return; }
+  if(typeof TradingView === "undefined"){ showFallback(containerId); return; }
   try{
-    const dark = theme() === "dark";
     new TradingView.widget({
       container_id: containerId,
       autosize: true,
       symbol: tvSymbol,
       interval: interval,
-      theme: dark ? "dark" : "light",
+      theme: theme(),
       style: "1",
       locale: "en",
+      toolbar_bg: theme()==="dark" ? "#0A0F1C" : "#FFFFFF",
       hide_side_toolbar: false,
       allow_symbol_change: false,
-      backgroundColor: dark ? "rgba(10, 15, 28, 1)" : "rgba(255, 255, 255, 1)",
-      gridColor: dark ? "rgba(255,255,255,0.06)" : "rgba(15,23,42,0.06)"
+      backgroundColor: theme()==="dark" ? "rgba(5, 8, 15, 1)" : "rgba(255,255,255,1)",
+      gridColor: theme()==="dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)"
     });
     hideFallback(containerId);
   }catch(e){ showFallback(containerId); }
 }
-function fbIds(containerId){
-  return containerId === "tvChart"
-    ? { canvas:"fallbackChart", note:"chartNote" }
-    : { canvas:"fallbackChartLive", note:null };
+function showFallback(id){
+  const cv = id==="tvChart" ? $("fallbackChart") : $("fallbackChartLive");
+  if(cv) cv.hidden = false;
+  if(id==="tvChart" && $("chartNote")) $("chartNote").hidden = false;
 }
-function showFallback(containerId){
-  const f = fbIds(containerId);
-  $(f.canvas).hidden = false;
-  if (f.note) $(f.note).hidden = false;
-}
-function hideFallback(containerId){
-  const f = fbIds(containerId);
-  $(f.canvas).hidden = true;
-  if (f.note) $(f.note).hidden = true;
+function hideFallback(id){
+  const cv = id==="tvChart" ? $("fallbackChart") : $("fallbackChartLive");
+  if(cv) cv.hidden = true;
+  if(id==="tvChart" && $("chartNote")) $("chartNote").hidden = true;
 }
 function drawFallback(containerId, canvasId){
   const cv = $(canvasId);
-  if (!cv || cv.hidden) return;
-  const h = state.hist[containerId === "tvChart" ? state.sym : "XAUUSD"];
-  const dpr = window.devicePixelRatio || 1;
+  if(!cv || cv.hidden) return;
+  const h = state.hist[containerId==="tvChart" ? state.sym : "XAUUSD"];
+  const dpr = window.devicePixelRatio||1;
   const w = cv.clientWidth, ht = cv.clientHeight;
-  if (!w || !ht) return;
-  if (cv.width !== Math.round(w * dpr)){ cv.width = Math.round(w * dpr); cv.height = Math.round(ht * dpr); }
-  const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, ht);
-  const min = Math.min.apply(null, h), max = Math.max.apply(null, h), rng = (max - min) || 1;
-  const up = h[h.length - 1] >= h[0];
+  if(!w || !ht || h.length<2) return;
+  if(cv.width!==Math.round(w*dpr)){ cv.width=Math.round(w*dpr); cv.height=Math.round(ht*dpr); }
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,ht);
+  const min = Math.min.apply(null,h), max = Math.max.apply(null,h), rng = (max-min)||1;
+  const up = h[h.length-1] >= h[0];
   ctx.strokeStyle = up ? "#22C55E" : "#F04452"; ctx.lineWidth = 2;
   ctx.beginPath();
-  h.forEach((v, i) => {
-    const x = i / (h.length - 1) * w, y = ht - ((v - min) / rng) * (ht - 16) - 8;
-    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  h.forEach((v,i)=>{
+    const x = i/(h.length-1)*w, y = ht - ((v-min)/rng)*(ht-16) - 8;
+    i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
   });
   ctx.stroke();
-  ctx.lineTo(w, ht); ctx.lineTo(0, ht); ctx.closePath();
-  const g = ctx.createLinearGradient(0, 0, 0, ht);
-  g.addColorStop(0, up ? "rgba(34,197,94,.25)" : "rgba(240,68,82,.25)");
-  g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.lineTo(w,ht); ctx.lineTo(0,ht); ctx.closePath();
+  const g = ctx.createLinearGradient(0,0,0,ht);
+  g.addColorStop(0, up?"rgba(34,197,94,.25)":"rgba(240,68,82,.25)");
+  g.addColorStop(1,"rgba(0,0,0,0)");
   ctx.fillStyle = g; ctx.fill();
 }
 function drawFallbacks(){
-  drawFallback("tvChart", "fallbackChart");
-  if (state.liveBuilt) drawFallback("tvChartLive", "fallbackChartLive");
+  drawFallback("tvChart","fallbackChart");
+  if(state.liveBuilt) drawFallback("tvChartLive","fallbackChartLive");
 }
-$("tfBar").addEventListener("click", e => {
-  const b = e.target.closest(".tf"); if (!b) return;
-  document.querySelectorAll(".tf").forEach(x => x.classList.remove("active"));
+
+/* timeframe chips */
+$("tfBar").addEventListener("click", e=>{
+  const b = e.target.closest(".tf"); if(!b) return;
+  document.querySelectorAll(".tf").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");
   state.tf = b.dataset.tf;
-  loadTV("tvChart", meta(state.sym).tv, TF_MAP[state.tf]);
+  loadTV("tvChart", meta(state.sym).tv, state.tf);
 });
 
-/* ---------------- TRADE TICKET ---------------- */
-function setLots(v){
-  state.lots = Math.min(50, Math.max(0.01, Math.round(v * 100) / 100));
-  $("lotVal").textContent = state.lots.toFixed(2);
-  renderTradeTick();
+/* ---------------- ORDER BOOK DEPTH (simulated) ---------------- */
+const DEPTH_ROWS = 8;
+function buildDepth(s){
+  const m = meta(s), pr = px(s);
+  const step = m.spread > 0 ? Math.max(m.spread/2, m.vol/4) : m.vol/4;
+  const asks = [], bids = [];
+  let cum = 0;
+  for(let i=DEPTH_ROWS;i>=1;i--){
+    const size = 0.2 + Math.random()*2.4;
+    cum += size;
+    asks.push({ price: pr.ask + step*(i-1) + (Math.random()-0.5)*step*0.4, size, cum });
+  }
+  cum = 0;
+  for(let i=1;i<=DEPTH_ROWS;i++){
+    const size = 0.2 + Math.random()*2.4;
+    cum += size;
+    bids.push({ price: pr.bid - step*(i-1) - (Math.random()-0.5)*step*0.4, size, cum });
+  }
+  const maxCum = Math.max(asks[asks.length-1].cum, bids[bids.length-1].cum);
+  return { asks, bids, maxCum };
 }
-$("lotMinus").addEventListener("click", () => setLots(state.lots - 0.01));
-$("lotPlus").addEventListener("click", () => setLots(state.lots + 0.01));
+function renderDepth(force){
+  const s = state.sym;
+  if(force || !state.depth[s] || Math.random()<0.6) state.depth[s] = buildDepth(s);
+  const d = state.depth[s], pr = px(s);
+  const row = (r, side) =>
+    '<div class="ob-row '+side+'"><span class="bar" style="width:'+(r.cum/d.maxCum*100).toFixed(1)+'%"></span>'+
+    '<span>'+fmtP(s,r.price)+'</span><span>'+r.size.toFixed(2)+'</span><span>'+r.cum.toFixed(2)+'</span></div>';
+  $("obAsks").innerHTML = d.asks.map(r=>row(r,"ask")).join("");
+  $("obBids").innerHTML = d.bids.map(r=>row(r,"bid")).join("");
+  const last = $("obLast"), up = pr.bid >= (prevBid[s] ?? pr.bid);
+  last.textContent = fmtP(s, pr.bid);
+  last.className = "num " + (up ? "pl-pos" : "pl-neg");
+  $("obSpread").textContent = fmtP(s, meta(s).spread);
+}
+/* tap a depth row -> prefill limit price (Binance pattern) */
+$("mdDepth").addEventListener("click", e=>{
+  const r = e.target.closest(".ob-row"); if(!r) return;
+  const priceTxt = r.querySelector("span:nth-child(2)").textContent;
+  setTType(r.classList.contains("ask") ? "limit" : "limit");
+  $("tPrice").value = priceTxt;
+  toast("Limit price set from order book — demo");
+});
 
-function mirrorBadge(p){
-  return p.mirror
-    ? '<div class="mirror-badge"><span class="mdot"></span>Mirrored to ' + p.mirror.broker + " · " + p.mirror.ms + "ms</div>"
-    : '<div class="mirror-badge demo"><span class="mdot"></span>Demo fill — connect a broker to mirror</div>';
-}
-function execute(dir){
+/* ---------------- RECENT TRADES TAPE (simulated) ---------------- */
+const tape = [];
+function renderTape(force){
+  if(force) tape.length = 0;
   const s = state.sym, pr = px(s);
-  const entry = dir === "BUY" ? pr.ask : pr.bid;
-  const linked = BROKERS.filter(b => b.connected);
-  const mirror = linked.length
-    ? { broker: linked[0].name, ms: 40 + Math.round(Math.random() * 100) } // simulated 40–140ms
-    : null;
-  state.open.push({ id:"o" + (state.orderSeq++), sym:s, dir:dir, lots:state.lots,
-                    entry:entry, time:new Date(), mirror:mirror });
-  renderPositions();
-  goTab("positions");
-  document.querySelector('[data-ptab="open"]').click();
-  toast(mirror
-    ? "Mirrored to " + mirror.broker + " · " + mirror.ms + "ms — demo"
-    : "Demo fill — connect a broker to mirror");
+  if(tape.length===0 || Math.random()<0.7){
+    const now = new Date();
+    tape.unshift({
+      t: String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")+":"+String(now.getSeconds()).padStart(2,"0"),
+      p: Math.random()>0.5 ? pr.ask : pr.bid,
+      z: (0.01 + Math.random()*1.9),
+      up: Math.random()>0.5
+    });
+    while(tape.length>14) tape.pop();
+  }
+  $("tapeBody").innerHTML = tape.map(r=>
+    '<div class="ob-row"><span>'+r.t+'</span>'+
+    '<span class="'+(r.up?"pl-pos":"pl-neg")+'">'+fmtP(s,r.p)+'</span>'+
+    '<span>'+r.z.toFixed(2)+'</span></div>'
+  ).join("");
 }
-$("buyBtn").addEventListener("click", () => execute("BUY"));
-$("sellBtn").addEventListener("click", () => execute("SELL"));
+function renderTapeTick(){ if(!$("mdTape").hidden) renderTape(false); }
+
+/* market-data tabs */
+$("mdTabs").addEventListener("click", e=>{
+  const b = e.target.closest(".md-tab"); if(!b) return;
+  document.querySelectorAll(".md-tab").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  const depth = b.dataset.md === "depth";
+  $("mdDepth").hidden = !depth;
+  $("mdTape").hidden = depth;
+  if(depth) renderDepth(true); else renderTape(true);
+});
+
+/* ---------------- PRO ORDER TICKET ---------------- */
+function setTType(t){
+  state.ttype = t;
+  document.querySelectorAll(".ttype").forEach(x=>x.classList.toggle("active", x.dataset.ttype===t));
+  const needPrice = t !== "market";
+  $("tPriceWrap").hidden = !needPrice;
+  $("tPriceLabel").textContent = t==="limit" ? "Limit price" : t==="stop" ? "Stop price" : "Price";
+}
+$("ttypeTabs").addEventListener("click", e=>{
+  const b = e.target.closest(".ttype"); if(!b) return;
+  setTType(b.dataset.ttype);
+});
+$("dirToggle").addEventListener("click", e=>{
+  const b = e.target.closest(".dir-btn"); if(!b) return;
+  state.dir = b.dataset.dir;
+  document.querySelectorAll(".dir-btn").forEach(x=>x.classList.toggle("active", x===b));
+  renderTicketTick();
+});
+function setLots(v){
+  state.lots = Math.min(50, Math.max(0.01, Math.round(v*100)/100));
+  $("lotVal").textContent = state.lots.toFixed(2);
+  renderTicketTick();
+}
+$("lotMinus").addEventListener("click", ()=>setLots(state.lots-0.01));
+$("lotPlus").addEventListener("click", ()=>setLots(state.lots+0.01));
+$("tpslToggle").addEventListener("click", ()=>{
+  state.tpslOn = !state.tpslOn;
+  $("tpslToggle").setAttribute("aria-pressed", state.tpslOn ? "true" : "false");
+  $("tpslWrap").hidden = !state.tpslOn;
+  renderTicketTick();
+});
+["tPrice","tpPrice","slPrice"].forEach(id=>$(id).addEventListener("input", renderTicketTick));
+
+function ticketPx(){
+  const s = state.sym, pr = px(s);
+  if(state.ttype==="market") return state.dir==="buy" ? pr.ask : pr.bid;
+  const v = parseFloat($("tPrice").value);
+  return isNaN(v) ? (state.dir==="buy" ? pr.ask : pr.bid) : v;
+}
+function estMargin(){
+  const s = state.sym;
+  return state.lots * meta(s).contract * ticketPx() / LEVERAGE;
+}
+function estRisk(){
+  if(!state.tpslOn) return null;
+  const sl = parseFloat($("slPrice").value);
+  if(isNaN(sl)) return null;
+  const s = state.sym, entry = ticketPx();
+  const diff = state.dir==="buy" ? (entry - sl) : (sl - entry);
+  if(diff <= 0) return null;
+  return diff * meta(s).perPoint * state.lots;
+}
+function renderTicketTick(){
+  const s = state.sym, pr = px(s);
+  $("buyPx").textContent = fmtP(s, pr.ask);
+  $("sellPx").textContent = fmtP(s, pr.bid);
+  $("estMargin").textContent = fmt$(estMarginSafe());
+  const r = estRisk();
+  $("estRisk").textContent = r===null ? "—" : fmt$(r);
+}
+function estMarginSafe(){ try{ return estMargin(); }catch(e){ return 0; } }
+
+function linkedBroker(){
+  return BROKERS.find(b=>b.connected) || null;
+}
+function execute(){
+  const s = state.sym, dir = state.dir.toUpperCase();
+  const lots = state.lots;
+  let tp = null, sl = null;
+  if(state.tpslOn){
+    const tpV = parseFloat($("tpPrice").value), slV = parseFloat($("slPrice").value);
+    if(!isNaN(tpV)) tp = tpV;
+    if(!isNaN(slV)) sl = slV;
+  }
+  if(state.ttype==="market"){
+    const pr = px(s);
+    const entry = dir==="BUY" ? pr.ask : pr.bid;
+    const lb = linkedBroker();
+    state.open.push({
+      id:"o"+(state.orderSeq++), sym:s, dir, lots, entry, tp, sl,
+      time:new Date(),
+      mirror: lb ? { broker: lb.name, ms: 40 + Math.round(Math.random()*100) } : null
+    });
+    renderPositions();
+    toast(lb ? "Market "+dir+" filled · Mirrored to "+lb.name+" — demo"
+             : "Market "+dir+" "+lots.toFixed(2)+" "+s+" filled — demo");
+  }else{
+    const price = parseFloat($("tPrice").value);
+    if(isNaN(price) || price<=0){ toast("Enter a valid "+state.ttype+" price — demo"); $("tPrice").focus(); return; }
+    const type = (dir==="BUY" ? "Buy " : "Sell ") + (state.ttype==="limit" ? "Limit" : "Stop");
+    state.pending.push({ id:"p"+(state.orderSeq++), sym:s, dir, type, lots, price, tp, sl });
+    renderPositions();
+    toast(type+" placed @ "+fmtP(s,price)+" — fills when price reaches it");
+  }
+}
+$("buyBtn").addEventListener("click", ()=>{ state.dir="buy"; syncDir(); execute(); });
+$("sellBtn").addEventListener("click", ()=>{ state.dir="sell"; syncDir(); execute(); });
+function syncDir(){
+  document.querySelectorAll(".dir-btn").forEach(x=>x.classList.toggle("active", x.dataset.dir===state.dir));
+}
+
+/* pending limit/stop auto-fill when price reaches trigger (simulated) */
+function fillPending(){
+  if(!state.pending.length) return;
+  const filled = [];
+  state.pending = state.pending.filter(o=>{
+    const pr = px(o.sym);
+    let hit = false;
+    if(o.type==="Buy Limit"  && pr.ask <= o.price) hit = true;
+    if(o.type==="Sell Limit" && pr.bid >= o.price) hit = true;
+    if(o.type==="Buy Stop"   && pr.ask >= o.price) hit = true;
+    if(o.type==="Sell Stop"  && pr.bid <= o.price) hit = true;
+    if(hit){ filled.push(o); return false; }
+    return true;
+  });
+  filled.forEach(o=>{
+    const lb = linkedBroker();
+    state.open.push({
+      id:"o"+(state.orderSeq++), sym:o.sym, dir:o.dir, lots:o.lots, entry:o.price,
+      tp:o.tp, sl:o.sl, time:new Date(),
+      mirror: lb ? { broker: lb.name, ms: 40 + Math.round(Math.random()*100) } : null
+    });
+    toast(o.type+" "+o.sym+" filled @ "+fmtP(o.sym,o.price)+" — demo");
+  });
+  if(filled.length) renderPositions();
+}
+
+/* TP/SL auto-close on open positions (simulated) */
+function checkTpSl(){
+  if(!state.open.length) return;
+  let changed = false;
+  state.open = state.open.filter(p=>{
+    const pr = px(p.sym);
+    const cur = p.dir==="BUY" ? pr.bid : pr.ask;
+    let exit = null;
+    if(p.tp!==null && p.tp!==undefined){
+      if((p.dir==="BUY" && cur>=p.tp) || (p.dir==="SELL" && cur<=p.tp)) exit = p.tp;
+    }
+    if(exit===null && p.sl!==null && p.sl!==undefined){
+      if((p.dir==="BUY" && cur<=p.sl) || (p.dir==="SELL" && cur>=p.sl)) exit = p.sl;
+    }
+    if(exit!==null){ closePosition(p, exit, exit===p.tp ? "Take profit" : "Stop loss"); changed = true; return false; }
+    return true;
+  });
+  if(changed) renderPositions();
+}
+
+/* ---------------- ACCOUNT STRIP ---------------- */
+function positionPL(p){
+  const pr = px(p.sym);
+  const closePx = p.dir==="BUY" ? pr.bid : pr.ask;
+  const diff = p.dir==="BUY" ? (closePx - p.entry) : (p.entry - closePx);
+  return diff * meta(p.sym).perPoint * p.lots;
+}
+function openPL(){ return state.open.reduce((a,p)=>a+positionPL(p),0); }
+function usedMargin(){
+  return state.open.reduce((a,p)=>a + p.lots*meta(p.sym).contract*p.entry/LEVERAGE, 0);
+}
+function equity(){ return state.balance + openPL(); }
+function renderAccount(){
+  const eq = equity(), m = usedMargin(), free = eq - m;
+  $("acctEquity").textContent = fmt$(eq);
+  $("acctBalance").textContent = fmt$(state.balance);
+  $("acctMargin").textContent = fmt$(m);
+  $("acctFree").textContent = fmt$(free);
+  const lvl = $("acctLevel");
+  if(m > 0.01){
+    const pct = eq/m*100;
+    lvl.textContent = pct.toFixed(0)+"%";
+    lvl.classList.toggle("warn", pct<200);
+  }else{ lvl.textContent = "—"; lvl.classList.remove("warn"); }
+  $("eqVal").textContent = fmt$(eq);
+}
+
+/* ---------------- PRICE ALERTS ---------------- */
+function renderAlerts(){
+  const list = $("alertList"); list.innerHTML = "";
+  $("alertDot").hidden = !state.alerts.some(a=>!a.triggered);
+  if(!state.alerts.length){
+    list.innerHTML = '<div class="alerts-empty fine">No alerts yet. Tap “New alert” to get notified when a price crosses your level.</div>';
+    return;
+  }
+  state.alerts.forEach(a=>{
+    const r = document.createElement("div");
+    r.className = "alert-row" + (a.triggered ? " triggered" : "");
+    r.innerHTML = '<span class="ic" data-icon="'+(a.triggered?"check":"bell")+'"></span>'+
+      '<div><b class="num">'+a.sym+' '+(a.cond==="above"?"≥":"≤")+' '+fmtP(a.sym,a.price)+'</b>'+
+      '<span>'+(a.triggered?"Triggered":"Active")+'</span></div>'+
+      '<button class="del" data-adel="'+a.id+'" aria-label="Delete alert"><span class="ic sm" data-icon="trash"></span></button>';
+    list.appendChild(r);
+  });
+  injectIcons();
+}
+$("alertAddBtn").addEventListener("click", ()=>{
+  const f = $("alertForm");
+  f.hidden = !f.hidden;
+  if(!f.hidden){
+    const sel = $("afSym");
+    if(!sel.options.length) SYM_ORDER.forEach(s=>{ const o=document.createElement("option"); o.value=s; o.textContent=s; sel.appendChild(o); });
+    sel.value = state.sym;
+    if(!$("afPrice").value) $("afPrice").value = fmtP(state.sym, px(state.sym).bid);
+  }
+});
+$("afCancel").addEventListener("click", ()=>{ $("alertForm").hidden = true; });
+$("afSave").addEventListener("click", ()=>{
+  const price = parseFloat($("afPrice").value);
+  if(isNaN(price) || price<=0){ toast("Enter a valid alert price — demo"); return; }
+  state.alerts.push({ id:"a"+(state.alertSeq++), sym:$("afSym").value, cond:$("afCond").value, price, triggered:false });
+  $("alertForm").hidden = true; $("afPrice").value = "";
+  renderAlerts();
+  toast("Alert created — demo");
+});
+document.addEventListener("click", e=>{
+  const d = e.target.closest("[data-adel]"); if(!d) return;
+  state.alerts = state.alerts.filter(a=>a.id!==d.dataset.adel);
+  renderAlerts();
+  toast("Alert deleted — demo");
+});
+function checkAlerts(){
+  let hit = false;
+  state.alerts.forEach(a=>{
+    if(a.triggered) return;
+    const bid = px(a.sym).bid;
+    if((a.cond==="above" && bid>=a.price) || (a.cond==="below" && bid<=a.price)){
+      a.triggered = true; hit = true;
+      toast("Alert triggered: "+a.sym+" "+(a.cond==="above"?"≥":"≤")+" "+fmtP(a.sym,a.price));
+    }
+  });
+  if(hit) renderAlerts();
+}
 
 /* ---------------- POSITIONS ---------------- */
-$("posTabs").addEventListener("click", e => {
-  const b = e.target.closest("[data-ptab]"); if (!b) return;
-  document.querySelectorAll("#posTabs .subtab").forEach(x => x.classList.remove("active"));
+$("posTabs").addEventListener("click", e=>{
+  const b = e.target.closest(".subtab"); if(!b) return;
+  document.querySelectorAll(".subtab").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");
   const t = b.dataset.ptab;
-  $("posOpen").hidden = t !== "open";
-  $("posPending").hidden = t !== "pending";
-  $("posHistory").hidden = t !== "history";
+  $("posOpen").hidden = t!=="open";
+  $("posPending").hidden = t!=="pending";
+  $("posHistory").hidden = t!=="history";
 });
+function closePosition(p, exit, reason){
+  const pl = (p.dir==="BUY" ? (exit-p.entry) : (p.entry-exit)) * meta(p.sym).perPoint * p.lots;
+  state.balance += pl;
+  state.history.push({ sym:p.sym, dir:p.dir, lots:p.lots, entry:p.entry, exit, pl });
+  state.open = state.open.filter(x=>x.id!==p.id);
+  toast((reason ? reason+": " : "Closed ")+p.sym+" "+fmt$(pl)+" — demo");
+}
 function renderPositions(){
   /* open */
   const open = $("posOpen"); open.innerHTML = "";
   $("openCount").textContent = state.open.length;
-  const badge = $("posBadge"), badgeSide = $("posBadgeSide");
-  badge.hidden = !state.open.length; badge.textContent = state.open.length;
-  badgeSide.hidden = !state.open.length; badgeSide.textContent = state.open.length;
-  if (!state.open.length)
-    open.innerHTML = '<div class="empty">No open positions.<br>Place a trade from the Trade tab.</div>';
-  state.open.forEach(p => {
+  ["posBadge","posBadgeSide"].forEach(id=>{
+    const b = $(id); b.hidden = !state.open.length; b.textContent = state.open.length;
+  });
+  if(!state.open.length) open.innerHTML = '<div class="empty">No open positions.<br>Place a trade from the Trade tab.</div>';
+  state.open.forEach(p=>{
     const card = document.createElement("div");
     card.className = "pos-card"; card.dataset.pid = p.id;
+    const mb = p.mirror
+      ? '<div class="mirror-badge"><span class="mdot"></span>Mirrored to '+esc(p.mirror.broker)+' · '+p.mirror.ms+'ms</div>'
+      : '<div class="mirror-badge demo"><span class="mdot"></span>Demo fill — connect a broker to mirror</div>';
     card.innerHTML =
-      '<div class="pos-top"><span class="pos-sym">' + p.sym + "</span>" +
-      '<span class="dir ' + (p.dir === "BUY" ? "buy" : "sell") + '">' + p.dir + "</span>" +
-      '<span class="pos-lots num">' + p.lots.toFixed(2) + ' lots</span>' +
-      '<button class="pos-close" data-close="' + p.id + '" aria-label="Close">×</button></div>' +
-      '<div class="pos-grid">' +
-      '<div class="pos-col"><span>Entry</span><b class="num">' + fmtP(p.sym, p.entry) + "</b></div>" +
-      '<div class="pos-col"><span>Current</span><b class="num" data-cur="' + p.id + '">—</b></div>' +
-      '<div class="pos-col"><span>P/L</span><b class="num" data-pl="' + p.id + '">—</b></div>' +
-      "</div>" + mirrorBadge(p);
+      '<div class="pos-top"><span class="pos-sym">'+p.sym+'</span>'+
+      '<span class="dir '+(p.dir==="BUY"?"buy":"sell")+'">'+p.dir+'</span>'+
+      '<span class="pos-lots">'+p.lots.toFixed(2)+' lots</span>'+
+      '<button class="pos-close" data-close="'+p.id+'" aria-label="Close position">×</button></div>'+
+      '<div class="pos-grid">'+
+      '<div class="pos-col"><span>Entry</span><b>'+fmtP(p.sym,p.entry)+'</b></div>'+
+      '<div class="pos-col"><span>Current</span><b data-cur="'+p.id+'">—</b></div>'+
+      '<div class="pos-col"><span>P/L</span><b data-pl="'+p.id+'">—</b></div>'+
+      '</div>'+
+      ((p.tp||p.sl) ? '<div class="pos-tpsl">'+(p.tp?'TP <b>'+fmtP(p.sym,p.tp)+'</b>':"")+(p.sl?'<span>SL <b>'+fmtP(p.sym,p.sl)+'</b></span>':"")+'</div>' : "")+
+      mb;
     open.appendChild(card);
   });
   /* pending */
   const pend = $("posPending"); pend.innerHTML = "";
   $("pendCount").textContent = state.pending.length;
-  if (!state.pending.length) pend.innerHTML = '<div class="empty">No pending orders.</div>';
-  state.pending.forEach(o => {
+  if(!state.pending.length) pend.innerHTML = '<div class="empty">No pending orders.<br>Limit and Stop orders wait here until price reaches them.</div>';
+  state.pending.forEach(o=>{
     const card = document.createElement("div");
     card.className = "pos-card";
     card.innerHTML =
-      '<div class="pos-top"><span class="pos-sym">' + o.sym + "</span>" +
-      '<span class="dir ' + (o.dir === "BUY" ? "buy" : "sell") + '">' + o.type.toUpperCase() + "</span>" +
-      '<span class="pos-lots num">' + o.lots.toFixed(2) + ' lots</span>' +
-      '<button class="pos-close" data-cancel="' + o.id + '" aria-label="Cancel">×</button></div>' +
-      '<div class="pos-grid"><div class="pos-col"><span>Trigger</span><b class="num">' + fmtP(o.sym, o.price) + "</b></div>" +
-      '<div class="pos-col"><span>Current</span><b class="num">' + fmtP(o.sym, px(o.sym).bid) + "</b></div></div>";
+      '<div class="pos-top"><span class="pos-sym">'+o.sym+'</span>'+
+      '<span class="dir '+(o.dir==="BUY"?"buy":"sell")+'">'+esc(o.type.toUpperCase())+'</span>'+
+      '<span class="pos-lots">'+o.lots.toFixed(2)+' lots</span>'+
+      '<button class="pos-close" data-cancel="'+o.id+'" aria-label="Cancel order">×</button></div>'+
+      '<div class="pos-grid"><div class="pos-col"><span>Trigger</span><b>'+fmtP(o.sym,o.price)+'</b></div>'+
+      '<div class="pos-col"><span>Current</span><b>'+fmtP(o.sym,px(o.sym).bid)+'</b></div></div>';
     pend.appendChild(card);
   });
-  /* history (positions tab + profile) */
   renderHistory($("posHistory"));
   renderHistory($("profHistory"));
-  $("eqVal").textContent = fmt$(equity());
+  renderAccount();
 }
-function renderHistory(box){
-  box.innerHTML = "";
-  if (!state.history.length){ box.innerHTML = '<div class="empty">No closed trades yet.</div>'; return; }
-  state.history.slice().reverse().forEach(h => {
+function renderHistory(el){
+  if(!el) return;
+  el.innerHTML = "";
+  if(!state.history.length){ el.innerHTML = '<div class="empty">No closed trades yet.</div>'; return; }
+  state.history.slice().reverse().forEach(h=>{
     const d = document.createElement("div");
     d.className = "pos-card";
     d.innerHTML =
-      '<div class="pos-top"><span class="pos-sym">' + h.sym + "</span>" +
-      '<span class="dir ' + (h.dir === "BUY" ? "buy" : "sell") + '">' + h.dir + "</span>" +
-      '<span class="pos-lots num">' + h.lots.toFixed(2) + " lots</span></div>" +
-      '<div class="pos-grid">' +
-      '<div class="pos-col"><span>Entry</span><b class="num">' + fmtP(h.sym, h.entry) + "</b></div>" +
-      '<div class="pos-col"><span>Exit</span><b class="num">' + fmtP(h.sym, h.exit) + "</b></div>" +
-      '<div class="pos-col"><span>P/L</span><b class="num ' + plClass(h.pl) + '">' + fmt$(h.pl) + "</b></div>" +
-      "</div>";
-    box.appendChild(d);
+      '<div class="pos-top"><span class="pos-sym">'+h.sym+'</span>'+
+      '<span class="dir '+(h.dir==="BUY"?"buy":"sell")+'">'+h.dir+'</span>'+
+      '<span class="pos-lots">'+h.lots.toFixed(2)+' lots</span></div>'+
+      '<div class="pos-grid">'+
+      '<div class="pos-col"><span>Entry</span><b>'+fmtP(h.sym,h.entry)+'</b></div>'+
+      '<div class="pos-col"><span>Exit</span><b>'+fmtP(h.sym,h.exit)+'</b></div>'+
+      '<div class="pos-col"><span>P/L</span><b class="'+plClass(h.pl)+'">'+fmt$(h.pl)+'</b></div>'+
+      '</div>';
+    el.appendChild(d);
   });
 }
-/* live-tick P/L updates without full re-render */
 function renderPositionsTick(){
-  state.open.forEach(p => {
+  state.open.forEach(p=>{
     const pr = px(p.sym);
-    const curEl = document.querySelector('[data-cur="' + p.id + '"]');
-    const plEl = document.querySelector('[data-pl="' + p.id + '"]');
-    if (curEl) curEl.textContent = fmtP(p.sym, p.dir === "BUY" ? pr.bid : pr.ask);
-    if (plEl){ const v = positionPL(p); plEl.textContent = fmt$(v); plEl.className = "num " + plClass(v); }
+    const curEl = document.querySelector('[data-cur="'+p.id+'"]');
+    const plEl = document.querySelector('[data-pl="'+p.id+'"]');
+    if(curEl) curEl.textContent = fmtP(p.sym, p.dir==="BUY"?pr.bid:pr.ask);
+    if(plEl){ const v = positionPL(p); plEl.textContent = fmt$(v); plEl.className = plClass(v); }
   });
-  if (state.open.length) $("eqVal").textContent = fmt$(equity());
 }
-/* close / cancel via delegation */
-document.addEventListener("click", e => {
+document.addEventListener("click", e=>{
   const c = e.target.closest("[data-close]");
-  if (c){
-    const i = state.open.findIndex(p => p.id === c.dataset.close);
-    if (i > -1){
-      const p = state.open[i];
+  if(c){
+    const p = state.open.find(x=>x.id===c.dataset.close);
+    if(p){
       const pr = px(p.sym);
-      const exit = p.dir === "BUY" ? pr.bid : pr.ask;
-      const pl = positionPL(p);
-      state.realized += pl;
-      state.history.push({ sym:p.sym, dir:p.dir, lots:p.lots, entry:p.entry, exit:exit, pl:pl });
-      state.open.splice(i, 1);
+      closePosition(p, p.dir==="BUY" ? pr.bid : pr.ask, null);
       renderPositions();
-      toast("Closed " + p.sym + " " + fmt$(pl) + " — demo");
     }
     return;
   }
   const x = e.target.closest("[data-cancel]");
-  if (x){
-    state.pending = state.pending.filter(o => o.id !== x.dataset.cancel);
+  if(x){
+    state.pending = state.pending.filter(o=>o.id!==x.dataset.cancel);
     renderPositions();
     toast("Pending order cancelled — demo");
   }
@@ -500,64 +745,54 @@ const MOCK_CHAT = [
   ["trendrider","that wick rejection though"]
 ];
 let chatIdx = 0, viewers = 2412;
-
 function buildLive(){
-  loadTV("tvChartLive", SYMBOLS.XAUUSD.tv, "5");
+  loadTV("tvChartLive", SYMBOLS.XAUUSD.tv, "5m");
   restoreFaceCam();
-  for (let i = 0; i < 3; i++) pushFeed();
-  MOCK_CHAT.slice(0, 6).forEach(m => addChat(m[0], m[1], false));
-  setInterval(() => { // mock viewer drift
-    viewers = Math.max(1800, viewers + Math.round((Math.random() - 0.48) * 60));
+  for(let i=0;i<3;i++) pushFeed();
+  MOCK_CHAT.slice(0,6).forEach(m=>addChat(m[0], m[1], false));
+  setInterval(()=>{
+    viewers = Math.max(1800, viewers + Math.round((Math.random()-0.48)*60));
     $("viewerCount").textContent = viewers.toLocaleString("en-US");
   }, 3000);
-  setInterval(() => pushFeed(), 6000);
-  setInterval(() => {
-    const m = MOCK_CHAT[chatIdx++ % MOCK_CHAT.length];
-    addChat(m[0], m[1], false);
-  }, 8000);
+  setInterval(()=>pushFeed(), 6000);
+  setInterval(()=>{ const m = MOCK_CHAT[chatIdx++ % MOCK_CHAT.length]; addChat(m[0], m[1], false); }, 8000);
 }
 function pushFeed(){
   const pr = px("XAUUSD");
-  const dir = Math.random() > 0.45 ? "BUY" : "SELL";
-  const lots = (Math.random() * 0.4 + 0.05).toFixed(2);
-  const at = dir === "BUY" ? pr.ask : pr.bid;
+  const dir = Math.random()>0.45 ? "BUY" : "SELL";
+  const lots = (Math.random()*0.4+0.05).toFixed(2);
+  const at = dir==="BUY" ? pr.ask : pr.bid;
   const feed = $("liveFeed");
   const d = document.createElement("div");
   d.className = "feed-item";
   const now = new Date();
-  d.innerHTML = '<span class="dir ' + (dir === "BUY" ? "buy" : "sell") + '">' + dir + "</span>" +
-    "<b>" + lots + " XAUUSD @ " + fmtP("XAUUSD", at) + "</b>" +
-    '<span class="t">' + String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0") + "</span>";
+  d.innerHTML = '<span class="dir '+(dir==="BUY"?"buy":"sell")+'">'+dir+'</span>'+
+    "<b>"+lots+" XAUUSD @ "+fmtP("XAUUSD",at)+"</b>"+
+    '<span class="t">'+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")+"</span>";
   feed.prepend(d);
-  while (feed.children.length > 6) feed.lastChild.remove();
+  while(feed.children.length>6) feed.lastChild.remove();
 }
 function addChat(user, text, me){
   const box = $("liveChat");
   const d = document.createElement("div");
-  d.className = "chat-msg" + (me ? " me" : "");
+  d.className = "chat-msg"+(me?" me":"");
   const b = document.createElement("b"); b.textContent = user;
   d.appendChild(b); d.appendChild(document.createTextNode(text));
   box.appendChild(d);
-  while (box.children.length > 30) box.firstChild.remove();
-  box.scrollTop = box.scrollHeight;
+  while(box.children.length>30) box.firstChild.remove();
+  box.parentElement.scrollTop = box.parentElement.scrollHeight;
 }
 $("chatSend").addEventListener("click", sendChat);
-$("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
+$("chatInput").addEventListener("keydown", e=>{ if(e.key==="Enter") sendChat(); });
 function sendChat(){
   const inp = $("chatInput"), v = inp.value.trim();
-  if (!v) return;
+  if(!v) return;
   addChat("You", v, true); inp.value = "";
-  setTimeout(() => { // mock replies
-    const replies = [["PipQueen","facts"],["GoldHunter","+1 on that"],["MarcusFX","lets gooo"]];
-    const r = replies[Math.floor(Math.random() * replies.length)];
-    addChat(r[0], r[1], false);
-  }, 1400);
 }
 $("copySwitch").addEventListener("click", function(){
   this.classList.toggle("on");
-  toast(this.classList.contains("on")
-    ? "Copy-trading ON — mock only, no real orders"
-    : "Copy-trading OFF");
+  this.setAttribute("aria-pressed", this.classList.contains("on") ? "true" : "false");
+  toast(this.classList.contains("on") ? "Copy-trading ON — demo only, no real orders" : "Copy-trading OFF");
 });
 
 /* draggable + resizable face-cam, position persisted */
@@ -565,14 +800,13 @@ $("copySwitch").addEventListener("click", function(){
   const cam = $("faceCam"), wrap = $("liveChartWrap"), grip = $("fcResize");
   const KEY = "tc_facecam_v1";
   let drag = null, resizing = false;
-
   window.restoreFaceCam = function(){
     try{
-      const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-      if (saved && saved.w){
-        cam.style.left = saved.x + "px"; cam.style.top = saved.y + "px";
+      const saved = JSON.parse(localStorage.getItem(KEY)||"null");
+      if(saved && saved.w){
+        cam.style.left = saved.x+"px"; cam.style.top = saved.y+"px";
         cam.style.right = "auto"; cam.style.bottom = "auto";
-        cam.style.width = saved.w + "px"; cam.style.height = saved.h + "px";
+        cam.style.width = saved.w+"px"; cam.style.height = saved.h+"px";
         return;
       }
     }catch(e){}
@@ -580,165 +814,160 @@ $("copySwitch").addEventListener("click", function(){
   };
   function save(){
     try{
-      localStorage.setItem(KEY, JSON.stringify({
-        x: cam.offsetLeft, y: cam.offsetTop,
-        w: cam.offsetWidth, h: cam.offsetHeight
-      }));
+      localStorage.setItem(KEY, JSON.stringify({ x:cam.offsetLeft, y:cam.offsetTop, w:cam.offsetWidth, h:cam.offsetHeight }));
     }catch(e){}
   }
   function clamp(){
     const wr = wrap.getBoundingClientRect();
     const x = Math.min(Math.max(0, cam.offsetLeft), Math.max(0, wr.width - cam.offsetWidth));
     const y = Math.min(Math.max(0, cam.offsetTop), Math.max(0, wr.height - cam.offsetHeight));
-    cam.style.left = x + "px"; cam.style.top = y + "px";
+    cam.style.left = x+"px"; cam.style.top = y+"px";
     cam.style.right = "auto"; cam.style.bottom = "auto";
   }
-  cam.addEventListener("pointerdown", e => {
-    if (e.target === grip) return;
+  cam.addEventListener("pointerdown", e=>{
+    if(e.target===grip) return;
     drag = { dx: e.clientX - cam.offsetLeft, dy: e.clientY - cam.offsetTop };
     try{ cam.setPointerCapture(e.pointerId); }catch(err){}
   });
-  grip.addEventListener("pointerdown", e => {
+  grip.addEventListener("pointerdown", e=>{
     e.stopPropagation();
     resizing = true;
-    drag = { sx: e.clientX, sy: e.clientY, w: cam.offsetWidth, h: cam.offsetHeight };
+    drag = { sx:e.clientX, sy:e.clientY, w:cam.offsetWidth, h:cam.offsetHeight };
     try{ grip.setPointerCapture(e.pointerId); }catch(err){}
   });
-  cam.addEventListener("pointermove", e => {
-    if (!drag) return;
-    if (resizing){
-      const w = Math.min(220, Math.max(64, drag.w + (e.clientX - drag.sx)));
-      const h = Math.min(300, Math.max(80, drag.h + (e.clientY - drag.sy)));
-      cam.style.width = w + "px"; cam.style.height = h + "px"; clamp();
+  cam.addEventListener("pointermove", e=>{
+    if(!drag) return;
+    if(resizing){
+      cam.style.width = Math.min(220, Math.max(64, drag.w + (e.clientX - drag.sx)))+"px";
+      cam.style.height = Math.min(300, Math.max(80, drag.h + (e.clientY - drag.sy)))+"px";
+      clamp();
     }else{
       const wr = wrap.getBoundingClientRect();
-      cam.style.left = (e.clientX - wr.left - drag.dx) + "px";
-      cam.style.top = (e.clientY - wr.top - drag.dy) + "px";
-      cam.style.right = "auto"; cam.style.bottom = "auto"; clamp();
+      cam.style.left = (e.clientX - wr.left - drag.dx)+"px";
+      cam.style.top = (e.clientY - wr.top - drag.dy)+"px";
+      cam.style.right = "auto"; cam.style.bottom = "auto";
+      clamp();
     }
   });
-  ["pointerup","pointercancel"].forEach(ev => cam.addEventListener(ev, () => {
-    if (drag) save();
-    drag = null; resizing = false;
-  }));
+  ["pointerup","pointercancel"].forEach(ev=>cam.addEventListener(ev, ()=>{ if(drag) save(); drag = null; resizing = false; }));
 })();
 
 /* ---------------- COMMUNITY ---------------- */
+const TRADERS = [
+  { name:"Marcus Cole", handle:"@daudtradefx", ini:"DR", g:["#2F80FF","#1B5FD6"], fol:"48.2k", win:"67%", live:true },
+  { name:"Sara Malik", handle:"@saramalik", ini:"SM", g:["#B678F0","#5E2B8A"], fol:"21.7k", win:"61%", live:false },
+  { name:"Arjun Rao", handle:"@arjunfx", ini:"AR", g:["#5B8DEF","#2B4A8A"], fol:"15.3k", win:"58%", live:false },
+  { name:"Lena Fischer", handle:"@lenafx", ini:"LF", g:["#22C55E","#166534"], fol:"9.8k", win:"64%", live:false }
+];
 function renderTraders(){
-  $("traderCards").innerHTML = MOCK_TRADERS.map((t, i) =>
-    '<div class="trader-card"' + (t.live ? ' data-live="1" role="button" tabindex="0" title="Watch live"' : "") + ">" +
-      '<div class="avatar sm" style="--g1:' + t.g[0] + ";--g2:" + t.g[1] + '">' + initials(t.name) + "</div>" +
-      '<div class="t-info"><b>' + t.name +
-        (t.live ? '<span class="trader-live-badge"><span class="dot"></span>LIVE</span>' : "") + "</b>" +
-        "<span>" + t.handle + "</span>" +
-        '<div class="t-stats"><span><b>' + t.followers + "</b> followers</span><span><b>" + t.winRate + "</b> win rate</span></div>" +
-      "</div>" +
-      '<button class="follow-btn' + (follows[i] ? " following" : "") + '" data-follow="' + i + '">' +
-        (follows[i] ? "Following" : "Follow") + "</button>" +
-    "</div>").join("");
+  const list = $("traderList"); list.innerHTML = "";
+  TRADERS.forEach((t,i)=>{
+    const c = document.createElement("div");
+    c.className = "trader-card";
+    c.innerHTML =
+      '<div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
+      (t.live ? '<span class="trader-live">LIVE</span>' : '') + '</div>'+
+      '<div><b>'+t.name+' <span class="handle">'+t.handle+'</span></b>'+
+      '<span class="tstat">'+t.fol+' followers · '+t.win+' win rate</span></div>'+
+      '<button class="follow-btn'+(t.following?" following":"")+'" data-follow="'+i+'">'+(t.following?"Following":"Follow")+'</button>';
+    if(t.live) c.querySelector(".avatar").addEventListener("click", ()=>goTab("live"));
+    list.appendChild(c);
+  });
 }
-renderTraders();
-$("traderCards").addEventListener("click", e => {
-  const f = e.target.closest("[data-follow]");
-  if (f){
-    const i = +f.dataset.follow;
-    follows[i] = !follows[i];
-    renderTraders();
-    toast((follows[i] ? "Following " : "Unfollowed ") + MOCK_TRADERS[i].name + " — demo");
-    return;
-  }
-  if (e.target.closest("[data-live]")) goTab("live");
-});
-$("traderCards").addEventListener("keydown", e => {
-  if (e.key === "Enter" && e.target.matches("[data-live]")) goTab("live");
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-follow]"); if(!b) return;
+  const t = TRADERS[+b.dataset.follow];
+  t.following = !t.following;
+  b.classList.toggle("following", t.following);
+  b.textContent = t.following ? "Following" : "Follow";
+  toast((t.following ? "Following " : "Unfollowed ") + t.name + " — demo");
 });
 
-/* sentiment poll — one vote, persisted */
 const POLL_KEY = "tc_poll_v1";
 let poll = { buy:7693, sell:4715, voted:null };
-try{
-  const s = JSON.parse(localStorage.getItem(POLL_KEY) || "null");
-  if (s && s.voted) poll = s;
-}catch(e){}
+try{ const s = JSON.parse(localStorage.getItem(POLL_KEY)||"null"); if(s && s.voted) poll = s; }catch(e){}
 function renderPoll(){
   const total = poll.buy + poll.sell;
-  const bp = Math.round(poll.buy / total * 100), sp = 100 - bp;
-  $("pollBuyFill").style.width = bp + "%";
-  $("pollSellFill").style.width = sp + "%";
-  $("pollBuyPct").textContent = bp + "%";
-  $("pollSellPct").textContent = sp + "%";
-  $("pollVotes").textContent = total.toLocaleString("en-US") + " votes";
-  if (poll.voted) $("pollBtns").classList.add("voted");
+  const bp = Math.round(poll.buy/total*100), sp = 100-bp;
+  $("pollBuyFill").style.width = bp+"%";
+  $("pollSellFill").style.width = sp+"%";
+  $("pollBuyPct").textContent = bp+"%";
+  $("pollSellPct").textContent = sp+"%";
+  $("pollVotes").textContent = total.toLocaleString("en-US")+" votes";
+  $("pollBtns").classList.toggle("voted", !!poll.voted);
 }
 function vote(side){
-  if (poll.voted){ toast("You already voted — demo"); return; }
+  if(poll.voted){ toast("You already voted"); return; }
   poll[side]++; poll.voted = side;
   try{ localStorage.setItem(POLL_KEY, JSON.stringify(poll)); }catch(e){}
   renderPoll();
-  toast("Vote counted: " + side.toUpperCase() + " — demo");
+  toast("Vote counted: "+side.toUpperCase()+" — demo");
 }
-$("pollBuy").addEventListener("click", () => vote("buy"));
-$("pollSell").addEventListener("click", () => vote("sell"));
+$("pollBuy").addEventListener("click", ()=>vote("buy"));
+$("pollSell").addEventListener("click", ()=>vote("sell"));
 
 const MOCK_POSTS = [
-  { name:"Daud", handle:"@daudtradefx · 12m", ini:"DR", g:["#2F80FF","#1B5FD6"],
-    body:"NFP Friday: expecting a hot print. DXY strength = gold pullback first, then dip-buy into 2640 liquidity. Not financial advice — sharing my read.",
-    likes:214, liked:false },
-  { name:"Sara Malik", handle:"@saramalik · 1h", ini:"SM", g:["#B678F0","#5E2B8A"],
-    body:"EURUSD swept Asia lows and reclaimed 1.0840. If London holds above, targeting 1.0890. Invalidation: M15 close back below the lows.",
-    likes:96, liked:false },
-  { name:"Arjun Rao", handle:"@arjunfx · 3h", ini:"AR", g:["#5B8DEF","#2B4A8A"],
-    body:"BTC funding neutral, spot bid on every dip. 98k is the line in the sand — lose it and I stand aside. Trade the plan, not the feeling.",
-    likes:158, liked:false }
+  { name:"Marcus Cole", handle:"@daudtradefx", time:"12m", g:["#2F80FF","#1B5FD6"], ini:"DR",
+    body:"NFP Friday: expecting a hot print. DXY strength = gold pullback first, then dip-buy into 2640 liquidity. Not financial advice — sharing my read.", likes:214, liked:false },
+  { name:"Sara Malik", handle:"@saramalik", time:"1h", g:["#B678F0","#5E2B8A"], ini:"SM",
+    body:"EURUSD swept Asia lows and reclaimed 1.0840. If London holds above, targeting 1.0890. Invalidation: M15 close back below the lows.", likes:96, liked:false },
+  { name:"Arjun Rao", handle:"@arjunfx", time:"3h", g:["#5B8DEF","#2B4A8A"], ini:"AR",
+    body:"BTC funding neutral, spot bid on every dip. 98k is the line in the sand — lose it and I stand aside. Trade the plan, not the feeling.", likes:158, liked:false }
 ];
 function renderPosts(){
   const list = $("postList"); list.innerHTML = "";
-  MOCK_POSTS.forEach((p, i) => {
+  MOCK_POSTS.forEach((p,i)=>{
     const c = document.createElement("div");
     c.className = "card";
     c.innerHTML =
-      '<div class="post-head"><div class="avatar sm" style="--g1:' + p.g[0] + ";--g2:" + p.g[1] + '">' + p.ini + "</div>" +
-      "<div><b>" + p.name + "</b><span>" + p.handle + "</span></div></div>" +
-      '<div class="post-body"></div>' +
-      '<button class="like-btn' + (p.liked ? " liked" : "") + '" data-like="' + i + '">' +
-      '<svg viewBox="0 0 24 24">' + ICONS.heart + "</svg> " +
-      '<span class="num">' + (p.likes + (p.liked ? 1 : 0)) + "</span></button>";
+      '<div class="post-head"><div class="avatar" style="background:linear-gradient(135deg,'+p.g[0]+','+p.g[1]+')">'+p.ini+'</div>'+
+      '<div><b>'+p.name+'</b><span>'+p.handle+' · '+p.time+'</span></div></div>'+
+      '<div class="post-body"></div>'+
+      '<div class="post-actions"><button class="like-btn'+(p.liked?" liked":"")+'" data-like="'+i+'" aria-pressed="'+p.liked+'">♥ <span>'+p.likes+'</span></button></div>';
     c.querySelector(".post-body").textContent = p.body;
     list.appendChild(c);
   });
 }
-$("postList").addEventListener("click", e => {
-  const b = e.target.closest("[data-like]"); if (!b) return;
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-like]"); if(!b) return;
   const p = MOCK_POSTS[+b.dataset.like];
-  p.liked = !p.liked;
-  renderPosts();
+  p.liked = !p.liked; p.likes += p.liked?1:-1;
+  b.classList.toggle("liked", p.liked);
+  b.setAttribute("aria-pressed", p.liked);
+  b.querySelector("span").textContent = p.likes;
 });
 
-/* ---------------- PROFILE: BROKERS ---------------- */
+/* ---------------- PROFILE + BROKERS ---------------- */
+const BROKERS = [
+  { name:"Exness",     sub:"MT4 / MT5",            g:["#2F80FF","#1B5FD6"], ini:"EX", server:"Exness-MT5Real", connected:false },
+  { name:"Vantage",    sub:"MT4 / MT5",            g:["#22C55E","#166534"], ini:"VA", server:"Vantage-MT5",     connected:false },
+  { name:"IC Markets", sub:"MT4 / MT5 · cTrader",  g:["#5B8DEF","#2B4A8A"], ini:"IC", server:"ICMarkets-MT5",  connected:false },
+  { name:"XM",         sub:"MT4 / MT5",            g:["#B678F0","#5E2B8A"], ini:"XM", server:"XM-MT5",          connected:false },
+  { name:"OctaFX",     sub:"MT4 / MT5",            g:["#F5A623","#B26A00"], ini:"OC", server:"OctaFX-MT5",      connected:false },
+  { name:"FBS",        sub:"MT4 / MT5",            g:["#F04452","#8A1F28"], ini:"FB", server:"FBS-MT5",         connected:false }
+];
 function renderBrokers(){
   const list = $("brokerList"); list.innerHTML = "";
-  BROKERS.forEach((b, i) => {
+  BROKERS.forEach((b,i)=>{
     const r = document.createElement("div");
     r.className = "broker-row";
     r.innerHTML =
-      '<div class="broker-ic" style="--g1:' + b.g[0] + ";--g2:" + b.g[1] + '">' + b.ini +
-        (b.connected ? '<span class="conn-dot"></span>' : "") + "</div>" +
-      "<div><b>" + b.name + "</b><span>" + (b.connected ? "Live link · demo" : "Trade & copy trading") + "</span></div>" +
-      '<button class="conn-btn' + (b.connected ? " connected" : "") + '" data-broker="' + i + '">' +
-        (b.connected ? "Connected" : "Connect") + "</button>";
+      '<div class="broker-ic" style="--g1:'+b.g[0]+';--g2:'+b.g[1]+'">'+b.ini+'</div>'+
+      '<div><b>'+esc(b.name)+'</b><span>'+esc(b.sub)+(b.connected?' · <span class="pl-pos">Live link · demo</span>':"")+'</span></div>'+
+      '<button class="conn-btn'+(b.connected?" connected":"")+'" data-broker="'+i+'">'+
+      (b.connected?'<span class="conn-dot"></span>Connected':"Connect")+'</button>';
     list.appendChild(r);
   });
 }
-$("brokerList").addEventListener("click", e => {
-  const btn = e.target.closest("[data-broker]");
-  if (!btn) return;
+$("brokerList").addEventListener("click", e=>{
+  const btn = e.target.closest("[data-broker]"); if(!btn) return;
   const i = +btn.dataset.broker;
-  if (BROKERS[i].connected){ toast(BROKERS[i].name + " already linked — demo"); return; }
+  if(BROKERS[i].connected){ toast(BROKERS[i].name+" already linked — demo"); return; }
   openBrokerModal(i);
 });
-$("addBroker").addEventListener("click", () => toast("Add your broker — demo"));
+$("addBroker").addEventListener("click", ()=>toast("Add your broker — demo"));
 
-/* broker login modal — simulated connection */
+/* broker login modal — simulated connection; open AND close reliably */
 let brokerTarget = null;
 function openBrokerModal(i){
   brokerTarget = i;
@@ -751,61 +980,45 @@ function openBrokerModal(i){
   $("brokerServer").value = b.server;
   const go = $("brokerConnectGo");
   go.disabled = false; go.textContent = "Connect";
-  $("brokerModal").hidden = false;
+  const m = $("brokerModal");
+  m.hidden = false; m.style.display = ""; /* belt & braces with the [hidden] CSS rule */
 }
-function closeBrokerModal(){ $("brokerModal").hidden = true; brokerTarget = null; }
+function closeBrokerModal(){
+  const m = $("brokerModal");
+  m.hidden = true; m.style.display = "none";
+  brokerTarget = null;
+}
 $("brokerModalX").addEventListener("click", closeBrokerModal);
 $("brokerModalBg").addEventListener("click", closeBrokerModal);
-$("brokerConnectGo").addEventListener("click", () => {
-  if (brokerTarget === null) return;
-  // demo: connect instantly, whatever is typed (or nothing at all)
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("brokerModal").hidden) closeBrokerModal(); });
+$("brokerConnectGo").addEventListener("click", ()=>{
+  if(brokerTarget===null) return;
+  /* demo: connect instantly, whatever is typed (or nothing at all) */
   const go = $("brokerConnectGo");
   go.disabled = true;
   go.innerHTML = '<span class="spinner"></span>Connecting…';
-  setTimeout(() => { // simulated ~1.5s handshake
+  setTimeout(()=>{
     BROKERS[brokerTarget].connected = true;
-    toast(BROKERS[brokerTarget].name + " connected — demo");
-    closeBrokerModal(); renderBrokers(); updateBrokerPrompt();
-  }, 1500);
+    toast(BROKERS[brokerTarget].name+" connected — demo");
+    closeBrokerModal(); renderBrokers();
+  }, 1200);
 });
 
-/* broker prompt card — first sign-in nudge */
-function updateBrokerPrompt(){
-  let dismissed = null;
-  try{ dismissed = localStorage.getItem("tc_broker_prompt_v1"); }catch(e){}
-  $("brokerPrompt").hidden = !!(dismissed || BROKERS.some(b => b.connected));
-}
-$("brokerPromptX").addEventListener("click", () => {
-  try{ localStorage.setItem("tc_broker_prompt_v1", "1"); }catch(e){}
-  $("brokerPrompt").hidden = true;
-});
-$("brokerPromptGo").addEventListener("click", () => {
-  try{ localStorage.setItem("tc_broker_prompt_v1", "1"); }catch(e){}
-  $("brokerPrompt").hidden = true;
-  goTab("profile");
-});
-
-/* ---------------- INIT ---------------- */
-const savedTheme = (() => { try{ return localStorage.getItem("tc_theme_v1"); }catch(e){ return null; } })();
-setAuthMode("signin");
+/* ---------------- INIT — straight into the terminal, no login ---------------- */
+injectIcons();
+renderWatchlist();
+renderAlerts();
 renderPoll();
 renderPosts();
 renderTraders();
 renderBrokers();
 renderPositions();
-setTheme(savedTheme === "light" ? "light" : "dark");
-renderTradeTick();
+renderDepth(true);
+renderTape(true);
+setSymbol("XAUUSD");
+setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } })());
+renderTicketTick();
+renderAccount();
 setInterval(tick, 700);
-
-// Entry flow: splash -> login. Any credentials work in this demo;
-// test account: demo@trading.community / demo1234 (pre-filled).
-const savedSession = (() => { try{ return localStorage.getItem("tc_session_v1"); }catch(e){ return null; } })();
-if (savedSession){
-  try{ finishAuth(JSON.parse(savedSession), false); }
-  catch(e){ showView("auth"); }
-}else{
-  showView("splash");
-  setTimeout(() => showView("auth"), 1400);
-}
 
 })();

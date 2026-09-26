@@ -1,15 +1,16 @@
-# Trading Community — App UI (BEST-UI rebuild)
+# Trading Community — App UI (terminal rebuild)
 
 Clean, app-like **static** web app for the "Trading Community" live-trading
 community concept. Plain HTML/CSS/JS — no build step, no frameworks.
 
 - **Mobile:** persistent 5-tab bottom navigation, always visible.
-- **Desktop:** full web terminal — left sidebar nav, top app bar, chart and
-  order ticket side-by-side.
+- **Desktop:** full web terminal — left sidebar nav, top app bar, watchlist /
+  chart / order book / ticket side-by-side.
 - **Themes:** dark + light, persisted, toggles in app bar / sidebar / Profile.
 - **Fonts:** Apple font stack for words; system mono with tabular numerals
   for prices.
-- Opens **directly into trading** after sign-in (no landing page).
+- **No login** — opens straight into the Trade terminal (auth code kept
+  dormant in `app.js`, marked `AUTH DISABLED for demo — re-enable later`).
 
 ## Preview
 
@@ -19,31 +20,32 @@ community concept. Plain HTML/CSS/JS — no build step, no frameworks.
 
 ## Screens
 
-1. **Auth** — splash → Welcome screen, free join, Google / Facebook / Apple
-   social buttons, email continue, create-account mode. All mock; session
-   persists in `localStorage`. After first sign-in, a dismissible
-   "Connect your broker" prompt card explains trades will mirror to the
-   broker account.
-2. **Trade** (default) — symbol picker (XAUUSD, BTCUSD, ETHUSD, EURUSD,
-   GBPUSD, USDJPY, US30, NQ100), ticking price + change with ~150ms tick
-   flash, TradingView Advanced chart (follows symbol, timeframe, theme),
-   timeframe bar (1m–1D). Ticket: spread, lots stepper, margin estimate,
-   pre-trade risk line, Buy/Sell → mock fills land in Positions.
-3. **Positions** — Open / Pending / History tabs with counts, live-ticking
-   P/L, close buttons (realize to History), pending cancel. Every new
-   position carries a mirror badge: "Mirrored to Exness · 84ms" (simulated
-   40–140ms latency) when a broker is connected, otherwise "Demo fill —
-   connect a broker to mirror".
-4. **Live** — streamer room: TradingView chart, draggable + resizable face-cam
+1. **Trade** (default) — live account strip (Equity, Balance, Margin, Free
+   Margin, Margin Level), symbol header with ticking price / change / spread,
+   8-symbol watchlist (XAUUSD, EURUSD, GBPUSD, USDJPY, BTCUSD, ETHUSD, US30,
+   NAS100) with instant switching and ~150ms tick flash, TradingView Advanced
+   chart (follows symbol, timeframe, theme; offline canvas fallback),
+   timeframe bar (1m–1D), order-book with depth shading (tap a row to prefill
+   a limit price) and recent-trades tape tabs, full order ticket
+   (Market/Limit/Stop, direction selector, lots stepper, optional TP/SL,
+   estimated margin + pre-trade risk, Buy/Sell buttons) → market fills land
+   in Open, Limit/Stop orders land in Pending and auto-fill when price reaches
+   them. Price alerts: create above/below alerts, fire + toast on cross,
+   delete.
+2. **Positions** — Open / Pending / History tabs with counts, live-ticking
+   P/L, close buttons (realize to History, TP/SL auto-close on hit), pending
+   cancel. Every new position carries a mirror badge: "Mirrored to Exness ·
+   84ms" (simulated 40–140ms latency) when a broker is connected, otherwise
+   "Demo fill — connect a broker to mirror".
+3. **Live** — streamer room: TradingView chart, draggable + resizable face-cam
    (persisted), simulated trade feed, viewer count, copy toggle, working chat.
-5. **Community** — Top traders section (avatar initials, handle, followers,
-   win rate, Follow/Following toggle, red LIVE badge jumps to Live tab) +
-   sentiment poll + analysis posts with likes.
-6. **Profile** — stats, realized P/L, broker connections (Exness, Vantage,
+4. **Community** — Top traders (avatar initials, handle, followers, win rate,
+   Follow/Following toggle, red LIVE badge jumps to Live tab) + sentiment
+   poll (persisted vote) + analysis posts with likes.
+5. **Profile** — stats, realized P/L, broker connections (Exness, Vantage,
    IC Markets, XM, OctaFX, FBS). Tapping Connect opens a broker login modal
-   (logo mark, login/account number, password, server; ~1.5s connecting
-   state → Connected with green dot). All simulated. Appearance setting,
-   logout.
+   (logo mark, login/account number, password, server; ~1.2s connecting
+   state → Connected with green dot). All simulated. Appearance setting.
 
 ## Mock vs real
 

@@ -4,66 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
-<title>Trading Community</title>
-<link rel="stylesheet" href="styles.css?v=2">
+<title>Trading Community — Live Trading Terminal</title>
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 
-<!-- ================= SPLASH ================= -->
-<div class="view active" id="view-splash">
-  <div class="splash-inner">
-    <div class="brand-mark xl">TC</div>
-    <h1>Trading Community</h1>
-    <p>Trade live. Get copied.</p>
-    <div class="splash-bar"><span></span></div>
-  </div>
-</div>
-
-<!-- ================= AUTH ================= -->
-<div class="view" id="view-auth">
-  <div class="auth-card">
-    <div class="brand-mark xl">TC</div>
-    <h1 id="authTitle">Your trading, live.</h1>
-    <p class="auth-sub">Join free — no card required. Watch live traders, mirror their moves, share your own.</p>
-
-    <button class="social-btn google" id="btnGoogle">
-      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
-      <span>Continue with Google</span>
-    </button>
-    <button class="social-btn facebook" id="btnFacebook">
-      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect width="24" height="24" rx="5" fill="#1877F2"/><path fill="#fff" d="M13.5 21v-7h2.4l.4-3h-2.8V9.1c0-.9.3-1.5 1.6-1.5h1.3V4.9c-.3 0-1.1-.1-2-.1-2 0-3.4 1.2-3.4 3.5V11H8.5v3H11v7h2.5z"/></svg>
-      <span>Continue with Facebook</span>
-    </button>
-    <button class="social-btn apple" id="btnApple">
-      <svg viewBox="0 0 384 512" width="19" height="19" aria-hidden="true"><path fill="#fff" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-      <span>Continue with Apple</span>
-    </button>
-
-    <div class="divider"><span>or continue with email</span></div>
-
-    <div id="authNameWrap" hidden>
-      <input class="field" id="authName" type="text" placeholder="Full name" autocomplete="name" maxlength="40">
-    </div>
-    <input class="field" id="authEmail" type="email" placeholder="Email address" autocomplete="email" value="demo@trading.community">
-    <div id="authPassWrap" hidden>
-      <input class="field" id="authPass" type="password" placeholder="Create a password" autocomplete="new-password" value="demo1234">
-    </div>
-    <button class="primary-btn" id="authEmailGo">Continue</button>
-    <p class="auth-err" id="authErr" hidden></p>
-
-    <button class="link-btn" id="authToggle">New to Trading Community? <b>Create account</b></button>
-    <p class="auth-fine">Demo build — sign-in is simulated, nothing leaves your device.</p>
-  </div>
-</div>
-
-<!-- ================= APP ================= -->
-<div class="view" id="view-app">
+<!-- ================= APP (no login — opens straight into the terminal) ================= -->
+<div class="view active" id="view-app">
   <div class="app-shell">
 
     <!-- Desktop sidebar -->
     <aside class="sidebar">
-      <div class="side-brand"><div class="brand-mark">TC</div><div><b>Trading Community</b><span>Paper trading</span></div></div>
-      <nav class="side-nav" id="sideNav">
+      <div class="side-brand"><div class="brand-mark">TC</div><div><b>Trading Community</b><span>Paper trading terminal</span></div></div>
+      <nav class="side-nav" id="sideNav" aria-label="Primary">
         <button class="snav active" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span></button>
         <button class="snav" data-tab="positions"><span class="ic" data-icon="positions"></span><span>Positions</span><i class="tab-badge" id="posBadgeSide" hidden></i></button>
         <button class="snav" data-tab="live"><span class="ic" data-icon="live"></span><span>Live</span><i class="live-dot"></i></button>
@@ -72,8 +25,7 @@
       </nav>
       <div class="side-foot">
         <button class="side-row" id="themeToggleSide"><span class="ic" data-icon="theme"></span><span>Appearance</span><b id="themeNameSide">Dark</b></button>
-        <button class="side-row" id="logoutSide"><span class="ic" data-icon="logout"></span><span>Log out</span></button>
-        <div class="side-user"><div class="avatar sm" id="sideAvatar">DR</div><div><b id="sideName">Trader</b><span id="sideEmail">demo</span></div></div>
+        <div class="side-user"><div class="avatar sm" id="sideAvatar">AT</div><div><b id="sideName">Alex Trader</b><span id="sideEmail">Demo account</span></div></div>
       </div>
     </aside>
 
@@ -81,159 +33,235 @@
     <div class="main">
       <header class="appbar">
         <div class="brand-mark sm-only">TC</div>
-        <button class="sym-picker" id="symPicker"><span id="symName">XAUUSD</span><span class="ic" data-icon="chev"></span></button>
+        <button class="sym-picker" id="symPicker" aria-label="Select symbol"><span id="symName">XAUUSD</span><span class="ic sm" data-icon="chev"></span></button>
         <div class="px-block">
           <div class="px num" id="hdrPrice">—</div>
-          <div class="chg num" id="hdrChg">—</div>
+          <div class="chg-pill num" id="hdrChg">—</div>
         </div>
         <div class="appbar-sp"></div>
         <button class="icon-btn" id="themeBtn" aria-label="Toggle theme"><span class="ic" data-icon="theme"></span></button>
-        <button class="icon-btn" id="bellBtn" aria-label="Alerts"><span class="ic" data-icon="bell"></span></button>
-        <button class="avatar-btn" id="avatarBtn" aria-label="Profile">DR</button>
+        <button class="icon-btn" id="bellBtn" aria-label="Price alerts"><span class="ic" data-icon="bell"></span><i class="dot" id="alertDot" hidden></i></button>
+        <button class="avatar-btn" id="avatarBtn" aria-label="Profile">AT</button>
       </header>
 
       <main class="content">
-        <!-- TRADE -->
-        <section class="screen active" id="screen-trade">
-          <div class="prompt-card" id="brokerPrompt" hidden>
-            <span class="ic" data-icon="link"></span>
-            <div><b>Connect your broker</b><span>Trades you place here will mirror to your broker account automatically.</span></div>
-            <button class="primary-btn sm" id="brokerPromptGo">Connect</button>
-            <button class="icon-btn xs" id="brokerPromptX" aria-label="Dismiss"><span class="ic sm" data-icon="x"></span></button>
+
+        <!-- ============ TRADE TERMINAL ============ -->
+        <section class="screen active" id="screen-trade" aria-label="Trade">
+          <!-- Account strip -->
+          <div class="acct-strip" id="acctStrip" aria-label="Account summary">
+            <div class="acct"><span>Equity</span><b class="num" id="acctEquity">$10,000.00</b></div>
+            <div class="acct"><span>Balance</span><b class="num" id="acctBalance">$10,000.00</b></div>
+            <div class="acct"><span>Margin</span><b class="num" id="acctMargin">$0.00</b></div>
+            <div class="acct"><span>Free margin</span><b class="num" id="acctFree">$10,000.00</b></div>
+            <div class="acct"><span>Margin level</span><b class="num" id="acctLevel">—</b></div>
           </div>
+
+          <!-- Symbol header -->
+          <div class="sym-head">
+            <div class="sym-title">
+              <h2 id="symTitle">XAUUSD</h2>
+              <span id="symSub">Gold vs US Dollar · OANDA</span>
+            </div>
+            <div class="sym-px">
+              <div class="num big" id="symPrice">—</div>
+              <div class="spread-tag">Spread <b class="num" id="hdrSpread">—</b></div>
+            </div>
+          </div>
+
           <div class="trade-grid">
-            <div class="chart-col">
-              <div class="tf-bar" id="tfBar">
-                <button class="tf active" data-tf="1m">1m</button>
-                <button class="tf" data-tf="5m">5m</button>
-                <button class="tf" data-tf="15m">15m</button>
-                <button class="tf" data-tf="1H">1H</button>
-                <button class="tf" data-tf="4H">4H</button>
-                <button class="tf" data-tf="1D">1D</button>
+            <!-- Watchlist -->
+            <div class="col-watch">
+              <div class="sec-head"><h3>Watchlist</h3></div>
+              <div class="watchlist" id="watchList" role="listbox" aria-label="Watchlist"></div>
+            </div>
+
+            <!-- Chart + market data -->
+            <div class="col-chart">
+              <div class="tf-bar" id="tfBar" role="tablist" aria-label="Timeframe">
+                <button class="tf active" data-tf="1m" role="tab">1m</button>
+                <button class="tf" data-tf="5m" role="tab">5m</button>
+                <button class="tf" data-tf="15m" role="tab">15m</button>
+                <button class="tf" data-tf="1H" role="tab">1H</button>
+                <button class="tf" data-tf="4H" role="tab">4H</button>
+                <button class="tf" data-tf="1D" role="tab">1D</button>
               </div>
               <div class="chart-wrap" id="tradeChartWrap">
                 <div class="tv-host" id="tvChart"></div>
                 <canvas class="fallback-chart" id="fallbackChart" hidden></canvas>
                 <div class="chart-note" id="chartNote" hidden>Offline chart · simulated feed</div>
               </div>
-            </div>
-            <aside class="ticket-col">
-              <div class="ticket">
-                <div class="ticket-row">
-                  <span class="t-label">Spread <em>cost to open</em></span>
-                  <b class="num" id="spreadVal">—</b>
+
+              <div class="md-card">
+                <div class="md-tabs" id="mdTabs" role="tablist" aria-label="Market data">
+                  <button class="md-tab active" data-md="depth" role="tab">Order book</button>
+                  <button class="md-tab" data-md="tape" role="tab">Recent trades</button>
                 </div>
-                <div class="ticket-row">
-                  <span class="t-label">Size <em>lots · 1 lot = 100,000 units</em></span>
+                <div class="md-body" id="mdDepth">
+                  <div class="ob-head"><span>Price</span><span>Size</span><span>Total</span></div>
+                  <div id="obAsks"></div>
+                  <div class="ob-spread"><span class="num" id="obLast">—</span><span class="ob-spread-lbl">Spread <b class="num" id="obSpread">—</b></span></div>
+                  <div id="obBids"></div>
+                </div>
+                <div class="md-body" id="mdTape" hidden>
+                  <div class="ob-head"><span>Time</span><span>Price</span><span>Size</span></div>
+                  <div id="tapeBody"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ticket + alerts -->
+            <div class="col-ticket">
+              <div class="ticket" aria-label="Order ticket">
+                <div class="ttype-tabs" id="ttypeTabs" role="tablist" aria-label="Order type">
+                  <button class="ttype active" data-ttype="market" role="tab">Market</button>
+                  <button class="ttype" data-ttype="limit" role="tab">Limit</button>
+                  <button class="ttype" data-ttype="stop" role="tab">Stop</button>
+                </div>
+                <div class="dir-toggle" id="dirToggle" role="tablist" aria-label="Direction">
+                  <button class="dir-btn buy active" data-dir="buy" role="tab">Buy</button>
+                  <button class="dir-btn sell" data-dir="sell" role="tab">Sell</button>
+                </div>
+                <div class="fld" id="tPriceWrap" hidden>
+                  <label for="tPrice" id="tPriceLabel">Limit price</label>
+                  <input class="field num" id="tPrice" inputmode="decimal" placeholder="0.00" autocomplete="off">
+                </div>
+                <div class="fld">
+                  <label>Volume (lots)</label>
                   <div class="stepper">
-                    <button id="lotMinus" aria-label="Decrease size"><span class="ic" data-icon="minus"></span></button>
+                    <button id="lotMinus" aria-label="Decrease volume"><span class="ic sm" data-icon="minus"></span></button>
                     <span class="num" id="lotVal">0.10</span>
-                    <button id="lotPlus" aria-label="Increase size"><span class="ic" data-icon="plus"></span></button>
+                    <button id="lotPlus" aria-label="Increase volume"><span class="ic sm" data-icon="plus"></span></button>
                   </div>
                 </div>
-                <div class="ticket-row">
-                  <span class="t-label">Margin <em>money set aside</em></span>
-                  <b class="num" id="marginVal">—</b>
+                <button class="switch-row" id="tpslToggle" aria-pressed="false">
+                  <span>Take profit / Stop loss</span>
+                  <span class="switch" id="tpslSwitch"><i></i></span>
+                </button>
+                <div class="tpsl-grid" id="tpslWrap" hidden>
+                  <div class="fld"><label for="tpPrice">Take profit</label><input class="field num" id="tpPrice" inputmode="decimal" placeholder="—" autocomplete="off"></div>
+                  <div class="fld"><label for="slPrice">Stop loss</label><input class="field num" id="slPrice" inputmode="decimal" placeholder="—" autocomplete="off"></div>
                 </div>
-                <div class="risk-line" id="riskLine">Est. risk at 20 pt stop: —</div>
+                <div class="risk-line">Est. margin <b class="num" id="estMargin">$0.00</b><span class="sep">·</span>Risk <b class="num" id="estRisk">—</b></div>
                 <div class="exec-row">
-                  <button class="exec sell" id="sellBtn"><span class="exec-label">SELL</span><span class="exec-px num" id="bidPx">—</span></button>
-                  <button class="exec buy" id="buyBtn"><span class="exec-label">BUY</span><span class="exec-px num" id="askPx">—</span></button>
+                  <button class="exec buy" id="buyBtn"><span>Buy</span><b class="num" id="buyPx">—</b></button>
+                  <button class="exec sell" id="sellBtn"><span>Sell</span><b class="num" id="sellPx">—</b></button>
                 </div>
-                <p class="ticket-note">Demo only — no real money moves.</p>
+                <p class="fine">Demo execution — no real orders are placed.</p>
               </div>
-            </aside>
+
+              <div class="alerts-card" id="alertsCard">
+                <div class="sec-head"><h3>Price alerts</h3><button class="link-btn" id="alertAddBtn"><span class="ic xs" data-icon="plus"></span> New alert</button></div>
+                <div class="alert-form" id="alertForm" hidden>
+                  <div class="fld"><label for="afSym">Symbol</label><select class="field" id="afSym"></select></div>
+                  <div class="fld-row">
+                    <div class="fld"><label for="afCond">Condition</label>
+                      <select class="field" id="afCond"><option value="above">Price above</option><option value="below">Price below</option></select>
+                    </div>
+                    <div class="fld"><label for="afPrice">Price</label><input class="field num" id="afPrice" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+                  </div>
+                  <div class="form-row">
+                    <button class="primary-btn sm" id="afSave">Create alert</button>
+                    <button class="ghost-btn sm" id="afCancel">Cancel</button>
+                  </div>
+                </div>
+                <div id="alertList"></div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <!-- POSITIONS -->
-        <section class="screen" id="screen-positions">
-          <header class="page-head"><h1>Positions</h1><div class="eq-chip">Equity <b class="num" id="eqVal">$10,000.00</b></div></header>
-          <div class="subtabs" id="posTabs">
-            <button class="subtab active" data-ptab="open">Open <span class="count num" id="openCount">0</span></button>
-            <button class="subtab" data-ptab="pending">Pending <span class="count num" id="pendCount">0</span></button>
-            <button class="subtab" data-ptab="history">History</button>
+        <!-- ============ POSITIONS ============ -->
+        <section class="screen" id="screen-positions" aria-label="Positions">
+          <div class="sec-head">
+            <h3>Positions</h3>
+            <span class="eq-chip">Equity <b class="num" id="eqVal">$10,000.00</b></span>
           </div>
-          <div class="pos-list" id="posOpen"></div>
-          <div class="pos-list" id="posPending" hidden></div>
-          <div class="pos-list" id="posHistory" hidden></div>
+          <div class="subtabs" id="posTabs" role="tablist" aria-label="Position tabs">
+            <button class="subtab active" data-ptab="open" role="tab">Open <span class="cnt" id="openCount">0</span></button>
+            <button class="subtab" data-ptab="pending" role="tab">Pending <span class="cnt" id="pendCount">0</span></button>
+            <button class="subtab" data-ptab="history" role="tab">History</button>
+          </div>
+          <div id="posOpen"></div>
+          <div id="posPending" hidden></div>
+          <div id="posHistory" hidden></div>
         </section>
 
-        <!-- LIVE -->
-        <section class="screen" id="screen-live">
-          <header class="live-head">
-            <div class="avatar lg" style="--g1:#2F80FF;--g2:#1B5FD6">DR</div>
-            <div class="live-id"><b>Daud</b><span>@daudtradefx · XAUUSD</span></div>
-            <div class="live-pill"><span class="dot"></span>LIVE</div>
-            <div class="viewers"><b class="num" id="viewerCount">2,412</b> watching</div>
-          </header>
+        <!-- ============ LIVE ============ -->
+        <section class="screen" id="screen-live" aria-label="Live">
+          <div class="live-head">
+            <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
+            <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span></div>
+          </div>
           <div class="chart-wrap live-chart" id="liveChartWrap">
             <div class="tv-host" id="tvChartLive"></div>
             <canvas class="fallback-chart" id="fallbackChartLive" hidden></canvas>
-            <div class="facecam" id="faceCam">
-              <div class="fc-label">YOU</div>
-              <div class="fc-resize" id="fcResize"></div>
+            <div class="face-cam" id="faceCam" aria-label="Streamer camera">
+              <span>Face cam</span>
+              <i class="fc-resize" id="fcResize"></i>
             </div>
           </div>
-          <div class="live-feed" id="liveFeed"></div>
-          <div class="copy-row">
-            <div><b>Copy trades</b><span>Mirror this streamer's entries &amp; exits (demo)</span></div>
-            <button class="switch" id="copySwitch" aria-label="Copy trades"><span class="knob"></span></button>
-          </div>
-          <div class="chat" id="liveChat"></div>
-          <div class="chat-bar">
-            <input id="chatInput" type="text" placeholder="Say something…" maxlength="120" autocomplete="off">
-            <button class="send-btn" id="chatSend" aria-label="Send"><span class="ic" data-icon="send"></span></button>
+          <div class="live-grid">
+            <div class="live-col">
+              <div class="sec-head"><h3>Live trades</h3>
+                <button class="copy-switch" id="copySwitch" aria-pressed="false"><i></i><span>Copy trades</span></button>
+              </div>
+              <div class="feed" id="liveFeed"></div>
+            </div>
+            <div class="live-col">
+              <div class="sec-head"><h3>Chat</h3></div>
+              <div class="chat-scroll"><div class="chat" id="liveChat"></div></div>
+              <div class="chat-bar">
+                <input class="field" id="chatInput" placeholder="Say something…" maxlength="140" autocomplete="off">
+                <button class="icon-btn primary" id="chatSend" aria-label="Send message"><span class="ic" data-icon="send"></span></button>
+              </div>
+            </div>
           </div>
         </section>
 
-        <!-- COMMUNITY -->
-        <section class="screen" id="screen-community">
-          <header class="page-head"><h1>Community</h1></header>
-          <h2 class="sec-title">Top traders</h2>
-          <div class="trader-cards" id="traderCards"></div>
-          <h2 class="sec-title">This week</h2>
-          <div class="poll">
-            <div class="poll-q">Where is XAUUSD headed this week?</div>
+        <!-- ============ COMMUNITY ============ -->
+        <section class="screen" id="screen-community" aria-label="Community">
+          <div class="sec-head"><h3>Top traders</h3><span class="fine">Follow to copy their ideas</span></div>
+          <div class="trader-list" id="traderList"></div>
+          <div class="card poll">
+            <div class="sec-head"><h3>Community sentiment</h3><span class="fine num" id="pollVotes">—</span></div>
+            <p class="poll-q">XAUUSD — where is gold headed this week?</p>
             <div class="poll-bars">
-              <div class="poll-row"><span>Up</span><div class="bar"><div class="fill buy-fill" id="pollBuyFill" style="width:62%"></div></div><b class="num" id="pollBuyPct">62%</b></div>
-              <div class="poll-row"><span>Down</span><div class="bar"><div class="fill sell-fill" id="pollSellFill" style="width:38%"></div></div><b class="num" id="pollSellPct">38%</b></div>
+              <div class="poll-row"><span>Bullish</span><div class="poll-track"><i id="pollBuyFill"></i></div><b class="num" id="pollBuyPct">—</b></div>
+              <div class="poll-row"><span>Bearish</span><div class="poll-track"><i id="pollSellFill"></i></div><b class="num" id="pollSellPct">—</b></div>
             </div>
-            <div class="poll-votes num" id="pollVotes">12,408 votes</div>
             <div class="poll-btns" id="pollBtns">
-              <button class="exec buy sm" id="pollBuy">UP</button>
-              <button class="exec sell sm" id="pollSell">DOWN</button>
+              <button class="primary-btn sm" id="pollBuy">Vote bullish</button>
+              <button class="ghost-btn sm" id="pollSell">Vote bearish</button>
             </div>
           </div>
+          <div class="sec-head"><h3>Analysis</h3></div>
           <div id="postList"></div>
         </section>
 
-        <!-- PROFILE -->
-        <section class="screen" id="screen-profile">
-          <header class="prof-head">
-            <div class="avatar xl" id="profAvatar">DR</div>
-            <div class="prof-id"><h1><span id="profName">Daud</span> <span class="verified" title="Verified">✓</span></h1><span id="profHandle">@daudtradefx</span></div>
-          </header>
-          <div class="stat-tiles">
-            <div class="tile"><b class="num">67%</b><span>Win rate</span></div>
-            <div class="tile"><b class="num">312</b><span>Live trades</span></div>
-            <div class="tile"><b class="num">48.2k</b><span>Followers</span></div>
+        <!-- ============ PROFILE ============ -->
+        <section class="screen" id="screen-profile" aria-label="Profile">
+          <div class="prof-head">
+            <div class="avatar lg" id="profAvatar">AT</div>
+            <div><h3 id="profName">Alex Trader</h3><span class="handle" id="profHandle">@alextrader</span><span class="demo-tag">Demo account</span></div>
           </div>
-          <div class="pnl-banner">This week <b class="pos num">+$1,284.50</b></div>
-          <h2 class="sec-title">Trade history</h2>
-          <div class="pos-list" id="profHistory"></div>
-          <h2 class="sec-title">Broker accounts <span class="mock-tag">demo</span></h2>
-          <div class="broker-list" id="brokerList"></div>
-          <button class="ghost-btn" id="addBroker">+ Add broker</button>
-          <h2 class="sec-title">Settings</h2>
-          <button class="setting-row" id="themeRowBtn"><span class="ic" data-icon="theme"></span><span>Appearance</span><b id="themeNameRow">Dark</b><span class="ic" data-icon="chevR"></span></button>
-          <button class="setting-row danger" id="logoutBtn"><span class="ic" data-icon="logout"></span><span>Log out</span></button>
-          <p class="foot-note">Trading Community demo · v0.2</p>
+          <div class="stat-grid">
+            <div class="stat"><b class="num" id="statWin">67%</b><span>Win rate</span></div>
+            <div class="stat"><b class="num" id="statTrades">312</b><span>Live trades</span></div>
+            <div class="stat"><b class="num" id="statFollowers">48.2k</b><span>Followers</span></div>
+            <div class="stat"><b class="num" id="statPL">+$4,210</b><span>Total P/L</span></div>
+          </div>
+          <div class="sec-head"><h3>Broker accounts</h3><span class="demo-tag">Demo</span></div>
+          <div id="brokerList"></div>
+          <button class="ghost-btn wide" id="addBroker"><span class="ic xs" data-icon="plus"></span> Add broker</button>
+          <div class="sec-head"><h3>Trade history</h3></div>
+          <div id="profHistory"></div>
         </section>
+
       </main>
 
-      <!-- Mobile tab bar -->
-      <nav class="tabbar" id="tabbar">
+      <!-- Mobile bottom nav -->
+      <nav class="bottomnav" id="bottomNav" aria-label="Primary">
         <button class="tab active" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span></button>
         <button class="tab" data-tab="positions"><span class="ic" data-icon="positions"></span><span>Positions</span><i class="tab-badge" id="posBadge" hidden></i></button>
         <button class="tab" data-tab="live"><span class="ic" data-icon="live"></span><span>Live</span><i class="live-dot"></i></button>
@@ -244,14 +272,21 @@
   </div>
 </div>
 
+<!-- Symbol picker sheet -->
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="sheet" id="symbolSheet" hidden role="dialog" aria-label="Select symbol">
+  <div class="sheet-head"><h3>Select symbol</h3><button class="icon-btn" id="sheetX" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>
+  <div id="symbolList"></div>
+</div>
+
 <!-- Broker login modal -->
-<div class="modal-wrap" id="brokerModal" hidden>
+<div class="modal-wrap" id="brokerModal" hidden role="dialog" aria-label="Connect broker">
   <div class="modal-backdrop" id="brokerModalBg"></div>
   <div class="modal">
     <button class="modal-x" id="brokerModalX" aria-label="Close"><span class="ic sm" data-icon="x"></span></button>
     <div class="broker-ic lg" id="brokerModalIc">EX</div>
     <h3 id="brokerModalName">Exness</h3>
-    <p class="modal-sub">Log in to link your account <span class="mock-tag">demo</span></p>
+    <p class="modal-sub">Log in to link your account <span class="demo-tag">demo</span></p>
     <label class="fld-label">Login / account number
       <input class="field" id="brokerLogin" inputmode="numeric" placeholder="e.g. 12345678" autocomplete="off">
     </label>
@@ -266,17 +301,9 @@
   </div>
 </div>
 
-<!-- Symbol sheet -->
-<div class="backdrop" id="backdrop" hidden></div>
-<div class="sheet" id="symbolSheet" hidden>
-  <div class="sheet-grab"></div>
-  <h3>Select symbol</h3>
-  <div id="symbolList"></div>
-</div>
-
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" hidden role="status"></div>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
