@@ -173,12 +173,9 @@ function authError(msg){
 }
 $("authEmailGo").addEventListener("click", () => {
   const name = $("authName").value.trim();
-  const email = $("authEmail").value.trim();
-  const pass = $("authPass").value;
-  if (authMode === "signup" && name.length < 2){ authError("Please enter your name."); return; }
-  if (!validEmail(email)){ authError("Enter a valid email address."); return; }
-  if (authMode === "signup" && pass.length < 6){ authError("Password must be at least 6 characters."); return; }
-  const display = authMode === "signup" ? name
+  let email = $("authEmail").value.trim();
+  if (!validEmail(email)) email = "demo.trader@example.com"; // demo: never block entry
+  const display = (authMode === "signup" && name.length >= 2) ? name
     : email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   finishAuth({ name: display, email: email, via: "email" }, true); // mock sign-in
 });
@@ -761,7 +758,7 @@ $("brokerModalX").addEventListener("click", closeBrokerModal);
 $("brokerModalBg").addEventListener("click", closeBrokerModal);
 $("brokerConnectGo").addEventListener("click", () => {
   if (brokerTarget === null) return;
-  if (!$("brokerLogin").value.trim()){ $("brokerLogin").focus(); toast("Enter your account number — demo"); return; }
+  // demo: connect instantly, whatever is typed (or nothing at all)
   const go = $("brokerConnectGo");
   go.disabled = true;
   go.innerHTML = '<span class="spinner"></span>Connecting…';
