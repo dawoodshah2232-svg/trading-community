@@ -140,7 +140,6 @@ p{ margin:0; }
   .side-user b{ display:block; font-size:13.5px; }
   .side-user span{ font-size:12px; color:var(--faint); }
   .content{ padding:24px 24px 48px; }
-  .bottomnav{ display:none; }
 }
 
 /* ---------- appbar ---------- */
@@ -206,6 +205,11 @@ p{ margin:0; }
 .live-dot{
   position:absolute; top:10px; right:calc(50% - 18px); width:8px; height:8px; border-radius:50%;
   background:var(--red); box-shadow:0 0 0 3px var(--red-soft);
+}
+/* desktop uses the sidebar — the mobile tab bar must stay hidden there.
+   Placed AFTER the base .bottomnav rule so it wins at equal specificity. */
+@media (min-width:1024px){
+  .bottomnav{ display:none; }
 }
 
 /* ---------- shared controls ---------- */

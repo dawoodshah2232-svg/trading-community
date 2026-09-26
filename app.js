@@ -1217,6 +1217,7 @@ function renderTraders(){
   rows.forEach((t,i)=>{
     const c = document.createElement("div");
     c.className = "trader-card lb-row";
+    c.dataset.tprof = t.id; /* whole row opens the profile; live traders get a Watch-live button inside */
     c.innerHTML =
       rankBadge(i)+
       '<div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
@@ -1225,7 +1226,6 @@ function renderTraders(){
       '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></div>'+
       '<div class="lb-stat">'+lbStat(t)+'</div>'+
       '<button class="follow-btn'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button>';
-    if(t.live) c.querySelector(".avatar").addEventListener("click", ()=>goTab("live"));
     list.appendChild(c);
   });
 }
@@ -1250,8 +1250,9 @@ document.addEventListener("click", e=>{
   if(!$("traderProfile").hidden) renderTraderProfile(t.id);
   toast((t.following ? "Following " : "Unfollowed ") + t.name + " — demo");
 });
-/* tap a trader identity -> full profile view */
+/* tap a trader identity -> full profile view (follow buttons excluded) */
 document.addEventListener("click", e=>{
+  if(e.target.closest("[data-follow]")) return;
   const el = e.target.closest("[data-tprof]"); if(!el) return;
   openTraderProfile(el.dataset.tprof);
 });
