@@ -3,9 +3,9 @@
    *** EVERYTHING IS MOCK / SIMULATED ***
    Random-walk price engine, mock fills, mock brokers, mock
    chat/feed/alerts. No real market data, no real broker, no
-   real auth. The only real external piece is the TradingView
-   chart widget (needs internet); an offline canvas fallback
-   is built in.
+   real auth. The chart is self-hosted on Lightweight Charts
+   v4.2.3 (CDN) and fed by the same simulated engine below —
+   there is no external chart provider anymore.
    ============================================================ */
 (function(){
 "use strict";
@@ -38,7 +38,8 @@ const ICONS = {
   minus:'<path d="M5 12h14"/>',
   link:'<path d="M10 14a5 5 0 007.1 0l2.4-2.4a5 5 0 00-7.1-7.1L11 5.9"/><path d="M14 10a5 5 0 00-7.1 0l-2.4 2.4a5 5 0 007.1 7.1L13 18.1"/>',
   trash:'<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>',
-  send:'<path d="M4 12l16-7-7 16-2.5-6.5z"/><path d="M11.5 14.5L20 5"/>'
+  send:'<path d="M4 12l16-7-7 16-2.5-6.5z"/><path d="M11.5 14.5L20 5"/>',
+  cam:'<rect x="3" y="7" width="13" height="12" rx="3"/><path d="M16 10.5l5-3v9l-5-3"/>'
 };
 function injectIcons(){
   document.querySelectorAll("[data-icon]").forEach(el=>{
@@ -111,8 +112,7 @@ function setTheme(t){
   document.documentElement.dataset.theme = t;
   $("themeNameSide").textContent = t === "dark" ? "Dark" : "Light";
   try{ localStorage.setItem("tc_theme_v1", t); }catch(e){}
-  loadTV("tvChart", meta(state.sym).tv, state.tf); /* reload chart in new theme */
-  if(state.liveBuilt) loadTV("tvChartLive", SYMBOLS.XAUUSD.tv, "5m");
+  applyChartTheme(); /* recolor the self-hosted chart */
 }
 $("themeBtn").addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
 $("themeToggleSide").addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
@@ -154,7 +154,7 @@ function tick(){
   renderTicketTick();
   renderPositionsTick();
   renderAccount();
-  drawFallbacks();
+  updateChartTick(); /* roll the self-hosted candle chart forward */
 }
 
 /* ---------------- WATCHLIST ---------------- */
@@ -202,7 +202,7 @@ function setSymbol(s){
     el.classList.toggle("current", cur);
     el.setAttribute("aria-selected", cur ? "true" : "false");
   });
-  loadTV("tvChart", meta(s).tv, state.tf);
+  refreshMainData(); /* regenerate candles for the new symbol */
   renderDepth(true); renderTape(true);
   renderHeaderTick(); renderTicketTick();
   $("tPrice").value = "";
@@ -236,68 +236,165 @@ function renderSymbolSheet(){
   });
 }
 
-/* ---------------- TRADINGVIEW WIDGET + CANVAS FALLBACK ---------------- */
-function loadTV(containerId, tvSymbol, interval){
-  const host = $(containerId);
-  if(!host) return;
+/* ---------------- SELF-HOSTED CHART — Lightweight Charts v4.2.3 ----------------
+   The TradingView widget iframe was removed (it errored on real devices).
+   Candles are generated from the same simulated price engine, seeded per
+   symbol+timeframe so the history looks real. EVERYTHING REMAINS MOCK. */
+const LW = () => window.LightweightCharts;
+const TF_MIN = { "1m":1, "5m":5, "15m":15, "1H":60, "4H":240, "1D":1440 };
+const N_BARS = 240;
+function hashStr(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+/* Generate N_BARS candles for symbol s at timeframe tf, last close = live price */
+function genBars(s, tf){
+  const m = meta(s), mins = TF_MIN[tf]||1, cur = px(s).bid;
+  const rnd = mulberry32(hashStr(s+"|"+tf));
+  const perMin = (m.vol*(0.55+rnd()*0.9)) / Math.sqrt(mins);
+  const total = N_BARS*mins, closes = new Array(total+1);
+  closes[total] = cur;
+  for(let i=total-1;i>=0;i--) closes[i] = closes[i+1] - (rnd()-0.5)*2*perMin;
+  const bucket = mins*60;
+  const lastT = Math.floor(Date.now()/1000/bucket)*bucket;
+  const bars = [], vols = [];
+  for(let j=0;j<N_BARS;j++){
+    const a = j*mins, b = (j+1)*mins, o = closes[a], c = closes[b];
+    let h = o, l = o;
+    for(let k=a;k<=b;k++){ const v = closes[k]; if(v>h) h=v; if(v<l) l=v; }
+    const up = c>=o, t = lastT-(N_BARS-1-j)*bucket;
+    bars.push({ time:t, open:o, high:h, low:l, close:c });
+    vols.push({ time:t, value:+(0.4+rnd()*2.2).toFixed(2), color: up?"rgba(34,197,94,0.32)":"rgba(239,68,68,0.32)" });
+  }
+  return { bars, vols };
+}
+
+const lw = { chart:null, candles:null, volume:null, bars:[], vols:[], liveChart:null, liveCandles:null, liveBars:[] };
+
+function lwTheme(){
+  const dark = theme()==="dark";
+  return {
+    layout:{
+      background:{ type:"solid", color:"transparent" },
+      textColor: dark ? "#8b93a7" : "#5b6478",
+      fontFamily: '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif',
+      fontSize: 11
+    },
+    grid:{
+      vertLines:{ color: dark ? "rgba(148,163,184,0.07)" : "rgba(15,23,42,0.06)" },
+      horzLines:{ color: dark ? "rgba(148,163,184,0.07)" : "rgba(15,23,42,0.06)" }
+    },
+    crosshair:{
+      mode: LW().CrosshairMode.Normal,
+      vertLine:{ color: dark ? "rgba(148,163,184,0.5)" : "rgba(15,23,42,0.4)", labelBackgroundColor: dark ? "#2a3448" : "#e2e8f0" },
+      horzLine:{ color: dark ? "rgba(148,163,184,0.5)" : "rgba(15,23,42,0.4)", labelBackgroundColor: dark ? "#2a3448" : "#e2e8f0" }
+    },
+    rightPriceScale:{ borderVisible:false },
+    timeScale:{ borderVisible:false, timeVisible:true, secondsVisible:false }
+  };
+}
+function lwCandleOpts(){
+  return { upColor:"#22C55E", downColor:"#EF4444", wickUpColor:"#22C55E", wickDownColor:"#EF4444",
+           borderVisible:false, priceLineVisible:true, lastValueVisible:true };
+}
+
+function buildMainChart(){
+  const host = $("tvChart");
+  if(!host || !LW()){
+    if(host) host.innerHTML = '<div class="lw-err">Chart library failed to load.<br>Check your connection and reload.</div>';
+    return;
+  }
   host.innerHTML = "";
-  if(typeof TradingView === "undefined"){ showFallback(containerId); return; }
-  try{
-    new TradingView.widget({
-      container_id: containerId,
-      autosize: true,
-      symbol: tvSymbol,
-      interval: interval,
-      theme: theme(),
-      style: "1",
-      locale: "en",
-      toolbar_bg: theme()==="dark" ? "#0A0F1C" : "#FFFFFF",
-      hide_side_toolbar: false,
-      allow_symbol_change: false,
-      backgroundColor: theme()==="dark" ? "rgba(5, 8, 15, 1)" : "rgba(255,255,255,1)",
-      gridColor: theme()==="dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)"
-    });
-    hideFallback(containerId);
-  }catch(e){ showFallback(containerId); }
+  lw.chart = LW().createChart(host, Object.assign({ width:host.clientWidth||300, height:host.clientHeight||340 }, lwTheme()));
+  lw.candles = lw.chart.addCandlestickSeries(lwCandleOpts());
+  lw.volume = lw.chart.addHistogramSeries({ priceScaleId:"vol", priceFormat:{ type:"volume" } });
+  lw.chart.priceScale("vol").applyOptions({ scaleMargins:{ top:0.84, bottom:0 } });
+  refreshMainData();
+  lw.chart.subscribeCrosshairMove(onMainCrosshair);
+  new ResizeObserver(()=>{ if(lw.chart && host.clientWidth) lw.chart.resize(host.clientWidth, host.clientHeight); }).observe(host);
 }
-function showFallback(id){
-  const cv = id==="tvChart" ? $("fallbackChart") : $("fallbackChartLive");
-  if(cv) cv.hidden = false;
-  if(id==="tvChart" && $("chartNote")) $("chartNote").hidden = false;
+function refreshMainData(){
+  if(!lw.candles) return;
+  const d = genBars(state.sym, state.tf);
+  lw.bars = d.bars; lw.vols = d.vols;
+  lw.candles.setData(d.bars);
+  lw.volume.setData(d.vols);
+  lw.chart.timeScale().scrollToRealTime();
+  $("lgSym").textContent = state.sym;
+  $("lgTF").textContent = state.tf;
+  updateLegend(d.bars[d.bars.length-1]);
 }
-function hideFallback(id){
-  const cv = id==="tvChart" ? $("fallbackChart") : $("fallbackChartLive");
-  if(cv) cv.hidden = true;
-  if(id==="tvChart" && $("chartNote")) $("chartNote").hidden = true;
+function applyChartTheme(){
+  if(!LW()) return;
+  if(lw.chart) lw.chart.applyOptions(lwTheme());
+  if(lw.liveChart) lw.liveChart.applyOptions(lwTheme());
 }
-function drawFallback(containerId, canvasId){
-  const cv = $(canvasId);
-  if(!cv || cv.hidden) return;
-  const h = state.hist[containerId==="tvChart" ? state.sym : "XAUUSD"];
-  const dpr = window.devicePixelRatio||1;
-  const w = cv.clientWidth, ht = cv.clientHeight;
-  if(!w || !ht || h.length<2) return;
-  if(cv.width!==Math.round(w*dpr)){ cv.width=Math.round(w*dpr); cv.height=Math.round(ht*dpr); }
-  const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,w,ht);
-  const min = Math.min.apply(null,h), max = Math.max.apply(null,h), rng = (max-min)||1;
-  const up = h[h.length-1] >= h[0];
-  ctx.strokeStyle = up ? "#22C55E" : "#F04452"; ctx.lineWidth = 2;
-  ctx.beginPath();
-  h.forEach((v,i)=>{
-    const x = i/(h.length-1)*w, y = ht - ((v-min)/rng)*(ht-16) - 8;
-    i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
-  });
-  ctx.stroke();
-  ctx.lineTo(w,ht); ctx.lineTo(0,ht); ctx.closePath();
-  const g = ctx.createLinearGradient(0,0,0,ht);
-  g.addColorStop(0, up?"rgba(34,197,94,.25)":"rgba(240,68,82,.25)");
-  g.addColorStop(1,"rgba(0,0,0,0)");
-  ctx.fillStyle = g; ctx.fill();
+function onMainCrosshair(param){
+  if(!lw.candles || !lw.bars.length) return;
+  let bar = null;
+  if(param && param.time && param.seriesData){
+    const sd = param.seriesData.get(lw.candles);
+    if(sd && sd.time) bar = sd;
+  }
+  updateLegend(bar || lw.bars[lw.bars.length-1]);
 }
-function drawFallbacks(){
-  drawFallback("tvChart","fallbackChart");
-  if(state.liveBuilt) drawFallback("tvChartLive","fallbackChartLive");
+function updateLegend(bar){
+  if(!bar) return;
+  const s = state.sym;
+  $("lgO").textContent = fmtP(s, bar.open);
+  $("lgH").textContent = fmtP(s, bar.high);
+  $("lgL").textContent = fmtP(s, bar.low);
+  $("lgC").textContent = fmtP(s, bar.close);
+  const ch = (bar.close-bar.open)/bar.open*100, el = $("lgChg");
+  el.textContent = (ch>=0?"+":"")+ch.toFixed(2)+"%";
+  el.className = "num " + (ch>=0 ? "up" : "down");
+}
+
+/* Live-tab mini chart (XAUUSD 5m), built when the Live tab first opens */
+function buildLiveChart(){
+  const host = $("tvChartLive");
+  if(!host || !LW() || lw.liveChart) return;
+  host.innerHTML = "";
+  lw.liveChart = LW().createChart(host, Object.assign({ width:host.clientWidth||300, height:host.clientHeight||300 }, lwTheme()));
+  lw.liveCandles = lw.liveChart.addCandlestickSeries(lwCandleOpts());
+  lw.liveBars = genBars("XAUUSD", "5m").bars;
+  lw.liveCandles.setData(lw.liveBars);
+  lw.liveChart.timeScale().scrollToRealTime();
+  new ResizeObserver(()=>{ if(lw.liveChart && host.clientWidth) lw.liveChart.resize(host.clientWidth, host.clientHeight); }).observe(host);
+}
+
+/* Called from the 700ms price engine tick: rolls the live candle forward */
+function updateChartTick(){
+  if(lw.candles && lw.bars.length){
+    const p = px(state.sym).bid, bucket = (TF_MIN[state.tf]||1)*60;
+    const bt = Math.floor(Date.now()/1000/bucket)*bucket;
+    let last = lw.bars[lw.bars.length-1];
+    if(bt > last.time){
+      last = { time:bt, open:last.close, high:Math.max(last.close,p), low:Math.min(last.close,p), close:p };
+      lw.bars.push(last); lw.candles.update(last);
+      const up = p>=last.open;
+      const v = { time:bt, value:0.05, color: up?"rgba(34,197,94,0.32)":"rgba(239,68,68,0.32)" };
+      lw.vols.push(v); lw.volume.update(v);
+      if(lw.bars.length > N_BARS+20){ lw.bars.shift(); lw.vols.shift(); }
+    }else{
+      last.close = p; if(p>last.high) last.high = p; if(p<last.low) last.low = p;
+      lw.candles.update(last);
+      const lv = lw.vols[lw.vols.length-1];
+      lv.value = +(lv.value+0.01).toFixed(2); lw.volume.update(lv);
+    }
+    updateLegend(last);
+  }
+  if(lw.liveCandles && lw.liveBars.length){
+    const p = px("XAUUSD").bid, bucket = 300;
+    const bt = Math.floor(Date.now()/1000/bucket)*bucket;
+    let last = lw.liveBars[lw.liveBars.length-1];
+    if(bt > last.time){
+      last = { time:bt, open:last.close, high:Math.max(last.close,p), low:Math.min(last.close,p), close:p };
+      lw.liveBars.push(last); lw.liveCandles.update(last);
+    }else{
+      last.close = p; if(p>last.high) last.high = p; if(p<last.low) last.low = p;
+      lw.liveCandles.update(last);
+    }
+  }
 }
 
 /* timeframe chips */
@@ -306,7 +403,7 @@ $("tfBar").addEventListener("click", e=>{
   document.querySelectorAll(".tf").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");
   state.tf = b.dataset.tf;
-  loadTV("tvChart", meta(state.sym).tv, state.tf);
+  refreshMainData(); /* regenerate candles at the new timeframe */
 });
 
 /* ---------------- ORDER BOOK DEPTH (simulated) ---------------- */
@@ -747,7 +844,7 @@ const MOCK_CHAT = [
 ];
 let chatIdx = 0, viewers = 2412;
 function buildLive(){
-  loadTV("tvChartLive", SYMBOLS.XAUUSD.tv, "5m");
+  buildLiveChart(); /* self-hosted XAUUSD 5m chart */
   restoreFaceCam();
   for(let i=0;i<3;i++) pushFeed();
   MOCK_CHAT.slice(0,6).forEach(m=>addChat(m[0], m[1], false));
@@ -1113,6 +1210,7 @@ renderDepth(true);
 renderTape(true);
 setSymbol("XAUUSD");
 setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } })());
+buildMainChart(); /* self-hosted candle chart, after theme is set */
 renderTicketTick();
 renderAccount();
 setInterval(tick, 700);

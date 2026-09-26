@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
@@ -87,26 +87,8 @@
                 <button class="tf" data-tf="1D" role="tab">1D</button>
               </div>
               <div class="chart-wrap" id="tradeChartWrap">
+                <div class="lw-legend num" id="chartLegend"><b id="lgSym">XAUUSD</b><span class="lg-tf" id="lgTF">1m</span><span>O <i id="lgO">—</i></span><span>H <i id="lgH">—</i></span><span>L <i id="lgL">—</i></span><span>C <i id="lgC">—</i></span><span id="lgChg" class="num">—</span></div>
                 <div class="tv-host" id="tvChart"></div>
-                <canvas class="fallback-chart" id="fallbackChart" hidden></canvas>
-                <div class="chart-note" id="chartNote" hidden>Offline chart · simulated feed</div>
-              </div>
-
-              <div class="md-card">
-                <div class="md-tabs" id="mdTabs" role="tablist" aria-label="Market data">
-                  <button class="md-tab active" data-md="depth" role="tab">Order book</button>
-                  <button class="md-tab" data-md="tape" role="tab">Recent trades</button>
-                </div>
-                <div class="md-body" id="mdDepth">
-                  <div class="ob-head"><span>Price</span><span>Size</span><span>Total</span></div>
-                  <div id="obAsks"></div>
-                  <div class="ob-spread"><span class="num" id="obLast">—</span><span class="ob-spread-lbl">Spread <b class="num" id="obSpread">—</b></span></div>
-                  <div id="obBids"></div>
-                </div>
-                <div class="md-body" id="mdTape" hidden>
-                  <div class="ob-head"><span>Time</span><span>Price</span><span>Size</span></div>
-                  <div id="tapeBody"></div>
-                </div>
               </div>
             </div>
 
@@ -168,6 +150,26 @@
                 <div id="alertList"></div>
               </div>
             </div>
+
+            <!-- Market data: order book + tape -->
+            <div class="col-data">
+              <div class="md-card">
+                <div class="md-tabs" id="mdTabs" role="tablist" aria-label="Market data">
+                  <button class="md-tab active" data-md="depth" role="tab">Order book</button>
+                  <button class="md-tab" data-md="tape" role="tab">Recent trades</button>
+                </div>
+                <div class="md-body" id="mdDepth">
+                  <div class="ob-head"><span>Price</span><span>Size</span><span>Total</span></div>
+                  <div id="obAsks"></div>
+                  <div class="ob-spread"><span class="num" id="obLast">—</span><span class="ob-spread-lbl">Spread <b class="num" id="obSpread">—</b></span></div>
+                  <div id="obBids"></div>
+                </div>
+                <div class="md-body" id="mdTape" hidden>
+                  <div class="ob-head"><span>Time</span><span>Price</span><span>Size</span></div>
+                  <div id="tapeBody"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -193,7 +195,7 @@
             <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
             <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span></div>
           </div>
-          <button class="primary-btn go-live-btn" id="goLiveBtn">Go Live</button>
+          <button class="go-live-btn" id="goLiveBtn"><span class="golive-dot"></span><span class="golive-txt"><b>Go Live</b><small>Camera turns on automatically — stream to the community</small></span></button>
           <div class="you-live-bar" id="youLiveBar" hidden>
             <span class="live-pill"><i></i>YOU ARE LIVE</span>
             <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
@@ -203,11 +205,11 @@
           </div>
           <div class="chart-wrap live-chart" id="liveChartWrap">
             <div class="tv-host" id="tvChartLive"></div>
-            <canvas class="fallback-chart" id="fallbackChartLive" hidden></canvas>
             <div class="face-cam" id="faceCam" aria-label="Streamer camera">
               <video id="faceCamVideo" autoplay playsinline muted hidden></video>
               <div class="fc-empty" id="faceCamEmpty">
-                <span>Face cam</span>
+                <span class="ic fc-cam-ic" data-icon="cam"></span>
+                <span class="fc-label">Face cam</span>
                 <button class="fc-cam-btn" id="camToggleBtn">Enable camera</button>
               </div>
               <i class="fc-resize" id="fcResize"></i>
@@ -315,7 +317,7 @@
 
 <div class="toast" id="toast" hidden role="status"></div>
 
-<script src="https://s3.tradingview.com/tv.js"></script>
-<script src="app.js?v=3"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
