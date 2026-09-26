@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
 
@@ -15,7 +15,7 @@
 
     <!-- Desktop sidebar -->
     <aside class="sidebar">
-      <div class="side-brand"><div class="brand-mark">TC</div><div><b>Trading Community</b><span>Paper trading terminal</span></div></div>
+      <div class="side-brand"><div class="brand-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="blg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#22C55E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#blg1)"/><path d="M11 27v-7M11 15v-5M8.5 22.5h5M8.5 17h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M20 29V19M20 13V9M17.5 23.5h5M17.5 15h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M26.5 27.5l8-8M26.5 21h8v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Trading Community</b><span>Paper trading terminal</span></div></div>
       <nav class="side-nav" id="sideNav" aria-label="Primary">
         <button class="snav active" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span></button>
         <button class="snav" data-tab="positions"><span class="ic" data-icon="positions"></span><span>Positions</span><i class="tab-badge" id="posBadgeSide" hidden></i></button>
@@ -32,7 +32,7 @@
     <!-- Main column -->
     <div class="main">
       <header class="appbar">
-        <div class="brand-mark sm-only">TC</div>
+        <div class="brand-logo sm-only"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="blg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#22C55E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#blg2)"/><path d="M11 27v-7M11 15v-5M8.5 22.5h5M8.5 17h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M20 29V19M20 13V9M17.5 23.5h5M17.5 15h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M26.5 27.5l8-8M26.5 21h8v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <button class="sym-picker" id="symPicker" aria-label="Select symbol"><span id="symName">XAUUSD</span><span class="ic sm" data-icon="chev"></span></button>
         <div class="px-block">
           <div class="px num" id="hdrPrice">—</div>
@@ -49,6 +49,7 @@
         <!-- ============ TRADE TERMINAL ============ -->
         <section class="screen active" id="screen-trade" aria-label="Trade">
           <!-- Account strip -->
+          <button class="acct-switch" id="acctSwitch" aria-label="Switch trading account"><span class="acct-dot" id="acctDot"></span><span><b id="acctName">Exness</b><span class="acct-type" id="acctType">Demo</span></span><span class="ic sm" data-icon="chev"></span></button>
           <div class="acct-strip" id="acctStrip" aria-label="Account summary">
             <div class="acct"><span>Equity</span><b class="num" id="acctEquity">$10,000.00</b></div>
             <div class="acct"><span>Balance</span><b class="num" id="acctBalance">$10,000.00</b></div>
@@ -89,6 +90,11 @@
               <div class="chart-wrap" id="tradeChartWrap">
                 <div class="lw-legend num" id="chartLegend"><b id="lgSym">XAUUSD</b><span class="lg-tf" id="lgTF">1m</span><span>O <i id="lgO">—</i></span><span>H <i id="lgH">—</i></span><span>L <i id="lgL">—</i></span><span>C <i id="lgC">—</i></span><span id="lgChg" class="num">—</span></div>
                 <div class="tv-host" id="tvChart"></div>
+                <button class="idea-fab" id="shareIdeaBtn"><span class="ic xs" data-icon="send"></span> Post idea</button>
+                <div class="quick-trade">
+                  <button class="qt buy" id="qtBuy">BUY</button>
+                  <button class="qt sell" id="qtSell">SELL</button>
+                </div>
               </div>
             </div>
 
@@ -193,7 +199,7 @@
         <section class="screen" id="screen-live" aria-label="Live">
           <div class="live-head">
             <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
-            <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span></div>
+            <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span><span class="copy-chip" id="copyChip" hidden>📋 Copying</span></div>
           </div>
           <button class="go-live-btn" id="goLiveBtn"><span class="golive-dot"></span><span class="golive-txt"><b>Go Live</b><small>Camera check, title &amp; symbol — then stream to the community</small></span></button>
           <div class="you-live-bar" id="youLiveBar" hidden>
@@ -202,6 +208,10 @@
             <span class="yl-stat num" id="youTimer">00:00</span>
             <span class="yl-stat"><b class="num pl-pos" id="youPL">+$0.00</b> today</span>
             <button class="danger-btn sm" id="endLiveBtn">End</button>
+          </div>
+          <div class="watch-bar" id="watchBar" hidden>
+            <span id="watchBarTxt"></span>
+            <button class="ghost-btn sm" id="watchLeave">Leave</button>
           </div>
           <div class="live-hint card" id="liveHint" hidden>
             <b>You're live — what now?</b>
@@ -214,7 +224,9 @@
           </div>
           <div class="chart-wrap live-chart" id="liveChartWrap">
             <div class="tv-host" id="tvChartLive"></div>
+            <div class="live-hearts" id="liveHearts" aria-hidden="true"></div>
             <div class="face-cam" id="faceCam" aria-label="Streamer camera">
+              <span class="fc-tag" id="faceCamTag" hidden></span>
               <video id="faceCamVideo" autoplay playsinline muted hidden></video>
               <div class="fc-empty" id="faceCamEmpty">
                 <span class="ic fc-cam-ic" data-icon="cam"></span>
@@ -236,6 +248,7 @@
               <div class="chat-scroll"><div class="chat" id="liveChat"></div></div>
               <div class="chat-bar">
                 <input class="field" id="chatInput" placeholder="Say something…" maxlength="140" autocomplete="off">
+                <button class="icon-btn heart" id="heartBtn" aria-label="Send a like">♥</button>
                 <button class="icon-btn primary" id="chatSend" aria-label="Send message"><span class="ic" data-icon="send"></span></button>
               </div>
             </div>
@@ -264,6 +277,8 @@
               <button class="ghost-btn sm" id="pollSell">Vote bearish</button>
             </div>
           </div>
+          <div class="sec-head"><h3>Classes</h3><span class="fine">Learn to trade · demo</span></div>
+          <div class="course-list" id="courseList"></div>
           <div class="sec-head"><h3>Feed</h3><span class="fine">Demo posts</span></div>
           <div class="card composer">
             <div class="avatar">YOU</div>
@@ -286,7 +301,12 @@
         <section class="screen" id="screen-profile" aria-label="Profile">
           <div class="prof-head">
             <div class="avatar lg" id="profAvatar">AT</div>
-            <div><h3 id="profName">Alex Trader</h3><span class="handle" id="profHandle">@alextrader</span><span class="demo-tag">Demo account</span></div>
+            <div class="prof-id"><h3 id="profName">Alex Trader</h3><span class="handle" id="profHandle">@alextrader</span>
+            <div class="prof-bio" id="profBio">Learning in public · XAUUSD &amp; majors · demo journey</div></div>
+          </div>
+          <div class="prof-actions">
+            <button class="ghost-btn sm kyc-btn" id="kycRow"><span class="ic xs" data-icon="check"></span><span id="kycLabel">Verify identity</span><b class="kyc-status" id="kycStatus">Not verified</b></button>
+            <button class="ghost-btn sm" id="profAcctBtn"><span class="acct-dot" id="profAcctDot"></span><span id="profAcctName">Exness · Demo</span><span class="ic xs" data-icon="chev"></span></button>
           </div>
           <div class="stat-grid">
             <div class="stat"><b class="num" id="statWin">67%</b><span>Win rate</span></div>
@@ -294,11 +314,21 @@
             <div class="stat"><b class="num" id="statFollowers">48.2k</b><span>Followers</span></div>
             <div class="stat"><b class="num" id="statPL">+$4,210</b><span>Total P/L</span></div>
           </div>
-          <div class="sec-head"><h3>Broker accounts</h3><span class="demo-tag">Demo</span></div>
-          <div id="brokerList"></div>
-          <button class="ghost-btn wide" id="addBroker"><span class="ic xs" data-icon="plus"></span> Add broker</button>
-          <div class="sec-head"><h3>Trade history</h3></div>
-          <div id="profHistory"></div>
+          <div class="card copy-status" id="copyStatusCard" hidden></div>
+          <div class="prof-tabs" id="profTabs" role="tablist" aria-label="Profile tabs">
+            <button class="ptab active" data-ptab="posts" role="tab">Posts</button>
+            <button class="ptab" data-ptab="reels" role="tab">Reels</button>
+            <button class="ptab" data-ptab="trades" role="tab">Trades</button>
+          </div>
+          <div id="profPosts"></div>
+          <div id="profReels" hidden></div>
+          <div id="profTrades" hidden>
+            <div class="sec-head"><h3>Broker accounts</h3><span class="demo-tag">Demo</span></div>
+            <div id="brokerList"></div>
+            <button class="ghost-btn wide" id="addBroker"><span class="ic xs" data-icon="plus"></span> Add broker</button>
+            <div class="sec-head"><h3>Trade history</h3></div>
+            <div id="profHistory"></div>
+          </div>
         </section>
 
       </main>
@@ -358,7 +388,7 @@
 <!-- ============ TEMPORARY DEMO PASSWORD GATE (223219) ============ -->
 <div class="tc-lock" id="tcLock" hidden>
   <div class="tc-lock-card">
-    <div class="tc-lock-logo">TC</div>
+    <div class="brand-logo lg"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="blg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#22C55E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#blg3)"/><path d="M11 27v-7M11 15v-5M8.5 22.5h5M8.5 17h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M20 29V19M20 13V9M17.5 23.5h5M17.5 15h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M26.5 27.5l8-8M26.5 21h8v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <h2>Trading Community</h2>
     <p class="tc-lock-sub">Demo preview — enter the password to continue.</p>
     <input type="password" id="tcPass" class="field tc-lock-input" placeholder="Password" autocomplete="off" inputmode="numeric">
@@ -394,7 +424,133 @@
   </div>
 </section>
 
+<!-- ============ COPY-TRADING WARNING MODAL ============ -->
+<div class="modal-wrap" id="copyModal" hidden role="dialog" aria-label="Copy trading">
+  <div class="modal-backdrop" id="copyModalBg"></div>
+  <div class="modal copy-modal">
+    <button class="modal-x" id="copyModalX" aria-label="Close"><span class="ic sm" data-icon="x"></span></button>
+    <div class="warn-ic">!</div>
+    <h3>Copy this trader?</h3>
+    <p class="modal-sub" id="copyWarnHost">@daudtradefx</p>
+    <div class="warn-body">
+      <p>Every trade the host takes will be <b>automatically mirrored</b> in your <b id="copyWarnAcct">Exness demo</b> account.</p>
+      <ul>
+        <li>Host buys → you buy · host sells → you sell, instantly.</li>
+        <li>You choose your own lot size below.</li>
+        <li>Trading involves risk — past results don't guarantee future returns.</li>
+      </ul>
+    </div>
+    <div class="fld"><label>Your copy lot size</label>
+      <div class="stepper">
+        <button id="copyLotMinus" aria-label="Decrease lot size"><span class="ic sm" data-icon="minus"></span></button>
+        <span class="num" id="copyLotVal">0.10</span>
+        <button id="copyLotPlus" aria-label="Increase lot size"><span class="ic sm" data-icon="plus"></span></button>
+      </div>
+    </div>
+    <p class="fine">Demo only — no real money moves.</p>
+    <div class="form-row">
+      <button class="ghost-btn" id="copyCancel">Cancel</button>
+      <button class="primary-btn" id="copyAccept">I understand — start copying</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ACCOUNT SWITCHER SHEET ============ -->
+<div class="backdrop" id="acctBackdrop" hidden></div>
+<div class="sheet" id="acctSheet" hidden role="dialog" aria-label="Trading accounts">
+  <div class="sheet-head"><h3>Trading accounts</h3><button class="icon-btn" id="acctSheetX" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>
+  <div id="acctList"></div>
+  <button class="ghost-btn wide" id="acctAdd"><span class="ic xs" data-icon="plus"></span> Add account</button>
+  <p class="fine sheet-fine">Demo fills are simulated. Live execution needs the broker backend — coming in the next phase.</p>
+</div>
+
+<!-- ============ ADD ACCOUNT MODAL ============ -->
+<div class="modal-wrap" id="acctModal" hidden role="dialog" aria-label="Add trading account">
+  <div class="modal-backdrop" id="acctModalBg"></div>
+  <div class="modal">
+    <button class="modal-x" id="acctModalX" aria-label="Close"><span class="ic sm" data-icon="x"></span></button>
+    <h3>Add account</h3>
+    <p class="modal-sub">Link a broker account <span class="demo-tag">demo</span></p>
+    <div class="fld"><label for="amBroker">Broker</label><select class="field" id="amBroker"></select></div>
+    <div class="fld"><label>Account type</label>
+      <div class="seg" id="amTypeSeg">
+        <button class="seg-btn active" data-atype="demo">Demo</button>
+        <button class="seg-btn" data-atype="live">Live</button>
+      </div>
+      <p class="fine" id="amLiveWarn" hidden>Live accounts trade real money — execution is simulated in this demo build until the broker backend ships.</p>
+    </div>
+    <label class="fld-label">Login / account number
+      <input class="field" id="amLogin" inputmode="numeric" placeholder="e.g. 58102436" autocomplete="off">
+    </label>
+    <label class="fld-label">Password
+      <input class="field" id="amPass" type="password" placeholder="••••••••" autocomplete="off">
+    </label>
+    <label class="fld-label">Server
+      <input class="field" id="amServer" placeholder="e.g. Exness-MT5Real" autocomplete="off">
+    </label>
+    <button class="primary-btn" id="amGo">Link account</button>
+    <p class="auth-fine">Demo — credentials never leave your device.</p>
+  </div>
+</div>
+
+<!-- ============ KYC VERIFICATION ============ -->
+<div class="tprof-view" id="kycView" hidden>
+  <div class="tprof-top">
+    <button class="icon-btn" id="kycBack" aria-label="Back"><span class="ic tprof-back-ic" data-icon="chev" style="transform:rotate(90deg)"></span></button>
+    <b>Identity verification</b><span class="demo-tag">Demo</span>
+  </div>
+  <div class="tprof-scroll" id="kycBody"></div>
+</div>
+
+<!-- ============ COURSE / LESSON VIEW ============ -->
+<div class="tprof-view" id="courseView" hidden>
+  <div class="tprof-top">
+    <button class="icon-btn" id="courseBack" aria-label="Back"><span class="ic tprof-back-ic" data-icon="chev" style="transform:rotate(90deg)"></span></button>
+    <b id="courseViewTitle">Course</b><span class="demo-tag">Demo</span>
+  </div>
+  <div class="tprof-scroll" id="courseBody"></div>
+</div>
+
+<!-- ============ REEL VIEWER ============ -->
+<div class="reel-view" id="reelView" hidden role="dialog" aria-label="Reel">
+  <canvas id="reelCanvas" width="540" height="960"></canvas>
+  <div class="reel-top"><span class="reel-prog"><i id="reelProg"></i></span><button class="icon-btn" id="reelClose" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>
+  <div class="reel-side">
+    <button class="reel-act" id="reelLike" aria-label="Like">♥<b class="num" id="reelLikeN">0</b></button>
+    <button class="reel-act" id="reelComment" aria-label="Comments">✉<b class="num" id="reelComN">0</b></button>
+    <button class="reel-act" id="reelShare" aria-label="Share">↗<b>Share</b></button>
+  </div>
+  <div class="reel-cap"><b id="reelTrader">@trader</b><p id="reelTitle"></p></div>
+</div>
+
+<!-- ============ POST IDEA SHEET ============ -->
+<div class="backdrop" id="ideaBackdrop" hidden></div>
+<div class="sheet" id="ideaSheet" hidden role="dialog" aria-label="Post trading idea">
+  <div class="sheet-head"><h3>Post your idea</h3><button class="icon-btn" id="ideaX" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>
+  <div class="sheet-body">
+    <div class="idea-meta" id="ideaMeta"></div>
+    <div class="fld"><label>Direction</label>
+      <div class="seg" id="ideaDirSeg">
+        <button class="seg-btn active" data-dir="BUY">Bullish</button>
+        <button class="seg-btn" data-dir="SELL">Bearish</button>
+      </div>
+    </div>
+    <label class="fld-label">Strategy / reasoning
+      <textarea class="field" id="ideaBody" rows="3" placeholder="Why this trade? Key levels, confluence, invalidation…"></textarea>
+    </label>
+    <div class="fld"><label>Backtest <span class="demo-tag">Demo</span></label>
+      <div class="bt-row"><button class="ghost-btn sm" id="btRun">Run quick backtest</button><span class="fine" id="btOut">No backtest yet</span></div>
+      <div class="bt-inputs">
+        <label class="fld-label">Win rate %<input class="field num" id="ideaWin" inputmode="numeric" placeholder="61"></label>
+        <label class="fld-label">Trades tested<input class="field num" id="ideaN" inputmode="numeric" placeholder="200"></label>
+      </div>
+    </div>
+    <button class="primary-btn" id="ideaPublish">Publish to community</button>
+    <p class="fine sheet-fine">Demo — your idea appears in the feed and on your profile.</p>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

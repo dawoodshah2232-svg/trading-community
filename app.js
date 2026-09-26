@@ -896,7 +896,7 @@ $("posTabs").addEventListener("click", e=>{
 function closePosition(p, exit, reason){
   const pl = (p.dir==="BUY" ? (exit-p.entry) : (p.entry-exit)) * meta(p.sym).perPoint * p.lots;
   state.balance += pl;
-  state.history.push({ sym:p.sym, dir:p.dir, lots:p.lots, entry:p.entry, exit, pl });
+  state.history.push({ sym:p.sym, dir:p.dir, lots:p.lots, entry:p.entry, exit, pl, copy:p.copy||null });
   state.open = state.open.filter(x=>x.id!==p.id);
   toast((reason ? reason+": " : "Closed ")+p.sym+" "+fmt$(pl)+" — demo");
 }
@@ -911,7 +911,9 @@ function renderPositions(){
   state.open.forEach(p=>{
     const card = document.createElement("div");
     card.className = "pos-card"; card.dataset.pid = p.id;
-    const mb = p.mirror
+    const mb = p.copy
+      ? '<div class="copy-badge"><span class="mdot"></span>Copied from '+esc(p.copy.from)+' · auto</div>'
+      : p.mirror
       ? '<div class="mirror-badge"><span class="mdot"></span>Mirrored to '+esc(p.mirror.broker)+' · '+p.mirror.ms+'ms</div>'
       : '<div class="mirror-badge demo"><span class="mdot"></span>Demo fill — connect a broker to mirror</div>';
     card.innerHTML =
@@ -958,7 +960,7 @@ function renderHistory(el){
     d.innerHTML =
       '<div class="pos-top"><span class="pos-sym">'+h.sym+'</span>'+
       '<span class="dir '+(h.dir==="BUY"?"buy":"sell")+'">'+h.dir+'</span>'+
-      '<span class="pos-lots">'+h.lots.toFixed(2)+' lots</span></div>'+
+      '<span class="pos-lots">'+h.lots.toFixed(2)+' lots</span>'+(h.copy?'<span class="copy-badge">📋 copied</span>':"")+'</div>'+
       '<div class="pos-grid">'+
       '<div class="pos-col"><span>Entry</span><b>'+fmtP(h.sym,h.entry)+'</b></div>'+
       '<div class="pos-col"><span>Exit</span><b>'+fmtP(h.sym,h.exit)+'</b></div>'+
@@ -1037,6 +1039,7 @@ function pushFeed(){
     '<span class="t">'+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")+"</span>";
   feed.prepend(d);
   while(feed.children.length>6) feed.lastChild.remove();
+  mirrorHostTrade(dir, at); /* copy-trading: host trades land in your account (demo) */
 }
 function addChat(user, text, me){
   const box = $("liveChat");
@@ -1056,9 +1059,8 @@ function sendChat(){
   addChat("You", v, true); inp.value = "";
 }
 $("copySwitch").addEventListener("click", function(){
-  this.classList.toggle("on");
-  this.setAttribute("aria-pressed", this.classList.contains("on") ? "true" : "false");
-  toast(this.classList.contains("on") ? "Copy-trading ON — demo only, no real orders" : "Copy-trading OFF");
+  if(copyState.on) stopCopy();
+  else openCopyModal("daud"); /* the demo live room hosts @daudtradefx */
 });
 
 /* draggable + resizable face-cam, position persisted */
@@ -1350,6 +1352,7 @@ document.addEventListener("click", e=>{
   const b = e.target.closest("[data-follow]"); if(!b) return;
   e.stopPropagation();
   const t = TRADERS.find(x=>x.id===b.dataset.follow); if(!t) return;
+  if(t.you){ toast("That's you — demo"); return; }
   t.following = !t.following;
   t.followers += t.following ? 1 : -1;
   document.querySelectorAll('[data-follow="'+t.id+'"]').forEach(x=>{
@@ -1364,6 +1367,7 @@ document.addEventListener("click", e=>{
 document.addEventListener("click", e=>{
   if(e.target.closest("[data-follow]")) return;
   const el = e.target.closest("[data-tprof]"); if(!el) return;
+  if(el.dataset.tprof==="you"){ goTab("profile"); return; }
   openTraderProfile(el.dataset.tprof);
 });
 
@@ -1398,43 +1402,6 @@ function monthlyBars(m){
     const h = Math.max(6, Math.round(Math.abs(v)/max*56));
     return '<div class="mb"><i class="'+(v>=0?"pos":"neg")+'" style="height:'+h+'px"></i></div>';
   }).join("");
-}
-function renderTraderProfile(id){
-  const t = TRADERS.find(x=>x.id===id); if(!t) return;
-  const body = $("tprofBody");
-  const posts = MOCK_POSTS.filter(p=>p.tid===t.id);
-  body.innerHTML =
-    '<div class="tprof-head">'+
-      '<div class="avatar xl" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
-      (t.live?'<span class="trader-live">LIVE</span>':'')+'</div>'+
-      '<div class="tprof-id"><b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span>'+
-      '<p class="tprof-bio">'+esc(t.bio)+'</p></div>'+
-      '<button class="follow-btn'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button>'+
-    '</div>'+
-    (t.live?'<button class="watch-live-btn" id="tprofWatch"><span class="live-pill"><i></i>LIVE</span> Watch '+esc(t.name)+' trade now</button>':'')+
-    '<div class="tprof-stats">'+
-      '<div class="tstat-cell"><b class="num">'+t.win+'%</b><span>Win rate</span></div>'+
-      '<div class="tstat-cell"><b class="num '+plClass(t.pl)+'">'+fmt$(t.pl)+'</b><span>Total P/L</span></div>'+
-      '<div class="tstat-cell"><b class="num">'+fmtK(t.followers)+'</b><span>Followers</span></div>'+
-      '<div class="tstat-cell"><b class="num">'+t.followingN+'</b><span>Following</span></div>'+
-    '</div>'+
-    '<div class="sec-head"><h3>Monthly P/L</h3><span class="fine">Demo · last 12 months</span></div>'+
-    '<div class="card"><div class="mchart">'+monthlyBars(t.monthly)+'</div>'+
-    '<div class="mchart-x"><span>Jan</span><span>Dec</span></div></div>'+
-    '<div class="sec-head"><h3>Recent trades</h3><span class="fine">Demo</span></div>'+
-    '<div class="card ttrades">'+ t.trades.map(tr=>
-      '<div class="ttrade"><b>'+tr.s+'</b><span class="dir '+(tr.d==="BUY"?"buy":"sell")+'">'+tr.d+'</span>'+
-      '<b class="num '+plClass(tr.pl)+'">'+fmt$(tr.pl)+'</b></div>').join("") +'</div>'+
-    '<div class="sec-head"><h3>Posts</h3></div>'+
-    (posts.length ? '<div id="tprofPosts"></div>' : '<div class="empty">No posts yet.</div>');
-  if(t.live){
-    const w = $("tprofWatch");
-    if(w) w.addEventListener("click", ()=>{ closeTraderProfile(); goTab("live"); });
-  }
-  if(posts.length){
-    const pl = $("tprofPosts");
-    posts.forEach(p=>pl.appendChild(postCard(p)));
-  }
 }
 function openTraderProfile(id){
   renderTraderProfile(id);
@@ -1501,6 +1468,18 @@ function postCard(p){
       '<input class="field" id="ci-'+p.id+'" placeholder="Write a comment…" maxlength="140" autocomplete="off">'+
       '<button class="primary-btn sm" data-sendcomment="'+p.id+'">Send</button>'+
     '</div>';
+  if(p.idea){
+    const ib = document.createElement("div");
+    ib.className = "idea-block";
+    ib.innerHTML =
+      '<div class="idea-top"><b>'+esc(p.idea.sym)+'</b>'+
+      '<span class="dir '+(p.idea.dir==="BUY"?"buy":"sell")+'">'+(p.idea.dir==="BUY"?"BULLISH":"BEARISH")+'</span>'+
+      '<span class="idea-tf">'+esc(p.idea.tf)+'</span></div>'+
+      '<div class="idea-grid"><div><span>Entry ref</span><b class="num">'+fmtP(p.idea.sym,p.idea.price)+'</b></div>'+
+      (p.idea.win?'<div><span>Backtest win</span><b class="num">'+p.idea.win+'%</b></div><div><span>Trades tested</span><b class="num">'+p.idea.n+'</b></div>':"")+
+      '</div><span class="demo-tag">Strategy idea · demo</span>';
+    c.insertBefore(ib, c.querySelector(".post-body"));
+  }
   c.querySelector(".post-body").textContent = p.body;
   renderComments(p);
   injectIcons();
@@ -1555,7 +1534,7 @@ document.addEventListener("click", e=>{
 $("composerPost").addEventListener("click", ()=>{
   const inp = $("composerInput");
   const v = inp.value.trim(); if(!v){ toast("Write something first"); return; }
-  MOCK_POSTS.unshift({ id:"p"+Date.now(), tid:"daud", time:"now", likes:0, liked:false, body:v, comments:[] });
+  MOCK_POSTS.unshift({ id:"p"+Date.now(), tid:"you", time:"now", likes:0, liked:false, body:v, comments:[] });
   inp.value = "";
   renderPosts();
   toast("Posted — demo");
@@ -1577,7 +1556,7 @@ function renderBrokers(){
     const r = document.createElement("div");
     r.className = "broker-row";
     r.innerHTML =
-      '<div class="broker-ic" style="--g1:'+b.g[0]+';--g2:'+b.g[1]+'">'+b.ini+'</div>'+
+      '<div class="broker-logo" style="--g1:'+b.g[0]+';--g2:'+b.g[1]+'"><b>'+esc(b.name.split(" ")[0])+'</b><span>MT5</span></div>'+
       '<div><b>'+esc(b.name)+'</b><span>'+esc(b.sub)+(b.connected?' · <span class="pl-pos">Live link · demo</span>':"")+'</span></div>'+
       '<button class="conn-btn'+(b.connected?" connected":"")+'" data-broker="'+i+'">'+
       (b.connected?'<span class="conn-dot"></span>Connected':"Connect")+'</button>';
@@ -1597,9 +1576,7 @@ let brokerTarget = null;
 function openBrokerModal(i){
   brokerTarget = i;
   const b = BROKERS[i];
-  $("brokerModalIc").textContent = b.ini;
-  $("brokerModalIc").style.setProperty("--g1", b.g[0]);
-  $("brokerModalIc").style.setProperty("--g2", b.g[1]);
+  $("brokerModalIc").innerHTML = '<div class="broker-logo lg" style="--g1:'+b.g[0]+';--g2:'+b.g[1]+'"><b>'+esc(b.name.split(" ")[0])+'</b><span>MT5</span></div>';
   $("brokerModalName").textContent = b.name;
   $("brokerLogin").value = ""; $("brokerPass").value = "";
   $("brokerServer").value = b.server;
@@ -1629,6 +1606,906 @@ $("brokerConnectGo").addEventListener("click", ()=>{
   }, 1200);
 });
 
+/* ================= v15: SOCIAL PROFILES, REELS, COPY, ACCOUNTS, KYC, LMS ================= */
+/* --- enrich traders with posts + reels (seeded demo content) --- */
+(function enrichTraders(){
+  const P = (tid,n)=>({ id:tid+"-p"+n });
+  const D = {
+    daud:[
+      { sym:"XAUUSD", dir:"BUY", pl:184.20, likes:214, time:"2h", seed:11, body:"NFP scalp: bought the dip into 2640 liquidity, +184 on the bounce. Plan over prediction." },
+      { sym:"XAUUSD", dir:"SELL", pl:96.40, likes:156, time:"1d", seed:23, body:"London open fade — swept Asia high then dumped. Textbook liquidity grab." },
+      { sym:"BTCUSD", dir:"BUY", pl:-58.10, likes:89, time:"3d", seed:37, body:"Took the L on this one. Stopped at 98k like I said I would. Discipline > ego." }
+    ],
+    sara:[
+      { sym:"EURUSD", dir:"BUY", pl:142.80, likes:132, time:"5h", seed:41, body:"EURUSD reclaimed 1.0840 after sweeping Asia lows. Target 1.0890 hit." },
+      { sym:"GBPUSD", dir:"BUY", pl:88.20, likes:97, time:"2d", seed:53, body:"Cable followed through on the DXY weakness. Partial at +60, runner stopped BE." },
+      { sym:"USDJPY", dir:"SELL", pl:-34.50, likes:64, time:"4d", seed:67, body:"Small loss — BoJ headline spiked it through my stop. Risk was 0.5%, moving on." }
+    ],
+    arjun:[
+      { sym:"BTCUSD", dir:"BUY", pl:212.60, likes:178, time:"8h", seed:71, body:"98k held beautifully. Spot bid on every dip — added on the retest." },
+      { sym:"NAS100", dir:"SELL", pl:74.30, likes:91, time:"1d", seed:83, body:"Faded the tech euphoria into resistance. Quick in-and-out." },
+      { sym:"ETHUSD", dir:"BUY", pl:-41.20, likes:55, time:"5d", seed:97, body:"ETH wicked me out before the real move. Frustrating but that's the game." }
+    ],
+    lena:[
+      { sym:"XAUUSD", dir:"SELL", pl:118.90, likes:143, time:"3h", seed:103, body:"Patient short from the highs — metals reward those who wait." },
+      { sym:"XAGUSD", dir:"BUY", pl:62.40, likes:88, time:"2d", seed:109, body:"Silver broke the range, rode half the move. Enough." },
+      { sym:"XAUUSD", dir:"BUY", pl:-28.70, likes:47, time:"6d", seed:113, body:"Early on the long, stopped for -0.3%. Re-entered later for the win (not shown)." }
+    ]
+  };
+  const R = {
+    daud:[
+      { title:"How I scalp gold on NFP day", views:"12.4k", likes:842, seed:5 },
+      { title:"3 liquidity traps to avoid", views:"8.1k", likes:517, seed:9 }
+    ],
+    sara:[
+      { title:"My swing checklist (5 min)", views:"6.7k", likes:402, seed:13 },
+      { title:"Fundamentals + technicals", views:"4.2k", likes:268, seed:17 }
+    ],
+    arjun:[
+      { title:"Risk-first crypto entries", views:"9.8k", likes:633, seed:21 },
+      { title:"When I stand aside", views:"5.5k", likes:341, seed:25 }
+    ],
+    lena:[
+      { title:"Patience: my gold edge", views:"7.3k", likes:489, seed:29 },
+      { title:"Silver range breakout", views:"3.9k", likes:214, seed:33 }
+    ]
+  };
+  TRADERS.forEach(t=>{
+    t.posts = (D[t.id]||[]).map((p,i)=>Object.assign(P(t.id,i+1), p, { tid:t.id, liked:false, comments:[] }));
+    t.reels = (R[t.id]||[]).map((r,i)=>Object.assign({ id:t.id+"-r"+(i+1), liked:false }, r));
+    t.postCount = t.posts.length;
+  });
+  /* you, as a trader on the social layer */
+  TRADERS.push({ id:"you", name:"Alex Trader", handle:"@alextrader", ini:"AT", g:["#2F80FF","#1B5FD6"],
+    bio:"Learning in public · XAUUSD & majors", following:false, followers:1204, followingN:86,
+    win:52, pl:0, live:false, you:true,
+    monthly:[120,-40,200,90,-60,150,80,210,-30,140,60,110],
+    trades:[], posts:[], reels:[], postCount:0 });
+})();
+function traderPosts(tid){ const t = TRADERS.find(x=>x.id===tid); return t ? t.posts||[] : []; }
+
+/* --- seeded sparkline / equity canvases --- */
+function drawSpark(cv, seed, up){
+  try{
+    const ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+    const rnd = mulberry32(seed*7919+13);
+    const pts = []; let v = 0.5;
+    for(let i=0;i<28;i++){ v += (rnd()-0.46)*0.14; v = Math.max(0.08, Math.min(0.92, v)); pts.push(v); }
+    if(up) pts[27] = Math.min(0.92, pts[0]+0.25); else pts[27] = Math.max(0.08, pts[0]-0.25);
+    const grd = ctx.createLinearGradient(0,0,W,H);
+    grd.addColorStop(0,"#2F80FF"); grd.addColorStop(1,"#22C55E");
+    ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = "rgba(255,255,255,.95)"; ctx.lineWidth = 5; ctx.lineJoin = "round"; ctx.beginPath();
+    pts.forEach((p,i)=>{ const x = 14+i*(W-28)/27, y = H-16-p*(H-32); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.beginPath();
+    ctx.arc(14+27*(W-28)/27, H-16-pts[27]*(H-32), 9, 0, 7); ctx.fill();
+  }catch(e){}
+}
+function drawEquity(cv, monthly){
+  try{
+    const ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+    let cum = 0; const pts = monthly.map(m=>cum+=m);
+    const min = Math.min.apply(null,pts.concat([0])), max = Math.max.apply(null,pts.concat([1]));
+    const X = i=>14+i*(W-28)/(pts.length-1), Y = v=>H-14-((v-min)/(max-min))*(H-28);
+    const dark = theme()==="dark";
+    ctx.strokeStyle = dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.08)"; ctx.lineWidth = 1;
+    for(let g=0;g<4;g++){ ctx.beginPath(); ctx.moveTo(0,14+g*(H-28)/3); ctx.lineTo(W,14+g*(H-28)/3); ctx.stroke(); }
+    const up = pts[pts.length-1] >= 0;
+    const grd = ctx.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0, up?"rgba(34,197,94,.35)":"rgba(240,68,82,.35)"); grd.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(X(i),Y(p)):ctx.moveTo(X(i),Y(p)));
+    ctx.lineTo(X(pts.length-1),H); ctx.lineTo(X(0),H); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+    ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(X(i),Y(p)):ctx.moveTo(X(i),Y(p)));
+    ctx.strokeStyle = up?"#22C55E":"#F04452"; ctx.lineWidth = 4; ctx.lineJoin="round"; ctx.stroke();
+  }catch(e){}
+}
+
+
+/* --- IG-style trader profile (replaces renderTraderProfile) --- */
+function igProfileHTML(t){
+  const copyingThis = copyState.on && copyState.host === t.id;
+  return ''+
+  '<div class="ig-head">'+
+    '<div class="avatar xl" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
+    (t.live?'<span class="trader-live">LIVE</span>':'')+'</div>'+
+    '<div class="ig-id"><b>'+esc(t.name)+(t.kycVerified?' ✓':'')+'</b><span class="handle">'+esc(t.handle)+'</span>'+
+    '<p class="ig-bio">'+esc(t.bio)+'</p></div>'+
+  '</div>'+
+  '<div class="ig-actions">'+
+    (t.you
+      ? '<button class="ghost-btn" id="tprofEdit">Edit profile</button>'
+      : '<button class="'+(t.following?"ghost-btn":"primary-btn")+'" id="tprofFollow">'+(t.following?"Following":"Follow")+'</button>')+
+    (t.live?'<button class="watch-live-btn" id="tprofWatch"><span class="live-pill"><i></i>LIVE</span> Watch now</button>':'')+
+    (t.live?'<button class="ghost-btn" id="tprofCopy">📋 Copy</button>':'')+
+    (t.you?'':'<button class="ghost-btn" id="tprofMsg">Message</button>')+
+  '</div>'+
+  (copyingThis?'<div><span class="copying-chip">📋 Copying '+esc(t.handle)+' · '+copyState.lots.toFixed(2)+' lots</span></div>':'')+
+  '<div class="ig-stats">'+
+    '<div class="ig-stat"><b class="num">'+(t.posts?t.posts.length:0)+'</b><span>Posts</span></div>'+
+    '<div class="ig-stat"><b class="num">'+fmtK(t.followers)+'</b><span>Followers</span></div>'+
+    '<div class="ig-stat"><b class="num">'+fmtK(t.followingN)+'</b><span>Following</span></div>'+
+    '<div class="ig-stat"><b class="num">'+t.win+'%</b><span>Win rate</span></div>'+
+  '</div>'+
+  '<div class="ig-tabs" id="tprofTabs">'+
+    '<button class="ig-tab active" data-ttab="posts">Posts</button>'+
+    '<button class="ig-tab" data-ttab="reels">Reels</button>'+
+    '<button class="ig-tab" data-ttab="trades">Trades</button>'+
+  '</div>'+
+  '<div id="tprofTab-posts"></div>'+
+  '<div id="tprofTab-reels" hidden></div>'+
+  '<div id="tprofTab-trades" hidden></div>';
+}
+function renderTraderProfile(id){
+  const t = TRADERS.find(x=>x.id===id); if(!t) return;
+  const body = $("tprofBody");
+  body.innerHTML = igProfileHTML(t);
+  /* tabs */
+  $("tprofTabs").addEventListener("click", e=>{
+    const b = e.target.closest("[data-ttab]"); if(!b) return;
+    body.querySelectorAll(".ig-tab").forEach(x=>x.classList.toggle("active", x===b));
+    ["posts","reels","trades"].forEach(k=>{ $("tprofTab-"+k).hidden = (k!==b.dataset.ttab); });
+  });
+  renderTprofPosts(t); renderTprofReels(t); renderTprofTrades(t);
+  /* actions */
+  const fw = $("tprofFollow");
+  if(fw) fw.addEventListener("click", ()=>{
+    t.following = !t.following; t.followers += t.following?1:-1;
+    renderTraderProfile(t.id); renderTraders();
+  });
+  const w = $("tprofWatch");
+  if(w) w.addEventListener("click", ()=>{ closeTraderProfile(); watchTraderLive(t.id); });
+  const cp = $("tprofCopy");
+  if(cp) cp.addEventListener("click", ()=>{ closeTraderProfile(); openCopyModal(t.id); });
+  const mg = $("tprofMsg");
+  if(mg) mg.addEventListener("click", ()=>toast("Messaging is demo — chat coming soon"));
+  const ed = $("tprofEdit");
+  if(ed) ed.addEventListener("click", ()=>{ closeTraderProfile(); goTab("profile"); });
+}
+function renderTprofPosts(t){
+  const el = $("tprofTab-posts"); if(!el) return;
+  if(!t.posts || !t.posts.length){ el.innerHTML = '<div class="empty">No posts yet.</div>'; return; }
+  el.innerHTML = '<div class="post-grid">'+t.posts.map(p=>
+    '<button class="post-tile" data-post="'+p.id+'">'+
+      '<canvas width="300" height="300"></canvas>'+
+      '<div class="pt-meta"><b>'+esc(p.sym)+'</b><span class="'+(p.pl>=0?"up":"dn")+'">'+(p.pl>=0?"+":"")+fmt$(p.pl)+'</span></div>'+
+    '</button>').join("")+'</div>';
+  el.querySelectorAll(".post-tile").forEach((tile,i)=>{
+    const p = t.posts[i];
+    drawSpark(tile.querySelector("canvas"), p.seed, p.pl>=0);
+    tile.addEventListener("click", ()=>openPostDetail(t, p));
+  });
+}
+function openPostDetail(t, p){
+  const body = $("tprofBody");
+  body.innerHTML = '<button class="ghost-btn sm back-btn" id="postDetailBack">‹ Back to profile</button><div id="postDetailWrap"></div>';
+  $("postDetailWrap").appendChild(postCard(p));
+  $("postDetailBack").addEventListener("click", ()=>renderTraderProfile(t.id));
+  $("tprofBody").scrollTop = 0;
+}
+function renderTprofReels(t){
+  const el = $("tprofTab-reels"); if(!el) return;
+  if(!t.reels || !t.reels.length){ el.innerHTML = '<div class="empty">No reels yet.</div>'; return; }
+  el.innerHTML = '<div class="reel-grid">'+t.reels.map(r=>
+    '<button class="reel-tile" data-reel="'+r.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+      '<span class="rt-play"><i>▶</i></span>'+
+      '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views)+'</span></span>'+
+    '</button>').join("")+'</div>';
+  el.querySelectorAll(".reel-tile").forEach(tile=>{
+    tile.addEventListener("click", ()=>{
+      const r = t.reels.find(x=>x.id===tile.dataset.reel);
+      openReel(t, r);
+    });
+  });
+}
+function renderTprofTrades(t){
+  const el = $("tprofTab-trades"); if(!el) return;
+  el.innerHTML =
+    '<div class="card"><div class="sec-head" style="margin-bottom:8px"><h3>Equity curve</h3><span class="fine">Demo · 12 months</span></div>'+
+    '<canvas class="eq-canvas" id="tprofEq" width="640" height="240"></canvas></div>'+
+    '<div class="sec-head"><h3>Monthly P/L</h3></div>'+
+    '<div class="card"><div class="mchart">'+monthlyBars(t.monthly)+'</div><div class="mchart-x"><span>Jan</span><span>Dec</span></div></div>'+
+    '<div class="sec-head"><h3>Recent trades</h3><span class="fine">Demo</span></div>'+
+    '<div class="card ttrades">'+ (t.trades.length ? t.trades.map(tr=>
+      '<div class="ttrade"><b>'+tr.s+'</b><span class="dir '+(tr.d==="BUY"?"buy":"sell")+'">'+tr.d+'</span>'+
+      '<b class="num '+plClass(tr.pl)+'">'+fmt$(tr.pl)+'</b></div>').join("") : '<div class="empty">No trades yet.</div>') +'</div>';
+  drawEquity($("tprofEq"), t.monthly);
+}
+
+/* --- reel viewer --- */
+let reelTimer = null, reelRAF = 0;
+function openReel(t, r){
+  $("reelTrader").textContent = t.handle + (t.live?" · LIVE":"");
+  $("reelTitle").textContent = r.title;
+  $("reelLikeN").textContent = fmtK(r.likes);
+  $("reelComN").textContent = fmtK(r.commentsN || (r.comments?r.comments.length:0) || Math.round(r.likes/9));
+  $("reelLike").classList.toggle("liked", !!r.liked);
+  $("reelLike").onclick = ()=>{
+    r.liked = !r.liked; r.likes += r.liked?1:-1;
+    $("reelLikeN").textContent = fmtK(r.likes);
+    $("reelLike").classList.toggle("liked", r.liked);
+    if(r.liked) floatHeart();
+  };
+  $("reelComment").onclick = ()=>openReelComments(t, r);
+  $("reelShare").onclick = ()=>{ shareReel(r); };
+  $("reelView").hidden = false;
+  document.body.classList.add("lock-scroll");
+  /* animated chart canvas */
+  const cv = $("reelCanvas"), ctx = cv.getContext("2d");
+  const rnd = mulberry32(r.seed*331+7);
+  const pts = []; let v = 0.45;
+  for(let i=0;i<60;i++){ v += (rnd()-0.44)*0.1; v = Math.max(.1, Math.min(.9, v)); pts.push(v); }
+  const dur = 9000; let start = performance.now();
+  cancelAnimationFrame(reelRAF);
+  (function frame(now){
+    if($("reelView").hidden) return;
+    const el = Math.min(1, (now-start)/dur);
+    const W = cv.width, H = cv.height;
+    const grd = ctx.createLinearGradient(0,0,W,H);
+    grd.addColorStop(0, t.g[0]); grd.addColorStop(1, "#060A13");
+    ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = "rgba(255,255,255,.12)"; ctx.lineWidth = 2;
+    for(let g=1;g<5;g++){ ctx.beginPath(); ctx.moveTo(0,H*g/5); ctx.lineTo(W,H*g/5); ctx.stroke(); }
+    const n = Math.max(2, Math.floor(pts.length*el));
+    ctx.beginPath();
+    for(let i=0;i<n;i++){ const x = 30+i*(W-60)/(pts.length-1), y = H*0.72-pts[i]*H*0.5; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 6; ctx.lineJoin = "round"; ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.font = "700 34px "+getComputedStyle(document.body).fontFamily;
+    ctx.fillText(t.handle, 30, H-160);
+    ctx.font = "400 26px "+getComputedStyle(document.body).fontFamily;
+    ctx.fillStyle = "rgba(255,255,255,.75)";
+    wrapText(ctx, r.title, 30, H-116, W-200, 30);
+    $("reelProg").style.width = (el*100)+"%";
+    if(el>=1){ start = performance.now(); }
+    reelRAF = requestAnimationFrame(frame);
+  })(start);
+}
+function wrapText(ctx, text, x, y, maxW, lh){
+  const words = text.split(" "); let line = "";
+  for(const w of words){ const t = line+w+" ";
+    if(ctx.measureText(t).width > maxW && line){ ctx.fillText(line, x, y); line = w+" "; y += lh; }
+    else line = t; }
+  ctx.fillText(line, x, y);
+}
+function closeReel(){
+  cancelAnimationFrame(reelRAF);
+  $("reelView").hidden = true;
+  document.body.classList.remove("lock-scroll");
+}
+function shareReel(r){
+  const txt = "Reel: "+r.title+" (demo)";
+  if(navigator.share){ navigator.share({ title:"Trading Community", text:txt }).catch(()=>{}); }
+  else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>toast("Link copied (demo)")).catch(()=>toast("Share — demo")); }
+  else toast("Share — demo");
+}
+/* reel comments (simple bottom-sheet style list inside viewer) */
+function openReelComments(t, r){
+  if(!r.comments){
+    r.comments = [
+      { n:"Sara Malik", t:"This is exactly how I read liquidity too 🔥", time:"12m" },
+      { n:"Arjun Mehta", t:"Tried this on BTC, worked twice this week", time:"34m" },
+      { n:"Lena K", t:"Saving this one 📌", time:"1h" }
+    ];
+  }
+  const body = $("tprofBody"); /* reuse profile overlay if open? no — dedicated sheet */
+  closeReel();
+  openSheetComments("Reel · "+r.title, r.comments, (txt)=>{
+    r.comments.push({ n:"You", t:txt, time:"now" });
+    $("reelComN").textContent = fmtK(r.comments.length);
+  });
+}
+/* generic comment sheet used by reels */
+function openSheetComments(title, comments, onAdd){
+  let sheet = $("commentSheet");
+  if(!sheet){
+    sheet = document.createElement("div");
+    sheet.id = "commentSheet";
+    sheet.innerHTML =
+      '<div class="backdrop" id="csBackdrop"></div>'+
+      '<div class="sheet"><div class="sheet-head"><h3 id="csTitle"></h3>'+
+      '<button class="icon-btn" id="csX" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>'+
+      '<div class="comment-list" id="csList"></div>'+
+      '<div class="chat-bar"><input class="field" id="csInput" placeholder="Add a comment…" maxlength="140">'+
+      '<button class="icon-btn primary" id="csSend" aria-label="Send"><span class="ic" data-icon="send"></span></button></div></div>';
+    document.body.appendChild(sheet);
+    $("csX").addEventListener("click", closeSheetComments);
+    $("csBackdrop").addEventListener("click", closeSheetComments);
+  }
+  $("csTitle").textContent = title;
+  const render = ()=>{
+    $("csList").innerHTML = comments.map(c=>
+      '<div class="comment"><b>'+esc(c.n)+'</b><span>'+esc(c.t)+'</span></div>').join("") ||
+      '<div class="empty">No comments yet.</div>';
+  };
+  render();
+  $("csSend").onclick = ()=>{
+    const v = $("csInput").value.trim(); if(!v) return;
+    onAdd(v); $("csInput").value = ""; render();
+  };
+  injectIcons();
+  sheet.hidden = false;
+}
+function closeSheetComments(){ const s = $("commentSheet"); if(s) s.hidden = true; }
+
+
+/* --- copy trading v2: warning modal + lot-size choice + simulated mirror --- */
+let copyState = { on:false, host:null, lots:0.10, pendingHost:null };
+let copyLotSel = 0.10;
+function copyHostHandle(){ const t = TRADERS.find(x=>x.id===copyState.host); return t?t.handle:"@host"; }
+function openCopyModal(hostId){
+  const t = TRADERS.find(x=>x.id===hostId); if(!t || t.you){ if(t&&t.you) toast("That's you — demo"); return; }
+  copyState.pendingHost = t.id;
+  setCopyLots(0.10);
+  $("copyWarnHost").textContent = t.name+" ("+t.handle+")";
+  const a = activeAcct();
+  $("copyWarnAcct").textContent = a.broker+" "+a.type+" · "+a.login;
+  $("copyModal").hidden = false;
+}
+function closeCopyModal(){ $("copyModal").hidden = true; }
+function setCopyLots(v){
+  copyLotSel = Math.min(5, Math.max(0.01, Math.round(v*100)/100));
+  $("copyLotVal").textContent = copyLotSel.toFixed(2);
+}
+function startCopy(){
+  const t = TRADERS.find(x=>x.id===copyState.pendingHost); if(!t) return;
+  copyState.on = true; copyState.host = t.id; copyState.lots = copyLotSel;
+  paintCopyUI(); renderCopyStatus(); closeCopyModal();
+  toast("Copying "+t.handle+" at "+copyState.lots.toFixed(2)+" lots — demo, no real orders");
+}
+function stopCopy(){
+  copyState.on = false; copyState.host = null;
+  paintCopyUI(); renderCopyStatus();
+  toast("Copy-trading OFF — copied positions stay open until you close them");
+}
+function paintCopyUI(){
+  const sw = $("copySwitch"); if(!sw) return;
+  sw.classList.toggle("on", copyState.on);
+  sw.setAttribute("aria-pressed", copyState.on?"true":"false");
+  const chip = $("copyChip");
+  if(chip){ chip.hidden = !copyState.on; if(copyState.on) chip.textContent = "📋 Copying "+copyHostHandle(); }
+}
+function copiedOpen(){ return state.open.filter(p=>p.copy); }
+function copiedPL(){
+  return copiedOpen().reduce((s,p)=>{
+    const pr = px(p.sym), cur = p.dir==="BUY"?pr.bid:pr.ask;
+    return s + (p.dir==="BUY"?(cur-p.entry):(p.entry-cur))*meta(p.sym).perPoint*p.lots;
+  }, 0);
+}
+function renderCopyStatus(){
+  const card = $("copyStatusCard"); if(!card) return;
+  if(!copyState.on){ card.hidden = true; return; }
+  const cps = copiedOpen(), pl = copiedPL();
+  card.hidden = false;
+  card.innerHTML =
+    '<b>📋 Copy-trading ON</b>'+
+    '<p>Mirroring <b>'+esc(copyHostHandle())+'</b> at '+copyState.lots.toFixed(2)+' lots · '+
+    cps.length+' copied position'+(cps.length===1?"":"s")+' · '+
+    '<b class="num '+plClass(pl)+'">'+fmt$(pl)+'</b> <span class="demo-tag">Demo</span></p>'+
+    '<button class="danger-btn sm" id="copyStopBtn">Stop copying</button>';
+  $("copyStopBtn").addEventListener("click", stopCopy);
+}
+function mirrorHostTrade(dir, at){
+  /* called when the host takes a trade while copy is on — demo simulation */
+  if(!copyState.on) return;
+  if(copiedOpen().length >= 8) return;
+  state.open.push({ id:"cp"+Date.now()+Math.floor(Math.random()*999),
+    sym:"XAUUSD", dir, entry:at, lots:copyState.lots, copy:{ from:copyHostHandle() } });
+  renderPositions();
+  if(Math.random()<0.22){
+    const cp = copiedOpen()[0];
+    if(cp){ const pr = px(cp.sym); closePosition(cp, cp.dir==="BUY"?pr.bid:pr.ask, "Copy close"); }
+  }
+}
+
+
+/* --- multi-account system: demo + live accounts, switchable --- */
+let ACCOUNTS = [
+  { id:"a1", broker:"Exness",  type:"demo", login:"58102436", server:"Exness-MT5Real", balance:10000, open:[], pending:[], history:[] },
+  { id:"a2", broker:"Vantage", type:"live", login:"90213345", server:"Vantage-MT5",     balance:2500,  open:[], pending:[], history:[] }
+];
+let activeAcctId = "a1";
+function activeAcct(){ return ACCOUNTS.find(a=>a.id===activeAcctId) || ACCOUNTS[0]; }
+function switchAccount(id){
+  if(id===activeAcctId){ closeAcctSheet(); return; }
+  const cur = activeAcct();
+  cur.balance = state.balance; cur.open = state.open; cur.pending = state.pending; cur.history = state.history;
+  activeAcctId = id;
+  const a = activeAcct();
+  state.balance = a.balance; state.open = a.open; state.pending = a.pending; state.history = a.history;
+  renderAcctUI(); renderPositions(); renderCopyStatus(); closeAcctSheet();
+  toast("Switched to "+a.broker+" "+a.type+" · "+a.login+" — demo");
+}
+function renderAcctUI(){
+  const a = activeAcct();
+  $("acctName").textContent = a.broker;
+  $("acctType").textContent = (a.type==="live"?"Live":"Demo")+" · "+a.login;
+  $("acctDot").className = "acct-dot "+a.type;
+  $("profAcctName").textContent = a.broker+" · "+(a.type==="live"?"Live":"Demo");
+  $("profAcctDot").className = "acct-dot "+a.type;
+  renderAccount();
+}
+function renderAcctSheet(){
+  const list = $("acctList"); list.innerHTML = "";
+  ACCOUNTS.forEach(a=>{
+    const r = document.createElement("button");
+    r.className = "acct-row"+(a.id===activeAcctId?" active":"");
+    r.innerHTML = '<span class="acct-dot '+a.type+'"></span>'+
+      '<span class="a-info"><b>'+esc(a.broker)+'</b><span>'+esc(a.login)+' · '+esc(a.server)+'</span></span>'+
+      '<span class="acct-type-pill '+a.type+'">'+a.type.toUpperCase()+'</span>';
+    r.addEventListener("click", ()=>switchAccount(a.id));
+    list.appendChild(r);
+  });
+}
+function openAcctSheet(){ renderAcctSheet(); $("acctSheet").hidden = false; $("acctBackdrop").hidden = false; }
+function closeAcctSheet(){ $("acctSheet").hidden = true; $("acctBackdrop").hidden = true; }
+let amType = "demo";
+function openAcctModal(){
+  const sel = $("amBroker");
+  if(!sel.options.length) BROKERS.forEach(b=>{ const o = document.createElement("option"); o.textContent = b.name; sel.appendChild(o); });
+  $("acctModal").hidden = false;
+}
+function closeAcctModal(){ $("acctModal").hidden = true; }
+
+/* --- KYC verification (demo flow) --- */
+let kyc = { status:"unverified", name:"", dob:"", country:"" };
+try{ const k = JSON.parse(localStorage.getItem("tc_kyc_v1")||"null"); if(k && k.status) kyc = k; }catch(e){}
+function saveKyc(){ try{ localStorage.setItem("tc_kyc_v1", JSON.stringify(kyc)); }catch(e){} }
+function renderKyc(){
+  const st = $("kycStatus"), lb = $("kycLabel");
+  if(!st) return;
+  st.className = "kyc-status "+kyc.status;
+  st.textContent = kyc.status==="verified" ? "Verified ✓" : kyc.status==="pending" ? "Pending review" : "Not verified";
+  if(lb) lb.textContent = kyc.status==="verified" ? "Identity verified" : "Verify identity";
+  const you = TRADERS.find(t=>t.id==="you"); if(you) you.kycVerified = (kyc.status==="verified");
+}
+function openKyc(){
+  renderKycBody(); $("kycView").hidden = false;
+}
+function closeKyc(){ $("kycView").hidden = true; }
+function kycStep(n, title, desc, inner, done){
+  return '<div class="kyc-step'+(done?" done":"")+'"><span class="kyc-n">'+(done?"✓":n)+'</span>'+
+    '<div class="k-info"><b>'+title+'</b><p>'+desc+'</p>'+inner+'</div></div>';
+}
+function renderKycBody(){
+  const b = $("kycBody");
+  if(kyc.status==="pending"){
+    b.innerHTML = '<div class="card" style="text-align:center;padding:32px 20px"><div class="warn-ic" style="background:rgba(245,166,35,.12);color:#F5A623">…</div>'+
+      '<h3>Under review</h3><p class="modal-sub">Our demo team is checking your documents.<br>This usually takes a few minutes.</p></div>';
+    return;
+  }
+  if(kyc.status==="verified"){
+    b.innerHTML = '<div class="card" style="text-align:center;padding:32px 20px"><div class="warn-ic" style="background:var(--green-soft);color:var(--green)">✓</div>'+
+      '<h3>Identity verified</h3><p class="modal-sub">Verified as <b>'+esc(kyc.name||"Alex Trader")+'</b><br><span class="demo-tag">Demo verification</span></p></div>';
+    return;
+  }
+  b.innerHTML =
+    '<p class="modal-sub" style="margin-bottom:12px">Verify once to unlock withdrawals, higher limits and the verified badge. <span class="demo-tag">Demo</span></p>'+
+    kycStep(1, "Personal details", "As on your ID document.",
+      '<label class="fld-label">Full name<input class="field" id="kycName" value="'+esc(kyc.name)+'" placeholder="Alex Trader"></label>'+
+      '<label class="fld-label">Date of birth<input class="field" id="kycDob" type="date" value="'+esc(kyc.dob)+'"></label>'+
+      '<label class="fld-label">Country<input class="field" id="kycCountry" value="'+esc(kyc.country)+'" placeholder="United Arab Emirates"></label>',
+      !!(kyc.name && kyc.dob))+
+    kycStep(2, "ID document", "Passport or national ID — front and back.",
+      '<div class="doc-upload"><button class="doc-btn" id="kycDocF">📄 Front<br><small>tap to upload</small></button>'+
+      '<button class="doc-btn" id="kycDocB">📄 Back<br><small>tap to upload</small></button></div>'+
+      '<input type="file" id="kycFileF" accept="image/*" hidden><input type="file" id="kycFileB" accept="image/*" hidden>',
+      !!(kyc.docF && kyc.docB))+
+    kycStep(3, "Selfie", "Take a clear selfie in good light.",
+      '<div class="doc-upload"><button class="doc-btn" id="kycSelfie">🤳 Take selfie<br><small>tap to upload</small></button></div>'+
+      '<input type="file" id="kycFileS" accept="image/*" capture="user" hidden>',
+      !!kyc.selfie)+
+    '<button class="primary-btn" id="kycSubmit">Submit for verification</button>'+
+    '<p class="fine" style="text-align:center">Demo — files never leave your device.</p>';
+  $("kycDocF").addEventListener("click", ()=>$("kycFileF").click());
+  $("kycDocB").addEventListener("click", ()=>$("kycFileB").click());
+  $("kycSelfie").addEventListener("click", ()=>$("kycFileS").click());
+  [["kycFileF","kycDocF","docF"],["kycFileB","kycDocB","docB"],["kycFileS","kycSelfie","selfie"]].forEach(([fi,btn,key])=>{
+    $(fi).addEventListener("change", ()=>{
+      const f = $(fi).files[0]; if(!f) return;
+      kyc[key] = f.name; saveKyc();
+      $(btn).classList.add("has"); $(btn).innerHTML = "✓ "+esc(f.name.length>18?f.name.slice(0,16)+"…":f.name);
+    });
+  });
+  $("kycSubmit").addEventListener("click", ()=>{
+    kyc.name = $("kycName").value.trim(); kyc.dob = $("kycDob").value; kyc.country = $("kycCountry").value.trim();
+    if(!kyc.name || !kyc.dob){ toast("Add your name and date of birth first"); return; }
+    if(!kyc.docF || !kyc.docB){ toast("Upload front and back of your ID"); return; }
+    if(!kyc.selfie){ toast("Add a selfie to finish"); return; }
+    kyc.status = "pending"; saveKyc(); renderKyc(); renderKycBody();
+    toast("Documents submitted — demo review started");
+    setTimeout(()=>{
+      if(kyc.status!=="pending") return;
+      kyc.status = "verified"; saveKyc(); renderKyc(); renderKycBody();
+      toast("Identity verified ✓ — demo");
+    }, 6000);
+  });
+}
+
+/* --- Classes / LMS: free + paid private rooms --- */
+const COURSES = [
+  { id:"c1", title:"Price Action Mastery", sub:"6 lessons · English", price:0, emoji:"📈", g:["#2F80FF","#1B5FD6"], edu:"daud",
+    desc:"Read raw price like a pro: market structure, liquidity grabs and entries without a single indicator.",
+    lessons:[
+      { t:"Market structure in 15 minutes", dur:"14:20", type:"video", body:"Structure is the skeleton of every move: higher highs and higher lows for uptrend, lower highs and lower lows for downtrend. In this lesson you learn to mark swing points on any timeframe and spot the moment structure breaks — that break is where most of my entries come from." },
+      { t:"Liquidity: where the stops live", dur:"18:45", type:"video", body:"Price hunts liquidity. Equal highs, equal lows, session highs and round numbers are magnets. You will learn to wait for the sweep — the fake breakout that grabs stops — and enter on the reversal instead of chasing the breakout like the crowd." },
+      { t:"My NFP gold scalp, step by step", dur:"22:10", type:"video", body:"A full replay of a news-day scalp on XAUUSD: pre-news levels, the spread widening trap, the sweep of Asia low, and the entry with a 6-point stop. Includes the checklist I run before every red-news event." },
+      { t:"Entries: limit vs market", dur:"11:32", type:"article", body:"Market orders feel decisive but cost you spread and slippage. Limit orders at pre-marked zones get you better fills and force patience. Rule: if the zone is gone, the trade is gone — never chase more than 20% past your level." },
+      { t:"Backtesting this strategy (demo)", dur:"16:05", type:"video", body:"How I backtested 200 setups of this playbook: win rate 61%, average win 1.8R, average loss 1R. You get the exact spreadsheet template and the rules for logging — because a strategy you cannot measure is a hobby, not an edge." },
+      { t:"Putting it together: your playbook", dur:"13:48", type:"article", body:"Write your one-page playbook: setup, entry trigger, stop rule, two take-profit targets, and the sessions you trade. Trade only that page for 30 days. Then review the data, not your feelings." }
+    ],
+    materials:[
+      { name:"PA cheatsheet.pdf", kind:"PDF", size:"1.2 MB", body:"PRICE ACTION CHEATSHEET (demo)\n\n1. Trend = HH/HL or LH/LL — nothing else.\n2. Liquidity sits above equal highs, below equal lows.\n3. Enter on the sweep, not the breakout.\n4. Stop beyond the sweep wick, never beyond hope.\n5. Two targets: first at 1.5R, runner with trailing stop.\n6. Max 2% risk per trade. Max 3 trades per session." },
+      { name:"Backtest template.csv", kind:"CSV", size:"4 KB", body:"date,symbol,setup,entry,stop,tp1,tp2,result,r_multiple,notes (demo file — 200 rows in the full version)" }
+    ] },
+  { id:"c2", title:"Gold Scalping — Private Room", sub:"6 lessons · private", price:5, emoji:"🥇", g:["#F5A623","#B26A00"], edu:"daud", enrolled:false,
+    desc:"My private scalping room: exact gold entries, live session recordings, and every strategy PDF I trade from. One-time $5 entry — recordings stay yours forever.",
+    lessons:[
+      { t:"Welcome + room rules", dur:"6:12", type:"video", body:"Welcome to the private room. Rules: risk 1% max per scalp, no trading during the first 5 minutes after red news, and post every trade in the room journal. I review journals every Sunday." },
+      { t:"The London sweep setup", dur:"24:40", type:"video", body:"The highest-probability scalp I know: Asia range marked, London sweeps one side, M5 displacement back inside, enter on the retest. Full replay of 11 live examples with entries, stops and targets drawn." },
+      { t:"Spread & session traps", dur:"17:25", type:"video", body:"Why most scalpers bleed out: spread widening at rollover, fake liquidity at round numbers, and chasing after the move. Includes my session filter — I only scalp 07:00–11:00 and 13:30–16:30 GMT." },
+      { t:"Live recording: +$184 NFP scalp", dur:"31:02", type:"video", body:"Uncut recording of the NFP scalp from my profile: audio commentary, order entries, the moment I almost moved my stop (and why I didn't). Raw and unedited." },
+      { t:"Journaling like a professional", dur:"12:18", type:"article", body:"The journal template I use: screenshot, setup tag, emotional state 1–5, R-multiple. Review weekly. Your edge is hiding in your journal, not in another indicator." },
+      { t:"Graduation: your 30-day plan", dur:"9:44", type:"article", body:"30 days, one setup, max 3 scalps a day. Hit 55%+ win rate at 1.5R average and you graduate to 2% risk. The plan, the tracker and the rules — all in the materials below." }
+    ],
+    materials:[
+      { name:"Gold playbook.pdf", kind:"PDF", size:"2.4 MB", body:"GOLD SCALPING PLAYBOOK (demo)\n\nSetup: London sweep of Asia range.\nEntry: M5 displacement + retest of swept level.\nStop: 8–12 points beyond sweep wick.\nTargets: TP1 +18 points, TP2 runner.\nRisk: 1% per scalp. Max 3 per session.\nSessions: London open + New York open only." },
+      { name:"Session filter guide.pdf", kind:"PDF", size:"800 KB", body:"SESSION FILTER (demo)\n\nTrade: 07:00–11:00 GMT, 13:30–16:30 GMT.\nAvoid: rollover 21:00–22:00 GMT, first 5 min after red news.\nSpread rule: skip if spread > 35 points on gold." },
+      { name:"Journal template.xlsx", kind:"XLSX", size:"96 KB", body:"Journal columns: date, session, setup, entry, stop, tp1, tp2, R, emotion (1–5), screenshot link, notes. (demo preview)" }
+    ] },
+  { id:"c3", title:"Risk Management Bootcamp", sub:"5 lessons · English", price:0, emoji:"🛡", g:["#22C55E","#166534"], edu:"sara",
+    desc:"The unsexy skill that keeps you in the game: position sizing, drawdown rules and the math of survival.",
+    lessons:[
+      { t:"Position sizing without tears", dur:"15:30", type:"video", body:"Lots = (risk $) / (stop in points × $ per point). One formula, worked examples for gold, EURUSD and BTC. Includes the calculator I keep open on every trading day." },
+      { t:"The 2% rule and drawdown math", dur:"13:12", type:"video", body:"Lose 50% and you need 100% to come back. The math of drawdown is brutal, which is why the 2% rule exists. We simulate 100-trade sequences so you feel it before you live it." },
+      { t:"Daily loss limits that work", dur:"10:44", type:"article", body:"Set a daily stop: -3% and screens off. No 'one more trade'. The traders who survive are not the ones with the best entries — they are the ones with the best exits from bad days." },
+      { t:"Correlated risk: the hidden killer", dur:"12:56", type:"video", body:"Long gold, long silver and short USDJPY is one trade wearing three costumes. Learn to count portfolio heat and cap total open risk at 6%." },
+      { t:"Building your risk plan", dur:"11:20", type:"article", body:"One page: risk per trade, max daily loss, max open risk, sessions traded, setups allowed. Sign it. This page is your boss now." }
+    ],
+    materials:[
+      { name:"Risk plan template.pdf", kind:"PDF", size:"640 KB", body:"RISK PLAN (demo)\n\nRisk per trade: 1–2%.\nMax daily loss: 3% → screens off.\nMax open risk: 6%.\nSessions: London + New York.\nSetups allowed: max 2." }
+    ] }
+];
+let courseProg = {};
+try{ courseProg = JSON.parse(localStorage.getItem("tc_prog_v1")||"{}"); }catch(e){ courseProg = {}; }
+function saveProg(){ try{ localStorage.setItem("tc_prog_v1", JSON.stringify(courseProg)); }catch(e){} }
+function courseDoneCount(c){ return c.lessons.filter((_,i)=>courseProg[c.id+":"+i]).length; }
+function renderCourses(){
+  const list = $("courseList"); if(!list) return;
+  list.innerHTML = "";
+  COURSES.forEach(c=>{
+    const done = courseDoneCount(c), pct = Math.round(done/c.lessons.length*100);
+    const edu = TRADERS.find(t=>t.id===c.edu);
+    const card = document.createElement("button");
+    card.className = "course-card";
+    card.innerHTML =
+      '<div class="course-thumb" style="--g1:'+c.g[0]+';--g2:'+c.g[1]+'">'+c.emoji+'</div>'+
+      '<div class="c-info"><b>'+esc(c.title)+'</b>'+
+      '<span class="c-sub">'+esc(c.sub)+' · by '+(edu?esc(edu.name):"")+'</span>'+
+      '<div class="prog"><i style="width:'+pct+'%"></i></div>'+
+      '<span class="prog-lbl">'+(c.price? '<b class="num" style="color:var(--blue)">$'+c.price+'</b> · private' : '<b style="color:var(--green)">FREE</b>')+' · '+done+'/'+c.lessons.length+' lessons</span></div>';
+    card.addEventListener("click", ()=>openCourse(c.id));
+    list.appendChild(card);
+  });
+}
+function courseLocked(c){ return c.price>0 && !c.enrolled; }
+function openCourse(id){
+  const c = COURSES.find(x=>x.id===id); if(!c) return;
+  const edu = TRADERS.find(t=>t.id===c.edu);
+  const locked = courseLocked(c);
+  $("courseViewTitle").textContent = c.title;
+  const body = $("courseBody");
+  body.innerHTML =
+    '<div class="course-thumb" style="--g1:'+c.g[0]+';--g2:'+c.g[1]+';width:96px;height:96px;font-size:40px;margin-bottom:12px">'+c.emoji+'</div>'+
+    '<h3 style="margin:0 0 6px">'+esc(c.title)+'</h3>'+
+    '<p class="modal-sub" style="text-align:left;margin:0 0 10px">'+esc(c.desc)+'</p>'+
+    (edu?'<button class="trader-mini" data-tprof="'+edu.id+'"><span class="avatar sm" style="background:linear-gradient(135deg,'+edu.g[0]+','+edu.g[1]+')">'+edu.ini+'</span><span><b>'+esc(edu.name)+'</b><span class="handle">'+esc(edu.handle)+' · '+fmtK(edu.followers)+' followers</span></span></button>':"")+
+    '<div class="sec-head"><h3>Lessons</h3><span class="fine">'+courseDoneCount(c)+'/'+c.lessons.length+' done</span></div>'+
+    '<div id="lessonList"></div>'+
+    '<div class="sec-head"><h3>Materials</h3><span class="fine">'+(locked?"🔒 join to unlock":"demo files")+'</span></div>'+
+    '<div id="matList"></div>'+
+    (locked?'<button class="primary-btn" id="joinClassBtn" style="margin-top:12px">Join private class — $'+c.price+'</button>'+
+      '<p class="fine" style="text-align:center">One-time entry · recordings + PDFs stay yours · <span class="demo-tag">Demo checkout</span></p>':"");
+  const ll = $("lessonList");
+  c.lessons.forEach((l,i)=>{
+    const done = !!courseProg[c.id+":"+i];
+    const row = document.createElement("button");
+    row.className = "lesson-row"+(done?" done":"");
+    row.innerHTML = '<span class="lesson-n">'+(done?"✓":(locked?"🔒":(i+1)))+'</span>'+
+      '<span class="l-info"><b>'+esc(l.t)+'</b><span>'+l.type+' · '+l.dur+'</span></span>';
+    row.addEventListener("click", ()=>{
+      if(locked){ toast("Join the private class to unlock lessons"); return; }
+      openLesson(c, i);
+    });
+    ll.appendChild(row);
+  });
+  const ml = $("matList");
+  if(locked){
+    ml.innerHTML = '<div class="empty">🔒 '+c.materials.length+' files unlock after joining.</div>';
+  }else{
+    c.materials.forEach(m=>{
+      const row = document.createElement("button");
+      row.className = "lesson-row";
+      row.innerHTML = '<span class="lesson-n">📄</span><span class="l-info"><b>'+esc(m.name)+'</b><span>'+m.kind+' · '+m.size+'</span></span>';
+      row.addEventListener("click", ()=>openMaterial(m));
+      ml.appendChild(row);
+    });
+  }
+  const jb = $("joinClassBtn");
+  if(jb) jb.addEventListener("click", ()=>openPaySheet(c));
+  $("courseView").hidden = false;
+}
+function openLesson(c, i){
+  const l = c.lessons[i];
+  $("courseViewTitle").textContent = "Lesson "+(i+1);
+  const body = $("courseBody");
+  const done = !!courseProg[c.id+":"+i];
+  body.innerHTML =
+    '<button class="ghost-btn sm back-btn" id="lessonBack">‹ Back to course</button>'+
+    '<div class="lesson-video"><i>▶</i></div>'+
+    '<h3 style="margin:0 0 4px">'+esc(l.t)+'</h3>'+
+    '<p class="modal-sub" style="text-align:left;margin:0 0 12px">'+l.type+' · '+l.dur+' · <span class="demo-tag">Demo</span></p>'+
+    '<div class="lesson-body"><p>'+esc(l.body)+'</p></div>'+
+    '<button class="'+(done?"ghost-btn":"primary-btn")+'" id="lessonDone" style="margin-top:14px">'+(done?"✓ Completed — tap to undo":"Mark as complete")+'</button>';
+  $("lessonBack").addEventListener("click", ()=>openCourse(c.id));
+  $("lessonDone").addEventListener("click", ()=>{
+    if(courseProg[c.id+":"+i]) delete courseProg[c.id+":"+i]; else courseProg[c.id+":"+i] = 1;
+    saveProg(); renderCourses(); openLesson(c, i);
+  });
+}
+function openMaterial(m){
+  $("courseViewTitle").textContent = m.name;
+  $("courseBody").innerHTML =
+    '<button class="ghost-btn sm back-btn" id="matBack">‹ Back</button>'+
+    '<div class="card"><div class="sec-head"><h3>'+esc(m.name)+'</h3><span class="fine">'+m.kind+' · '+m.size+' · demo</span></div>'+
+    '<pre style="white-space:pre-wrap;font:inherit;font-size:13.5px;line-height:1.6;margin:0">'+esc(m.body)+'</pre></div>';
+  $("matBack").addEventListener("click", ()=>{ $("courseView").hidden = true; });
+}
+/* demo checkout for paid classes — real payments need the backend phase */
+function openPaySheet(c){
+  $("courseViewTitle").textContent = "Join class";
+  $("courseBody").innerHTML =
+    '<div class="card" style="text-align:center">'+
+    '<div class="course-thumb" style="--g1:'+c.g[0]+';--g2:'+c.g[1]+';margin:0 auto 12px">'+c.emoji+'</div>'+
+    '<h3 style="margin:0 0 4px">'+esc(c.title)+'</h3>'+
+    '<p class="modal-sub">One-time entry · <b class="num">$'+c.price+'</b></p></div>'+
+    '<label class="fld-label">Card number<input class="field num" id="payCard" value="4242 4242 4242 4242" inputmode="numeric"></label>'+
+    '<div style="display:flex;gap:10px">'+
+    '<label class="fld-label" style="flex:1">Expiry<input class="field num" value="12/28"></label>'+
+    '<label class="fld-label" style="flex:1">CVC<input class="field num" value="123" inputmode="numeric"></label></div>'+
+    '<button class="primary-btn" id="payGo">Pay $'+c.price+'</button>'+
+    '<p class="fine" style="text-align:center">Demo checkout — no real charge.<br>The class itself is run by the educator; the app stays free.</p>';
+  $("payGo").addEventListener("click", ()=>{
+    $("payGo").disabled = true; $("payGo").textContent = "Processing…";
+    setTimeout(()=>{
+      c.enrolled = true; renderCourses(); openCourse(c.id);
+      toast("Welcome to "+c.title+" — recordings unlocked");
+    }, 1500);
+  });
+}
+
+
+/* --- tiktok-style live hearts --- */
+function floatHeart(){
+  const layer = $("liveHearts"); if(!layer) return;
+  const s = document.createElement("span");
+  s.className = "f-heart";
+  s.textContent = "♥";
+  s.style.left = (8+Math.random()*80)+"%";
+  s.style.setProperty("--dx", (Math.random()*90-45)+"px");
+  s.style.color = ["#F04452","#F5A623","#2F80FF","#22C55E","#B678F0"][Math.floor(Math.random()*5)];
+  s.style.fontSize = (16+Math.random()*16)+"px";
+  layer.appendChild(s);
+  setTimeout(()=>s.remove(), 2300);
+}
+
+/* --- watch-trader-live: viewer sees the host's cam exactly as the host placed it --- */
+let watchingHost = null;
+function watchTraderLive(tid){
+  const t = TRADERS.find(x=>x.id===tid); if(!t) return;
+  watchingHost = t;
+  goTab("live");
+  if(window.restoreFaceCam) restoreFaceCam(); /* same layout the host customized */
+  paintWatchMode();
+  toast("Watching "+t.handle+" live — demo");
+}
+function paintWatchMode(){
+  const t = watchingHost, bar = $("watchBar");
+  const cam = $("faceCam");
+  if(!t){
+    if(bar) bar.hidden = true;
+    if(cam){ cam.classList.remove("viewer"); }
+    const tag = $("faceCamTag"); if(tag) tag.hidden = true;
+    return;
+  }
+  if(bar){
+    bar.hidden = false;
+    $("watchBarTxt").innerHTML = "👁 Watching <b>"+esc(t.handle)+"</b> live <span class='demo-tag'>Demo</span>";
+  }
+  if(cam){ cam.classList.add("viewer"); }
+  const tag = $("faceCamTag"); if(tag){ tag.hidden = false; tag.textContent = t.handle; }
+}
+function stopWatching(){ watchingHost = null; paintWatchMode(); }
+
+/* --- quick one-tap buy/sell on the chart (uses ticket lots + type) --- */
+function quickTrade(dir){
+  state.dir = dir; syncDir(); execute();
+}
+
+/* --- post a trading idea straight from the chart --- */
+let ideaDir = "BUY";
+function openIdeaSheet(){
+  const pr = px(state.sym);
+  ideaDir = "BUY";
+  $("ideaDirSeg").querySelectorAll(".seg-btn").forEach(b=>b.classList.toggle("active", b.dataset.dir==="BUY"));
+  $("ideaMeta").innerHTML = '<b>'+esc(state.sym)+'</b><span>'+esc(state.tf)+' · ref <b class="num">'+fmtP(state.sym, pr.bid)+'</b></span><span class="demo-tag">Demo</span>';
+  $("ideaBody").value = "";
+  $("ideaWin").value = ""; $("ideaN").value = "";
+  $("btOut").textContent = "No backtest yet";
+  $("ideaSheet").hidden = false; $("ideaBackdrop").hidden = false;
+}
+function closeIdeaSheet(){ $("ideaSheet").hidden = true; $("ideaBackdrop").hidden = true; }
+function runQuickBacktest(){
+  /* simulated EMA 9/21 cross backtest over generated candles — honest demo numbers */
+  const seed = state.sym.split("").reduce((a,c)=>a+c.charCodeAt(0),0) + state.tf.length*13;
+  const rnd = mulberry32(seed*97+5);
+  const closes = []; let p = 100;
+  for(let i=0;i<300;i++){ p += (rnd()-0.485)*2.2; closes.push(p); }
+  const ema = (arr,per)=>{ const k = 2/(per+1); let e = arr[0]; return arr.map(v=>{ e = v*k+e*(1-k); return e; }); };
+  const fast = ema(closes,9), slow = ema(closes,21);
+  let wins = 0, n = 0;
+  for(let i=22;i<closes.length-5;i++){
+    const up = fast[i-1]<=slow[i-1] && fast[i]>slow[i];
+    const dn = fast[i-1]>=slow[i-1] && fast[i]<slow[i];
+    if(up||dn){ n++; const win = up ? closes[i+5]>closes[i] : closes[i+5]<closes[i]; if(win) wins++; }
+  }
+  const wr = n ? Math.round(wins/n*100) : 0;
+  $("ideaWin").value = wr; $("ideaN").value = n;
+  $("btOut").textContent = "EMA 9/21 cross · "+n+" signals · "+wr+"% win — simulated, not real data";
+  toast("Backtest complete — simulated");
+}
+function publishIdea(){
+  const body = $("ideaBody").value.trim();
+  if(!body){ toast("Write your strategy first"); return; }
+  const pr = px(state.sym);
+  const win = parseInt($("ideaWin").value, 10), n = parseInt($("ideaN").value, 10);
+  MOCK_POSTS.unshift({ id:"p"+Date.now(), tid:"you", time:"now", likes:0, liked:false, body,
+    comments:[], idea:{ sym:state.sym, tf:state.tf, dir:ideaDir, price:pr.bid,
+      win:isNaN(win)?0:win, n:isNaN(n)?0:n } });
+  /* your post also lands on your profile */
+  const you = TRADERS.find(t=>t.id==="you");
+  if(you) you.posts.unshift({ id:"p"+Date.now(), tid:"you", time:"now", likes:0, liked:false, body,
+    comments:[], sym:state.sym, dir:ideaDir, pl:0, seed:Math.floor(Math.random()*999),
+    idea:{ sym:state.sym, tf:state.tf, dir:ideaDir, price:pr.bid, win:isNaN(win)?0:win, n:isNaN(n)?0:n } });
+  renderPosts(); renderProfPosts(); closeIdeaSheet();
+  toast("Idea published to the community — demo");
+}
+
+/* --- own profile tabs --- */
+function renderProfPosts(){
+  const el = $("profPosts"); if(!el) return;
+  const you = TRADERS.find(t=>t.id==="you");
+  const mine = MOCK_POSTS.filter(p=>p.tid==="you");
+  el.innerHTML = "";
+  if(!mine.length){ el.innerHTML = '<div class="empty">No posts yet — share your first idea from the Trade tab.</div>'; return; }
+  mine.forEach(p=>el.appendChild(postCard(p)));
+  injectIcons();
+}
+function renderProfReels(){
+  const el = $("profReels"); if(!el) return;
+  const you = TRADERS.find(t=>t.id==="you");
+  el.innerHTML = '<button class="ghost-btn wide new-reel-btn" id="newReelBtn"><span class="ic xs" data-icon="plus"></span> New reel (demo)</button><div id="profReelGrid"></div>';
+  const g = $("profReelGrid");
+  if(!you.reels.length){ g.innerHTML = '<div class="empty">No reels yet.</div>'; }
+  else{
+    g.innerHTML = '<div class="reel-grid">'+you.reels.map(r=>
+      '<button class="reel-tile" data-reel="'+r.id+'" style="--g1:'+you.g[0]+';--g2:'+you.g[1]+'">'+
+      '<span class="rt-play"><i>▶</i></span><span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views)+'</span></span></button>').join("")+'</div>';
+    g.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
+      const r = you.reels.find(x=>x.id===tile.dataset.reel); openReel(you, r);
+    }));
+  }
+  $("newReelBtn").addEventListener("click", ()=>{
+    you.reels.unshift({ id:"you-r"+Date.now(), title:"My latest strategy breakdown", views:"0", likes:0, liked:false, seed:Math.floor(Math.random()*999) });
+    renderProfReels(); toast("Reel added — demo");
+  });
+  injectIcons();
+}
+function renderProfTrades(){
+  /* history + brokers already render via existing renderBrokers()/history; ensure equity */
+  const el = $("profTrades"); if(!el) return;
+  if(!$("profEq")){
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = '<div class="sec-head" style="margin-bottom:8px"><h3>Your equity</h3><span class="fine">Demo</span></div><canvas class="eq-canvas" id="profEq" width="640" height="240"></canvas>';
+    el.prepend(card);
+  }
+  const you = TRADERS.find(t=>t.id==="you");
+  drawEquity($("profEq"), you.monthly);
+}
+
+/* --- boot wiring for v15 --- */
+function bootV15(){
+  /* copy modal */
+  $("copyModalX").addEventListener("click", closeCopyModal);
+  $("copyModalBg").addEventListener("click", closeCopyModal);
+  $("copyCancel").addEventListener("click", closeCopyModal);
+  $("copyAccept").addEventListener("click", startCopy);
+  $("copyLotMinus").addEventListener("click", ()=>setCopyLots(copyLotSel-0.01));
+  $("copyLotPlus").addEventListener("click", ()=>setCopyLots(copyLotSel+0.01));
+  paintCopyUI(); renderCopyStatus();
+  /* accounts */
+  $("acctSwitch").addEventListener("click", openAcctSheet);
+  $("profAcctBtn").addEventListener("click", openAcctSheet);
+  $("acctSheetX").addEventListener("click", closeAcctSheet);
+  $("acctBackdrop").addEventListener("click", closeAcctSheet);
+  $("acctAdd").addEventListener("click", ()=>{ closeAcctSheet(); openAcctModal(); });
+  $("acctModalX").addEventListener("click", closeAcctModal);
+  $("acctModalBg").addEventListener("click", closeAcctModal);
+  $("amTypeSeg").addEventListener("click", e=>{
+    const b = e.target.closest("[data-atype]"); if(!b) return;
+    amType = b.dataset.atype;
+    $("amTypeSeg").querySelectorAll(".seg-btn").forEach(x=>x.classList.toggle("active", x===b));
+    $("amLiveWarn").hidden = (amType!=="live");
+  });
+  $("amGo").addEventListener("click", ()=>{
+    const login = $("amLogin").value.trim();
+    if(!login){ toast("Enter the account login number"); return; }
+    const broker = $("amBroker").value || "Exness";
+    const b = BROKERS.find(x=>x.name===broker) || BROKERS[0];
+    ACCOUNTS.push({ id:"a"+Date.now(), broker, type:amType, login,
+      server:$("amServer").value.trim()||b.server,
+      balance: amType==="live"?1000:10000, open:[], pending:[], history:[] });
+    closeAcctModal(); renderAcctSheet();
+    switchAccount(ACCOUNTS[ACCOUNTS.length-1].id);
+  });
+  renderAcctUI();
+  /* KYC */
+  $("kycRow").addEventListener("click", openKyc);
+  $("kycBack").addEventListener("click", closeKyc);
+  renderKyc();
+  /* courses */
+  $("courseBack").addEventListener("click", ()=>{ $("courseView").hidden = true; });
+  renderCourses();
+  /* reels */
+  $("reelClose").addEventListener("click", closeReel);
+  /* hearts */
+  $("heartBtn").addEventListener("click", ()=>{ floatHeart(); setTimeout(floatHeart, 120); });
+  /* watch mode */
+  $("watchLeave").addEventListener("click", stopWatching);
+  /* cam: viewers can't move the host's camera */
+  const cam = $("faceCam");
+  cam.addEventListener("pointerdown", e=>{ if(cam.classList.contains("viewer")) e.stopImmediatePropagation(); }, true);
+  /* quick trade */
+  $("qtBuy").addEventListener("click", ()=>quickTrade("buy"));
+  $("qtSell").addEventListener("click", ()=>quickTrade("sell"));
+  /* idea sheet */
+  $("shareIdeaBtn").addEventListener("click", openIdeaSheet);
+  $("ideaX").addEventListener("click", closeIdeaSheet);
+  $("ideaBackdrop").addEventListener("click", closeIdeaSheet);
+  $("ideaDirSeg").addEventListener("click", e=>{
+    const b = e.target.closest("[data-dir]"); if(!b) return;
+    ideaDir = b.dataset.dir;
+    $("ideaDirSeg").querySelectorAll(".seg-btn").forEach(x=>x.classList.toggle("active", x===b));
+  });
+  $("btRun").addEventListener("click", runQuickBacktest);
+  $("ideaPublish").addEventListener("click", publishIdea);
+  /* own profile tabs */
+  $("profTabs").addEventListener("click", e=>{
+    const b = e.target.closest("[data-ptab]"); if(!b) return;
+    $("profTabs").querySelectorAll(".ptab").forEach(x=>x.classList.toggle("active", x===b));
+    const k = b.dataset.ptab;
+    $("profPosts").hidden = (k!=="posts");
+    $("profReels").hidden = (k!=="reels");
+    $("profTrades").hidden = (k!=="trades");
+    if(k==="reels") renderProfReels();
+    if(k==="trades"){ renderProfTrades(); renderBrokers(); renderHistory($("profHistory")); }
+  });
+  renderProfPosts();
+  /* stop watching when going live yourself */
+  const gl = $("goLiveBtn");
+  if(gl) gl.addEventListener("click", ()=>setTimeout(stopWatching, 50));
+}
+
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
 function bootApp(){
 injectIcons();
@@ -1646,6 +2523,7 @@ setSymbol("XAUUSD");
 setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } })());
 renderTicketTick();
 renderAccount();
+try{ bootV15(); }catch(err){ console.error("[v15] boot failed:", err); }
 setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must never stall the app */
 /* self-hosted candle chart — fully isolated: deferred sizing + internal try/catch */
 try{ buildMainChart(); }catch(err){ console.error("[chart] buildMainChart threw:", err); }
