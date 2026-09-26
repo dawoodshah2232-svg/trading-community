@@ -197,7 +197,9 @@ function tick(){
   renderPositionsTick();
   renderAccount();
   updateChartTick(); /* roll the self-hosted candle chart forward */
+  if(++tickCount % 7 === 0) renderYouCard(); /* your presence card, ~5s */
 }
+let tickCount = 0;
 
 /* ---------------- WATCHLIST ---------------- */
 function renderWatchlist(){
@@ -1141,90 +1143,265 @@ function renderYouLiveCard(){
   $("youLiveWatch").addEventListener("click", ()=>goTab("live"));
 }
 
-/* ---------------- COMMUNITY ---------------- */
+/* ---------------- COMMUNITY (social) ---------------- */
 const TRADERS = [
-  { name:"Marcus Cole", handle:"@daudtradefx", ini:"DR", g:["#2F80FF","#1B5FD6"], fol:"48.2k", win:"67%", live:true },
-  { name:"Sara Malik", handle:"@saramalik", ini:"SM", g:["#B678F0","#5E2B8A"], fol:"21.7k", win:"61%", live:false },
-  { name:"Arjun Rao", handle:"@arjunfx", ini:"AR", g:["#5B8DEF","#2B4A8A"], fol:"15.3k", win:"58%", live:false },
-  { name:"Lena Fischer", handle:"@lenafx", ini:"LF", g:["#22C55E","#166534"], fol:"9.8k", win:"64%", live:false }
+  { id:"daud", name:"Marcus Cole", handle:"@daudtradefx", ini:"DR", g:["#2F80FF","#1B5FD6"],
+    bio:"XAUUSD scalper · London session · 8 yrs trading", following:false, followers:48200, followingN:312,
+    win:67, pl:4210, live:true,
+    monthly:[820, -140, 1150, 640, 980, -220, 1310, 760, 540, 890, 410, 690],
+    trades:[ {s:"XAUUSD",d:"BUY",pl:184.20},{s:"EURUSD",d:"SELL",pl:96.40},{s:"BTCUSD",d:"BUY",pl:-58.10} ] },
+  { id:"sara", name:"Sara Malik", handle:"@saramalik", ini:"SM", g:["#B678F0","#5E2B8A"],
+    bio:"FX swing trader · fundamentals + technicals", following:false, followers:21700, followingN:428,
+    win:61, pl:2980, live:false,
+    monthly:[410, 320, -90, 520, 610, 280, -140, 490, 350, 420, 260, 380],
+    trades:[ {s:"EURUSD",d:"BUY",pl:142.80},{s:"GBPUSD",d:"BUY",pl:88.20},{s:"USDJPY",d:"SELL",pl:-34.50} ] },
+  { id:"arjun", name:"Arjun Rao", handle:"@arjunfx", ini:"AR", g:["#5B8DEF","#2B4A8A"],
+    bio:"Crypto + indices · risk-first, always", following:false, followers:15300, followingN:196,
+    win:58, pl:2140, live:false,
+    monthly:[260, 180, 340, -120, 290, 410, 220, -60, 310, 190, 240, 200],
+    trades:[ {s:"BTCUSD",d:"BUY",pl:212.60},{s:"NAS100",d:"SELL",pl:74.30},{s:"ETHUSD",d:"BUY",pl:-41.20} ] },
+  { id:"lena", name:"Lena Fischer", handle:"@lenafx", ini:"LF", g:["#22C55E","#166534"],
+    bio:"Gold & silver specialist · patient entries", following:false, followers:9800, followingN:154,
+    win:64, pl:1875, live:false,
+    monthly:[180, 240, 120, 300, -80, 260, 190, 220, 140, 260, 110, 170],
+    trades:[ {s:"XAUUSD",d:"SELL",pl:118.90},{s:"XAGUSD",d:"BUY",pl:62.40},{s:"XAUUSD",d:"BUY",pl:-28.70} ] },
 ];
+const fmtK = n => n>=1000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
+/* --- you (the owner) on the social layer --- */
+const YOU = { rank:null, followers:1204, todayPL:0 };
+
+let lbSort = "profit";
+function lbValue(t){
+  if(lbSort==="win") return t.win;
+  if(lbSort==="followers") return t.followers;
+  return t.pl;
+}
+function rankBadge(i){
+  if(i===0) return '<span class="rank r1">#1</span>';
+  if(i===1) return '<span class="rank r2">#2</span>';
+  if(i===2) return '<span class="rank r3">#3</span>';
+  return '<span class="rank">#'+(i+1)+'</span>';
+}
+function lbStat(t){
+  if(lbSort==="win") return '<b class="num">'+t.win+'%</b><span>win rate</span>';
+  if(lbSort==="followers") return '<b class="num">'+fmtK(t.followers)+'</b><span>followers</span>';
+  return '<b class="num '+plClass(t.pl)+'">'+fmt$(t.pl)+'</b><span>profit</span>';
+}
 function renderTraders(){
   const list = $("traderList"); list.innerHTML = "";
-  TRADERS.forEach((t,i)=>{
+  const rows = TRADERS.slice().sort((a,b)=>lbValue(b)-lbValue(a));
+  rows.forEach((t,i)=>{
     const c = document.createElement("div");
-    c.className = "trader-card";
+    c.className = "trader-card lb-row";
     c.innerHTML =
+      rankBadge(i)+
       '<div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
       (t.live ? '<span class="trader-live">LIVE</span>' : '') + '</div>'+
-      '<div><b>'+t.name+' <span class="handle">'+t.handle+'</span></b>'+
-      '<span class="tstat">'+t.fol+' followers · '+t.win+' win rate</span></div>'+
-      '<button class="follow-btn'+(t.following?" following":"")+'" data-follow="'+i+'">'+(t.following?"Following":"Follow")+'</button>';
+      '<div class="lb-info" data-tprof="'+t.id+'"><b>'+esc(t.name)+' <span class="handle">'+esc(t.handle)+'</span></b>'+
+      '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></div>'+
+      '<div class="lb-stat">'+lbStat(t)+'</div>'+
+      '<button class="follow-btn'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button>';
     if(t.live) c.querySelector(".avatar").addEventListener("click", ()=>goTab("live"));
     list.appendChild(c);
   });
 }
+$("lbTabs").addEventListener("click", e=>{
+  const b = e.target.closest("[data-lb]"); if(!b) return;
+  lbSort = b.dataset.lb;
+  document.querySelectorAll("#lbTabs .lb-tab").forEach(x=>x.classList.toggle("active", x===b));
+  renderTraders();
+});
+/* follow toggles — delegated so leaderboard, posts and profile all work */
 document.addEventListener("click", e=>{
   const b = e.target.closest("[data-follow]"); if(!b) return;
-  const t = TRADERS[+b.dataset.follow];
+  e.stopPropagation();
+  const t = TRADERS.find(x=>x.id===b.dataset.follow); if(!t) return;
   t.following = !t.following;
-  b.classList.toggle("following", t.following);
-  b.textContent = t.following ? "Following" : "Follow";
+  t.followers += t.following ? 1 : -1;
+  document.querySelectorAll('[data-follow="'+t.id+'"]').forEach(x=>{
+    x.classList.toggle("following", t.following);
+    x.textContent = t.following ? "Following" : "Follow";
+  });
+  renderTraders(); renderYouCard();
+  if(!$("traderProfile").hidden) renderTraderProfile(t.id);
   toast((t.following ? "Following " : "Unfollowed ") + t.name + " — demo");
 });
+/* tap a trader identity -> full profile view */
+document.addEventListener("click", e=>{
+  const el = e.target.closest("[data-tprof]"); if(!el) return;
+  openTraderProfile(el.dataset.tprof);
+});
 
-const POLL_KEY = "tc_poll_v1";
-let poll = { buy:7693, sell:4715, voted:null };
-try{ const s = JSON.parse(localStorage.getItem(POLL_KEY)||"null"); if(s && s.voted) poll = s; }catch(e){}
-function renderPoll(){
-  const total = poll.buy + poll.sell;
-  const bp = Math.round(poll.buy/total*100), sp = 100-bp;
-  $("pollBuyFill").style.width = bp+"%";
-  $("pollSellFill").style.width = sp+"%";
-  $("pollBuyPct").textContent = bp+"%";
-  $("pollSellPct").textContent = sp+"%";
-  $("pollVotes").textContent = total.toLocaleString("en-US")+" votes";
-  $("pollBtns").classList.toggle("voted", !!poll.voted);
+/* --- trader profile overlay --- */
+function monthlyBars(m){
+  const max = Math.max.apply(null, m.map(v=>Math.abs(v)).concat([1]));
+  return m.map(v=>{
+    const h = Math.max(6, Math.round(Math.abs(v)/max*56));
+    return '<div class="mb"><i class="'+(v>=0?"pos":"neg")+'" style="height:'+h+'px"></i></div>';
+  }).join("");
 }
-function vote(side){
-  if(poll.voted){ toast("You already voted"); return; }
-  poll[side]++; poll.voted = side;
-  try{ localStorage.setItem(POLL_KEY, JSON.stringify(poll)); }catch(e){}
-  renderPoll();
-  toast("Vote counted: "+side.toUpperCase()+" — demo");
+function renderTraderProfile(id){
+  const t = TRADERS.find(x=>x.id===id); if(!t) return;
+  const body = $("tprofBody");
+  const posts = MOCK_POSTS.filter(p=>p.tid===t.id);
+  body.innerHTML =
+    '<div class="tprof-head">'+
+      '<div class="avatar xl" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
+      (t.live?'<span class="trader-live">LIVE</span>':'')+'</div>'+
+      '<div class="tprof-id"><b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span>'+
+      '<p class="tprof-bio">'+esc(t.bio)+'</p></div>'+
+      '<button class="follow-btn'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button>'+
+    '</div>'+
+    (t.live?'<button class="watch-live-btn" id="tprofWatch"><span class="live-pill"><i></i>LIVE</span> Watch '+esc(t.name)+' trade now</button>':'')+
+    '<div class="tprof-stats">'+
+      '<div class="tstat-cell"><b class="num">'+t.win+'%</b><span>Win rate</span></div>'+
+      '<div class="tstat-cell"><b class="num '+plClass(t.pl)+'">'+fmt$(t.pl)+'</b><span>Total P/L</span></div>'+
+      '<div class="tstat-cell"><b class="num">'+fmtK(t.followers)+'</b><span>Followers</span></div>'+
+      '<div class="tstat-cell"><b class="num">'+t.followingN+'</b><span>Following</span></div>'+
+    '</div>'+
+    '<div class="sec-head"><h3>Monthly P/L</h3><span class="fine">Demo · last 12 months</span></div>'+
+    '<div class="card"><div class="mchart">'+monthlyBars(t.monthly)+'</div>'+
+    '<div class="mchart-x"><span>Jan</span><span>Dec</span></div></div>'+
+    '<div class="sec-head"><h3>Recent trades</h3><span class="fine">Demo</span></div>'+
+    '<div class="card ttrades">'+ t.trades.map(tr=>
+      '<div class="ttrade"><b>'+tr.s+'</b><span class="dir '+(tr.d==="BUY"?"buy":"sell")+'">'+tr.d+'</span>'+
+      '<b class="num '+plClass(tr.pl)+'">'+fmt$(tr.pl)+'</b></div>').join("") +'</div>'+
+    '<div class="sec-head"><h3>Posts</h3></div>'+
+    (posts.length ? '<div id="tprofPosts"></div>' : '<div class="empty">No posts yet.</div>');
+  if(t.live){
+    const w = $("tprofWatch");
+    if(w) w.addEventListener("click", ()=>{ closeTraderProfile(); goTab("live"); });
+  }
+  if(posts.length){
+    const pl = $("tprofPosts");
+    posts.forEach(p=>pl.appendChild(postCard(p)));
+  }
 }
-$("pollBuy").addEventListener("click", ()=>vote("buy"));
-$("pollSell").addEventListener("click", ()=>vote("sell"));
+function openTraderProfile(id){
+  renderTraderProfile(id);
+  $("traderProfile").hidden = false;
+  document.body.classList.add("lock-scroll");
+}
+function closeTraderProfile(){
+  $("traderProfile").hidden = true;
+  document.body.classList.remove("lock-scroll");
+}
+$("tprofBack").addEventListener("click", closeTraderProfile);
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("traderProfile").hidden) closeTraderProfile(); });
 
+/* --- your presence card --- */
+function yourTodayPL(){
+  let pl = openPL();
+  state.history.forEach(h=>{ pl += h.pl||0; });
+  return pl;
+}
+function renderYouCard(){
+  const tpl = yourTodayPL();
+  const sorted = TRADERS.slice().sort((a,b)=>b.pl-a.pl);
+  const rank = sorted.findIndex(t=>tpl>t.pl)+1 || sorted.length+1;
+  YOU.todayPL = tpl; YOU.rank = rank;
+  const el = $("youCard"); if(!el) return;
+  el.innerHTML =
+    '<div class="avatar">YOU</div>'+
+    '<div class="you-info"><b>Your trading</b>'+
+    '<span class="you-stats"><span class="num '+plClass(tpl)+'">'+fmt$(tpl)+'</span> today · '+
+    '<span class="num">#'+rank+'</span> rank · <span class="num">'+fmtK(YOU.followers)+'</span> followers</span></div>'+
+    '<button class="ghost-btn sm" id="youViewProf">Profile</button>';
+  $("youViewProf").addEventListener("click", ()=>goTab("profile"));
+}
+
+/* --- social feed: posts, likes, comments, share, composer --- */
 const MOCK_POSTS = [
-  { name:"Marcus Cole", handle:"@daudtradefx", time:"12m", g:["#2F80FF","#1B5FD6"], ini:"DR",
-    body:"NFP Friday: expecting a hot print. DXY strength = gold pullback first, then dip-buy into 2640 liquidity. Not financial advice — sharing my read.", likes:214, liked:false },
-  { name:"Sara Malik", handle:"@saramalik", time:"1h", g:["#B678F0","#5E2B8A"], ini:"SM",
-    body:"EURUSD swept Asia lows and reclaimed 1.0840. If London holds above, targeting 1.0890. Invalidation: M15 close back below the lows.", likes:96, liked:false },
-  { name:"Arjun Rao", handle:"@arjunfx", time:"3h", g:["#5B8DEF","#2B4A8A"], ini:"AR",
-    body:"BTC funding neutral, spot bid on every dip. 98k is the line in the sand — lose it and I stand aside. Trade the plan, not the feeling.", likes:158, liked:false }
+  { id:"p1", tid:"daud", time:"12m", likes:214, liked:false,
+    body:"NFP Friday: expecting a hot print. DXY strength = gold pullback first, then dip-buy into 2640 liquidity. Not financial advice — sharing my read.",
+    comments:[ {n:"Sara Malik", t:"Agree on the pullback — watching 2642 myself.", time:"8m"} ] },
+  { id:"p2", tid:"sara", time:"1h", likes:96, liked:false,
+    body:"EURUSD swept Asia lows and reclaimed 1.0840. If London holds above, targeting 1.0890. Invalidation: M15 close back below the lows.",
+    comments:[] },
+  { id:"p3", tid:"arjun", time:"3h", likes:158, liked:false,
+    body:"BTC funding neutral, spot bid on every dip. 98k is the line in the sand — lose it and I stand aside. Trade the plan, not the feeling.",
+    comments:[ {n:"Lena Fischer", t:"That 98k level held beautifully.", time:"2h"}, {n:"Marcus Cole", t:"Patience pays.", time:"1h"} ] },
 ];
+function traderOf(p){ return TRADERS.find(t=>t.id===p.tid) || TRADERS[0]; }
+function postCard(p){
+  const t = traderOf(p);
+  const c = document.createElement("div");
+  c.className = "card post";
+  c.innerHTML =
+    '<div class="post-head"><div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+'</div>'+
+    '<div data-tprof="'+t.id+'"><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+p.time+'</span></div>'+
+    '<button class="follow-btn xs'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button></div>'+
+    '<div class="post-body"></div>'+
+    '<div class="comments" id="cm-'+p.id+'" hidden></div>'+
+    '<div class="post-actions">'+
+      '<button class="like-btn'+(p.liked?" liked":"")+'" data-like="'+p.id+'" aria-pressed="'+p.liked+'"><span class="heart">♥</span> <span class="num">'+p.likes+'</span></button>'+
+      '<button class="like-btn" data-comments="'+p.id+'"><span class="ic xs" data-icon="send"></span> <span class="num">'+p.comments.length+'</span></button>'+
+      '<button class="like-btn" data-share="'+p.id+'"><span class="ic xs" data-icon="link"></span> Share</button>'+
+    '</div>'+
+    '<div class="comment-bar" id="cb-'+p.id+'" hidden>'+
+      '<input class="field" id="ci-'+p.id+'" placeholder="Write a comment…" maxlength="140" autocomplete="off">'+
+      '<button class="primary-btn sm" data-sendcomment="'+p.id+'">Send</button>'+
+    '</div>';
+  c.querySelector(".post-body").textContent = p.body;
+  renderComments(p);
+  injectIcons();
+  return c;
+}
+function renderComments(p){
+  const box = $("cm-"+p.id); if(!box) return;
+  box.innerHTML = p.comments.map(cm=>
+    '<div class="comment"><b>'+esc(cm.n)+'</b><span class="ctime">'+esc(cm.time)+'</span><p></p></div>'
+  ).join("");
+  box.querySelectorAll(".comment p").forEach((el,i)=>{ el.textContent = p.comments[i].t; });
+}
 function renderPosts(){
   const list = $("postList"); list.innerHTML = "";
-  MOCK_POSTS.forEach((p,i)=>{
-    const c = document.createElement("div");
-    c.className = "card";
-    c.innerHTML =
-      '<div class="post-head"><div class="avatar" style="background:linear-gradient(135deg,'+p.g[0]+','+p.g[1]+')">'+p.ini+'</div>'+
-      '<div><b>'+p.name+'</b><span>'+p.handle+' · '+p.time+'</span></div></div>'+
-      '<div class="post-body"></div>'+
-      '<div class="post-actions"><button class="like-btn'+(p.liked?" liked":"")+'" data-like="'+i+'" aria-pressed="'+p.liked+'">♥ <span>'+p.likes+'</span></button></div>';
-    c.querySelector(".post-body").textContent = p.body;
-    list.appendChild(c);
-  });
+  MOCK_POSTS.forEach(p=>list.appendChild(postCard(p)));
 }
 document.addEventListener("click", e=>{
-  const b = e.target.closest("[data-like]"); if(!b) return;
-  const p = MOCK_POSTS[+b.dataset.like];
-  p.liked = !p.liked; p.likes += p.liked?1:-1;
-  b.classList.toggle("liked", p.liked);
-  b.setAttribute("aria-pressed", p.liked);
-  b.querySelector("span").textContent = p.likes;
+  let b = e.target.closest("[data-like]");
+  if(b){
+    const p = MOCK_POSTS.find(x=>x.id===b.dataset.like); if(!p) return;
+    p.liked = !p.liked; p.likes += p.liked?1:-1;
+    b.classList.toggle("liked", p.liked);
+    b.setAttribute("aria-pressed", p.liked);
+    b.querySelector(".num").textContent = p.likes;
+    if(p.liked){ b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
+    return;
+  }
+  b = e.target.closest("[data-comments]");
+  if(b){
+    const id = b.dataset.comments;
+    const box = $("cm-"+id), bar = $("cb-"+id);
+    const show = box.hidden;
+    box.hidden = !show; bar.hidden = !show;
+    if(show) $("ci-"+id).focus();
+    return;
+  }
+  b = e.target.closest("[data-share]");
+  if(b){ toast("Link copied — demo"); return; }
+  b = e.target.closest("[data-sendcomment]");
+  if(b){
+    const p = MOCK_POSTS.find(x=>x.id===b.dataset.sendcomment); if(!p) return;
+    const inp = $("ci-"+p.id);
+    const v = inp.value.trim(); if(!v){ toast("Write something first"); return; }
+    p.comments.push({ n:"You", t:v, time:"now" });
+    inp.value = "";
+    renderComments(p);
+    document.querySelectorAll('[data-comments="'+p.id+'"] .num').forEach(el=>{ el.textContent = p.comments.length; });
+    toast("Comment posted — demo");
+  }
 });
+/* composer */
+$("composerPost").addEventListener("click", ()=>{
+  const inp = $("composerInput");
+  const v = inp.value.trim(); if(!v){ toast("Write something first"); return; }
+  MOCK_POSTS.unshift({ id:"p"+Date.now(), tid:"daud", time:"now", likes:0, liked:false, body:v, comments:[] });
+  inp.value = "";
+  renderPosts();
+  toast("Posted — demo");
+});
+$("composerInput").addEventListener("keydown", e=>{ if(e.key==="Enter") $("composerPost").click(); });
 
 /* ---------------- PROFILE + BROKERS ---------------- */
 const BROKERS = [
@@ -1300,6 +1477,7 @@ renderAlerts();
 renderPoll();
 renderPosts();
 renderTraders();
+renderYouCard();
 renderBrokers();
 renderPositions();
 renderDepth(true);

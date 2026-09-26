@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 
@@ -235,7 +235,13 @@
 
         <!-- ============ COMMUNITY ============ -->
         <section class="screen" id="screen-community" aria-label="Community">
-          <div class="sec-head"><h3>Top traders</h3><span class="fine">Follow to copy their ideas</span></div>
+          <div class="you-card" id="youCard"></div>
+          <div class="sec-head"><h3>Leaderboard</h3><span class="fine">Top traders · demo</span></div>
+          <div class="lb-tabs" id="lbTabs" role="tablist" aria-label="Leaderboard sort">
+            <button class="lb-tab active" data-lb="profit" role="tab">Profit</button>
+            <button class="lb-tab" data-lb="win" role="tab">Win rate</button>
+            <button class="lb-tab" data-lb="followers" role="tab">Followers</button>
+          </div>
           <div class="trader-list" id="traderList"></div>
           <div class="card poll">
             <div class="sec-head"><h3>Community sentiment</h3><span class="fine num" id="pollVotes">—</span></div>
@@ -249,9 +255,23 @@
               <button class="ghost-btn sm" id="pollSell">Vote bearish</button>
             </div>
           </div>
-          <div class="sec-head"><h3>Analysis</h3></div>
+          <div class="sec-head"><h3>Feed</h3><span class="fine">Demo posts</span></div>
+          <div class="card composer">
+            <div class="avatar">YOU</div>
+            <input class="field" id="composerInput" placeholder="Share a trade idea…" maxlength="280" autocomplete="off">
+            <button class="primary-btn sm" id="composerPost">Post</button>
+          </div>
           <div id="postList"></div>
         </section>
+
+        <!-- ============ TRADER PROFILE (overlay) ============ -->
+        <div class="tprof-view" id="traderProfile" hidden>
+          <div class="tprof-top">
+            <button class="icon-btn" id="tprofBack" aria-label="Back"><span class="ic tprof-back-ic" data-icon="chev"></span></button>
+            <b>Trader profile</b><span class="demo-tag">Demo</span>
+          </div>
+          <div class="tprof-scroll" id="tprofBody"></div>
+        </div>
 
         <!-- ============ PROFILE ============ -->
         <section class="screen" id="screen-profile" aria-label="Profile">
@@ -327,6 +347,6 @@
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
