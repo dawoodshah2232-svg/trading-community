@@ -1,54 +1,62 @@
-# Trading Community — App UI Prototype (FULL REBUILD)
+# Trading Community — App UI (BEST-UI rebuild)
 
-Mobile-first, app-like **static** web prototype for the "Trading Community"
-live-trading community app concept. Plain HTML/CSS/JS — no build step, no
-frameworks. Opens **directly into the logged-in trading interface** (like
-Binance / Exness Trade): no landing page, no marketing.
+Clean, app-like **static** web app for the "Trading Community" live-trading
+community concept. Plain HTML/CSS/JS — no build step, no frameworks.
+
+- **Mobile:** persistent 5-tab bottom navigation, always visible.
+- **Desktop:** full web terminal — left sidebar nav, top app bar, chart and
+  order ticket side-by-side.
+- **Themes:** dark + light, persisted, toggles in app bar / sidebar / Profile.
+- **Fonts:** Apple font stack for words; system mono with tabular numerals
+  for prices.
+- Opens **directly into trading** after sign-in (no landing page).
 
 ## Preview
 
-- Direct: open `index.html` in a browser (double-click works; the TradingView
-  chart needs internet).
+- Direct: open `index.html` (the TradingView chart needs internet).
 - Local server: `cd ~/workspace/trading-community && python3 -m http.server 8080`
-  then visit `http://localhost:8080`.
-- Single-file build: `trading-community-app.html` (CSS+JS inlined) — generated
-  from the three source files for easy sharing.
+  → `http://localhost:8080`.
 
-On desktop the app renders inside a phone frame; on mobile it is full-bleed.
+## Screens
 
-## Screens (bottom tab bar always visible)
-
-1. **Trade** (default) — app bar with brand mark, symbol picker (XAUUSD, EURUSD,
-   GBPUSD, USDJPY, BTCUSD, ETHUSD, US30, NAS100), ticking price + 24h change,
-   alerts bell, avatar. TradingView Advanced chart with timeframe bar
-   (1m–1D, reloads widget interval). Trade ticket: spread, lot stepper (0.01),
-   margin estimate, BUY/SELL with live bid/ask → mock market orders land in
-   Positions with live-ticking P/L.
-2. **Positions** — Open / Pending / History tabs. Open rows show live P/L and a
-   close (×) button; pending mock limit orders can be cancelled; history lists
-   closed trades. Equity chip ticks with open P/L; tab badge counts open
-   positions.
-3. **Live** — streamer room: TradingView chart, draggable + resizable face-cam
-   placeholder (position/size persist in localStorage), simulated live trade
-   feed, viewer count, Copy-trades toggle, working chat with simulated
-   incoming messages.
-4. **Community** — XAUUSD sentiment poll (one vote, animated bars, persisted)
-   + analysis post cards with like buttons.
-5. **Profile** — trader stats, weekly P/L banner, trade history, broker connect
-   list (Exness, Vantage, IC Markets, XM + Add broker) — UI mock.
+1. **Auth** — splash → Welcome screen, free join, Google / Facebook / Apple
+   social buttons, email continue, create-account mode. All mock; session
+   persists in `localStorage`. After first sign-in, a dismissible
+   "Connect your broker" prompt card explains trades will mirror to the
+   broker account.
+2. **Trade** (default) — symbol picker (XAUUSD, BTCUSD, ETHUSD, EURUSD,
+   GBPUSD, USDJPY, US30, NQ100), ticking price + change with ~150ms tick
+   flash, TradingView Advanced chart (follows symbol, timeframe, theme),
+   timeframe bar (1m–1D). Ticket: spread, lots stepper, margin estimate,
+   pre-trade risk line, Buy/Sell → mock fills land in Positions.
+3. **Positions** — Open / Pending / History tabs with counts, live-ticking
+   P/L, close buttons (realize to History), pending cancel. Every new
+   position carries a mirror badge: "Mirrored to Exness · 84ms" (simulated
+   40–140ms latency) when a broker is connected, otherwise "Demo fill —
+   connect a broker to mirror".
+4. **Live** — streamer room: TradingView chart, draggable + resizable face-cam
+   (persisted), simulated trade feed, viewer count, copy toggle, working chat.
+5. **Community** — Top traders section (avatar initials, handle, followers,
+   win rate, Follow/Following toggle, red LIVE badge jumps to Live tab) +
+   sentiment poll + analysis posts with likes.
+6. **Profile** — stats, realized P/L, broker connections (Exness, Vantage,
+   IC Markets, XM, OctaFX, FBS). Tapping Connect opens a broker login modal
+   (logo mark, login/account number, password, server; ~1.5s connecting
+   state → Connected with green dot). All simulated. Appearance setting,
+   logout.
 
 ## Mock vs real
 
-| Area | Status |
-|---|---|
-| Prices, spreads, P/L, margin, equity | Simulated random-walk engine in `app.js` |
-| Order execution, close, cancel | Mock, in-memory only |
-| TradingView chart widget | Real embed (needs internet); canvas fallback if offline |
-| Face-cam | Styled placeholder box, no camera access |
-| Brokers, copy-trading, alerts, votes | UI mock; votes/poll persisted locally only |
-| Chat, live feed, viewers | Simulated timers |
+- **Mock / simulated:** auth, all prices (random-walk engine), order
+  execution, P/L, equity, broker logins + connections, mirror latency,
+  community content, chat, viewers, feed. Labelled "demo" in the UI and in
+  code comments.
+- **Real:** the TradingView Advanced Chart embed (needs internet).
+  Lightweight Charts / own data feed remain the clean commercial path later
+  (TradingView ToS restricts commercial use without agreement).
 
-## Theme
+## Notes
 
-Fintech blue `#2F80FF` primary + profit green `#22C55E` / loss red `#F04452`
-on dark navy (`#05080F` family). Apple font stack only.
+- Single-file build: `trading-community-app.html` is generated by inlining
+  `styles.css` + `app.js` into `index.html` for easy sharing.
+- No commits/pushes were made in this rebuild pass.
