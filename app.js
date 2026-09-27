@@ -194,7 +194,7 @@ function trackTradeClosed(pl){
 /* Trades, price alerts and broker links survive reloads.
    Everything remains demo/simulated. */
 const TRADES_KEY = "tc_trades_v1", ALERTS_KEY = "tc_alerts_v1", BROKERS_KEY = "tc_brokers_v1";
-const APP_VERSION = "25.13";
+const APP_VERSION = "25.15";
 function paintVersion(){
   const s = $("setVerLine"); if(s) s.textContent = "Trading Community · demo build · v"+APP_VERSION;
   const p = $("profVerLine"); if(p) p.textContent = "v"+APP_VERSION+" · demo build";
@@ -764,7 +764,8 @@ function lwTheme(){
       background:{ type:"solid", color:"transparent" },
       textColor: dark ? "#8b93a7" : "#5b6478",
       fontFamily: '-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif',
-      fontSize: 11
+      fontSize: 11,
+      attributionLogo: false
     },
     grid:{
       vertLines:{ color: dark ? "rgba(148,163,184,0.07)" : "rgba(15,23,42,0.06)" },
@@ -926,6 +927,16 @@ function buildLiveChart(){
     lw.liveCandles.setData(lw.liveBars);
     lw.liveChart.timeScale().scrollToRealTime();
     new ResizeObserver(()=>{ if(lw.liveChart && host.clientWidth) lw.liveChart.resize(host.clientWidth, host.clientHeight); }).observe(host);
+    /* Stage background chart — same XAUUSD 5m feed, rendered behind the live stage (FaceTime layout) */
+    const stg = $("tvChartStage");
+    if(stg && !lw.stageChart){
+      stg.innerHTML = "";
+      lw.stageChart = LW().createChart(stg, Object.assign({ width:stg.clientWidth||300, height:stg.clientHeight||300 }, lwTheme()));
+      lw.stageCandles = lw.stageChart.addCandlestickSeries(lwCandleOpts());
+      lw.stageCandles.setData(lw.liveBars);
+      lw.stageChart.timeScale().scrollToRealTime();
+      new ResizeObserver(()=>{ if(lw.stageChart && stg.clientWidth) lw.stageChart.resize(stg.clientWidth, stg.clientHeight); }).observe(stg);
+    }
   }catch(err){ console.error("[chart] live init failed:", err); chartErr(host, "Chart failed to start."); }
 }
 
@@ -957,9 +968,11 @@ function updateChartTick(){
     if(bt > last.time){
       last = { time:bt, open:last.close, high:Math.max(last.close,p), low:Math.min(last.close,p), close:p };
       lw.liveBars.push(last); lw.liveCandles.update(last);
+      if(lw.stageCandles) lw.stageCandles.update(last);
     }else{
       last.close = p; if(p>last.high) last.high = p; if(p<last.low) last.low = p;
       lw.liveCandles.update(last);
+      if(lw.stageCandles) lw.stageCandles.update(last);
     }
   }
 }
