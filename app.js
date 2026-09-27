@@ -194,7 +194,7 @@ function trackTradeClosed(pl){
 /* Trades, price alerts and broker links survive reloads.
    Everything remains demo/simulated. */
 const TRADES_KEY = "tc_trades_v1", ALERTS_KEY = "tc_alerts_v1", BROKERS_KEY = "tc_brokers_v1";
-const APP_VERSION = "25.19";
+const APP_VERSION = "25.20";
 function paintVersion(){
   const s = $("setVerLine"); if(s) s.textContent = "Trading Community · demo build · v"+APP_VERSION;
   const p = $("profVerLine"); if(p) p.textContent = "v"+APP_VERSION+" · demo build";
@@ -1721,7 +1721,15 @@ $("chatInput").addEventListener("keydown", e=>{ if(e.key==="Enter") sendChat(); 
 function sendChat(){
   const inp = $("chatInput"), v = inp.value.trim();
   if(!v) return;
-  addChat("You", v, true); inp.value = "";
+  const you = TRADERS.find(t=>t.you), nm = you ? you.name : "You";
+  if(youLive.active && myLiveId){
+    MQ.publish(MQ_NS+"live/"+myLiveId+"/chat", {from:myDeviceId, name:nm, text:v, ts:Date.now()});
+    addChat("You", ": "+v, true);
+  }else if(watchingRemote){
+    MQ.publish(MQ_NS+"live/"+watchingRemote.liveId+"/chat", {from:myDeviceId, name:nm, text:v, ts:Date.now()});
+    addChat("You", ": "+v, true);
+  }else addChat("You", v, true);
+  inp.value = "";
 }
 $("copySwitch").addEventListener("click", function(){
   if(copyState.on) stopCopy();
@@ -1853,17 +1861,20 @@ function stopCamera(){
   if(camStream){ try{ camStream.getTracks().forEach(t=>t.stop()); }catch(e){} camStream = null; }
   paintCamUI(false);
 }
-async function enableCamera(){
-  if(camStream) return;
+let camHasAudio = false;
+async function enableCamera(withAudio){
+  if(camStream && (!withAudio || camHasAudio)) return;
+  if(camStream) stopCamera(); /* re-acquire when audio is newly required */
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    toast("Camera not supported here — showing placeholder (demo)"); return;
+    toast("Camera not supported here — showing placeholder"); return;
   }
   try{
     /* front camera preferred on phones (ideal, not required), default webcam on laptops */
-    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:"user" } }, audio:false });
+    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:"user" } }, audio:!!withAudio });
+    camHasAudio = !!withAudio;
     paintCamUI(true);
     for(const v of camVideoEls()){ try{ await v.play(); }catch(e){ /* mobile browsers need the explicit play() call */ } }
-    toast("Camera on — preview only, nothing is streamed (demo)");
+    toast(withAudio ? "Camera + mic on — you're broadcasting" : "Camera on");
   }catch(err){
     camStream = null;
     const n = (err && err.name) || "";
@@ -2301,12 +2312,15 @@ function startLive(){
   applyLiveLayout(liveSetup.layout);
   syncHostControls();
   renderGiftTop();
-  renderLiveNow();
-  enableCamera(); /* auto-request camera; fails gracefully to the placeholder */
+  renderLiveNow(); renderHomeLiveRow();
+  enableCamera(true); /* camera + mic for the real broadcast; fails gracefully to the placeholder */
+  presenceStart(); rtcHostStart();
+  if(myLiveId) MQ.subscribe(MQ_NS+"live/"+myLiveId+"/chat", onLiveChatMsg);
   youLive.timerId = setInterval(()=>{
     youLive.viewers = Math.max(50, youLive.viewers + Math.round((Math.random()-0.47)*24));
     youLive.pl += (Math.random()-0.48)*8;
-    $("youViewers").textContent = youLive.viewers.toLocaleString("en-US");
+    const realN = rtcViewerCount();
+    $("youViewers").textContent = (realN>0 ? realN : youLive.viewers).toLocaleString("en-US");
     $("youTimer").textContent = fmtClock(Date.now()-youLive.startT);
     const plEl = $("youPL");
     plEl.textContent = (youLive.pl>=0?"+$":"−$")+Math.abs(youLive.pl).toFixed(2);
@@ -2315,7 +2329,7 @@ function startLive(){
   }, 1000);
   renderYouLiveCard();
   showLiveHint();
-  toast("You are LIVE — demo broadcast, nothing really streams");
+  toast("You are LIVE");
 }
 function endLive(){
   if(!youLive.active) return;
@@ -2330,7 +2344,8 @@ function endLive(){
   syncHostControls();
   if(liveGuest){ liveGuest = null; renderGuestTile(); }
   endPollSilent();
-  renderLiveNow();
+  presenceEnd(); rtcHostStop(); stopRemoteWatch();
+  renderLiveNow(); renderHomeLiveRow();
   stopCamera();
   const card = $("youLiveCard"); if(card) card.remove();
   toast("Live ended — demo");
@@ -2345,9 +2360,348 @@ $("lsCamBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stop
 $("lsStart").addEventListener("click", ()=>{
   liveSetup.title = ($("lsTitle").value || "").trim().slice(0, 60) || (liveSetup.sym + " · Live scalps");
   closeLiveSetup();
-  startLive();
+  startCountdown(); /* 3-2-1 then live */
 });
 $("liveHintOk").addEventListener("click", ()=>{ $("liveHint").hidden = true; clearTimeout(liveHintTimer); });
+
+/* ================= v25.20: REAL CROSS-DEVICE LIVE (MQTT presence + WebRTC P2P) ================= */
+/* Transport: public MQTT broker over secure WebSocket — no account, no backend server.
+   Demo-grade but REAL: presence heartbeats, live chat and WebRTC signaling ride MQTT.
+   Test override: ?mq=ws://127.0.0.1:9001 */
+const MQ_BROKER = (function(){
+  try{ const q = new URLSearchParams(location.search).get("mq"); if(q) return q; }catch(e){}
+  return "wss://broker.emqx.io:8084/mqtt";
+})();
+const MQ_NS = "tfx/v1/";
+const DEV_KEY = "tc_dev_v1";
+let myDeviceId = null;
+try{ myDeviceId = localStorage.getItem(DEV_KEY); }catch(e){}
+if(!myDeviceId){ myDeviceId = "d"+Math.random().toString(36).slice(2,10); try{ localStorage.setItem(DEV_KEY, myDeviceId); }catch(e){} }
+
+/* ---- minimal MQTT 3.1.1 client over WebSocket (binary frames, QoS 0) ---- */
+function mqEncStr(s){
+  const b = new TextEncoder().encode(s), o = new Uint8Array(2+b.length);
+  o[0] = b.length>>8; o[1] = b.length&255; o.set(b, 2); return o;
+}
+function mqEncLen(n){
+  const o = [];
+  do{ let d = n%128; n >>= 7; if(n>0) d |= 0x80; o.push(d); }while(n>0);
+  return new Uint8Array(o);
+}
+function mqConcat(parts){
+  let n = 0; parts.forEach(p=>n+=p.length);
+  const o = new Uint8Array(n); let at = 0;
+  parts.forEach(p=>{ o.set(p, at); at += p.length; });
+  return o;
+}
+function mqPacket(fixedHeader, body){ return mqConcat([new Uint8Array([fixedHeader]), mqEncLen(body.length), body]); }
+const MQ = {
+  ws:null, connected:false, subs:{}, buf:new Uint8Array(0),
+  nextId:1, pingTimer:null, retryTimer:null, backoff:1500,
+  onOpen:[], onClose:[],
+  connect(){
+    if(this.ws && (this.ws.readyState===0 || this.ws.readyState===1)) return;
+    let ws;
+    try{ ws = new WebSocket(MQ_BROKER); }catch(e){ this.scheduleRetry(); return; }
+    ws.binaryType = "arraybuffer";
+    this.ws = ws;
+    ws.onopen = ()=>{
+      const body = mqConcat([
+        new Uint8Array([0x00,0x04,0x4D,0x51,0x54,0x54,0x04,0x02,0x00,0x1E]),
+        mqEncStr("tfx-"+myDeviceId+"-"+Math.random().toString(36).slice(2,8))
+      ]);
+      ws.send(mqPacket(0x10, body));
+    };
+    ws.onmessage = (e)=>{ this.feed(new Uint8Array(e.data)); };
+    ws.onclose = ()=>{ this.onDisc(); };
+    ws.onerror = ()=>{ try{ ws.close(); }catch(_){} };
+  },
+  onDisc(){
+    const was = this.connected;
+    this.connected = false;
+    clearInterval(this.pingTimer); this.pingTimer = null;
+    if(was) this.onClose.forEach(fn=>{ try{fn();}catch(_){} });
+    this.scheduleRetry();
+  },
+  scheduleRetry(){
+    clearTimeout(this.retryTimer);
+    this.retryTimer = setTimeout(()=>this.connect(), this.backoff);
+    this.backoff = Math.min(this.backoff*1.6, 30000);
+  },
+  feed(chunk){
+    const b = new Uint8Array(this.buf.length+chunk.length);
+    b.set(this.buf, 0); b.set(chunk, this.buf.length); this.buf = b;
+    for(;;){
+      if(this.buf.length<2) return;
+      let i = 1, mul = 1, rem = 0, ok = false;
+      for(let k=0;k<4;k++){
+        if(i>=this.buf.length) return;
+        const d = this.buf[i++];
+        rem += (d&127)*mul; mul *= 128;
+        if(!(d&128)){ ok = true; break; }
+      }
+      if(!ok) return;
+      if(this.buf.length < i+rem) return;
+      const type = this.buf[0]>>4, payload = this.buf.slice(i, i+rem);
+      this.buf = this.buf.slice(i+rem);
+      this.handle(type, this.buf[0] & 0x0F, payload);
+    }
+  },
+  handle(type, flags, p){
+    if(type===2){ /* CONNACK */
+      if(p.length>=2 && p[1]===0){
+        this.connected = true; this.backoff = 1500;
+        Object.keys(this.subs).forEach(t=>this.subRaw(t));
+        this.onOpen.forEach(fn=>{ try{fn();}catch(_){} });
+        clearInterval(this.pingTimer);
+        this.pingTimer = setInterval(()=>{ try{ this.ws.send(new Uint8Array([0xC0,0x00])); }catch(_){} }, 20000);
+      } else this.scheduleRetry();
+      return;
+    }
+    if(type===3){ /* PUBLISH qos0 */
+      if(p.length<2) return;
+      const tl = (p[0]<<8)|p[1];
+      if(p.length<2+tl) return;
+      const topic = new TextDecoder().decode(p.slice(2, 2+tl));
+      const data = p.slice(2+tl);
+      let msg = null;
+      try{ msg = JSON.parse(new TextDecoder().decode(data)); }catch(_){ return; }
+      Object.keys(this.subs).forEach(sub=>{
+        if(mqTopicMatch(sub, topic)) this.subs[sub].forEach(cb=>{ try{cb(topic, msg);}catch(_){} });
+      });
+      return;
+    }
+    /* 9 SUBACK, 13 PINGRESP: ignored */
+  },
+  subRaw(topic){
+    const id = this.nextId++;
+    const body = mqConcat([new Uint8Array([id>>8, id&255]), mqEncStr(topic), new Uint8Array([0])]);
+    try{ this.ws.send(mqPacket(0x82, body)); }catch(_){}
+  },
+  subscribe(topic, cb){
+    (this.subs[topic] = this.subs[topic] || []).push(cb);
+    if(this.connected) this.subRaw(topic);
+  },
+  publish(topic, obj, retain){
+    if(!this.connected) return;
+    let bytes;
+    try{ bytes = new TextEncoder().encode(JSON.stringify(obj)); }catch(_){ return; }
+    const body = mqConcat([mqEncStr(topic), bytes]);
+    try{ this.ws.send(mqPacket(0x30 | (retain?1:0), body)); }catch(_){}
+  }
+};
+function mqTopicMatch(sub, topic){
+  const s = sub.split("/"), t = topic.split("/");
+  for(let i=0;i<s.length;i++){
+    if(s[i]==="#") return true;
+    if(t[i]===undefined) return false;
+    if(s[i]!=="+" && s[i]!==t[i]) return false;
+  }
+  return s.length===t.length;
+}
+
+/* ---- live presence (who's actually live on another device) ---- */
+const remoteLives = {}; /* liveId -> presence payload */
+let myLiveId = null, presenceTimer = null, pruneTimer = null;
+function mqInit(){
+  MQ.subscribe(MQ_NS+"live/+/state", onPresenceMsg);
+  MQ.connect();
+  pruneTimer = setInterval(pruneLives, 10000);
+  window.addEventListener("beforeunload", ()=>{ try{ presenceEnd(); }catch(_){} });
+}
+function onPresenceMsg(topic, msg){
+  const parts = topic.split("/");
+  const liveId = parts[3];
+  if(!msg || msg.status==="ended" || liveId===myLiveId){ delete remoteLives[liveId]; }
+  else if(msg.v===1){ remoteLives[liveId] = msg; }
+  renderHomeLiveRow(); renderLiveNow();
+  if(watchingRemote && !remoteLives[watchingRemote.liveId]){
+    toast("That live ended"); stopRemoteWatch();
+  }
+}
+function pruneLives(){
+  const now = Date.now(); let changed = false;
+  for(const k in remoteLives){ if(now-(remoteLives[k].ts||0)>45000){ delete remoteLives[k]; changed = true; } }
+  if(changed){ renderHomeLiveRow(); renderLiveNow(); }
+  if(watchingRemote && !remoteLives[watchingRemote.liveId]){ toast("That live ended"); stopRemoteWatch(); }
+}
+function presencePayload(){
+  const you = TRADERS.find(t=>t.you) || {};
+  return { v:1, liveId:myLiveId, device:myDeviceId,
+    name:you.name||"Trader", handle:you.handle||"", ini:you.ini||"TR",
+    g:you.g||["#2F80FF","#1B5FD6"],
+    title:liveSetup.title||"", sym:liveSetup.sym||"XAUUSD",
+    ts:Date.now(), viewers:rtcViewerCount() };
+}
+function presenceStart(){
+  myLiveId = myDeviceId+"-"+Date.now().toString(36);
+  MQ.publish(MQ_NS+"live/"+myLiveId+"/state", presencePayload(), true);
+  clearInterval(presenceTimer);
+  presenceTimer = setInterval(()=>{ if(youLive.active) MQ.publish(MQ_NS+"live/"+myLiveId+"/state", presencePayload(), true); }, 15000);
+}
+function presenceEnd(){
+  if(myLiveId) MQ.publish(MQ_NS+"live/"+myLiveId+"/state", {status:"ended", ts:Date.now()}, true);
+  clearInterval(presenceTimer); presenceTimer = null; myLiveId = null;
+}
+
+/* ---- go-live countdown: 3 · 2 · 1 · LIVE ---- */
+let cdTimers = [];
+function startCountdown(){
+  const ov = $("liveCountdown"), num = $("cdNum"), sub = $("cdSub");
+  cdTimers.forEach(clearTimeout); cdTimers = [];
+  ov.hidden = false; sub.textContent = "Going live…"; num.classList.remove("go");
+  enableCamera(true); /* warm up camera + mic during the countdown */
+  const seq = ["3","2","1"];
+  seq.forEach((s, i)=>{
+    cdTimers.push(setTimeout(()=>{
+      num.textContent = s;
+      num.style.animation = "none"; void num.offsetWidth; num.style.animation = "";
+    }, i*850));
+  });
+  cdTimers.push(setTimeout(()=>{
+    num.textContent = "LIVE"; num.classList.add("go");
+    num.style.animation = "none"; void num.offsetWidth; num.style.animation = "";
+    sub.textContent = "You're on air";
+  }, seq.length*850));
+  cdTimers.push(setTimeout(()=>{ ov.hidden = true; startLive(); }, seq.length*850+750));
+}
+
+/* ---- TikTok-style live circles on the Home top ---- */
+function fmtViewers(n){ n = +n||0; return n>=1000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"K" : String(n); }
+function renderHomeLiveRow(){
+  const el = $("homeLiveRow"); if(!el) return;
+  const you = TRADERS.find(t=>t.you) || {};
+  const items = [];
+  if(youLive.active) items.push({kind:"you", id:"you", name:"You", ini:you.ini||"YOU", g:you.g});
+  Object.values(remoteLives).forEach(info=>items.push({kind:"remote", id:info.liveId, name:info.name, ini:info.ini, g:info.g, viewers:info.viewers}));
+  TRADERS.filter(t=>!t.you && t.live).forEach(t=>items.push({kind:"demo", id:t.id, name:String(t.name).split(" ")[0], ini:t.ini, g:t.g}));
+  el.hidden = !items.length;
+  el.innerHTML = items.map(it=>
+    '<button class="lc-item" data-kind="'+it.kind+'" data-id="'+esc(it.id)+'">'+
+    '<span class="lc-ring'+(it.kind==="you"?" you":"")+'"><span class="lc-av" style="--g1:'+(it.g?it.g[0]:"#2F80FF")+';--g2:'+(it.g?it.g[1]:"#1B5FD6")+'">'+esc(String(it.ini||"?").slice(0,2))+'</span><span class="lc-live">LIVE</span></span>'+
+    '<span class="lc-name">'+esc(it.kind==="you" ? "You" : String(it.name).split(" ")[0])+'</span>'+
+    (it.viewers!=null ? '<span class="lc-viewers num">'+fmtViewers(it.viewers)+'</span>' : "")+
+    '</button>').join("");
+  el.querySelectorAll(".lc-item").forEach(b=>b.addEventListener("click", ()=>{
+    const k = b.dataset.kind, id = b.dataset.id;
+    if(k==="you"){ goTab("live"); }
+    else if(k==="remote"){ watchRemoteLive(id); }
+    else if(watchingHost && watchingHost.id===id){ stopWatching(); }
+    else watchTraderLive(id);
+  }));
+}
+
+/* ---- WebRTC: host side (broadcast your camera to real viewers) ---- */
+const rtcHost = { pcs:{} };
+function rtcViewerCount(){ return Object.keys(rtcHost.pcs).length; }
+function rtcHostStart(){
+  if(!myLiveId || !window.RTCPeerConnection) return;
+  MQ.subscribe(MQ_NS+"live/"+myLiveId+"/sig/host", onHostSig);
+}
+function onHostSig(topic, msg){
+  if(!msg || !msg.t) return;
+  if(msg.t==="join" && msg.offer && msg.viewerId) hostAnswer(msg.viewerId, msg.offer);
+  else if(msg.t==="ice" && msg.from && msg.candidate){
+    const pc = rtcHost.pcs[msg.from];
+    if(pc) pc.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(()=>{});
+  }
+  else if(msg.t==="bye" && msg.from) hostDrop(msg.from);
+}
+async function hostAnswer(viewerId, offer){
+  hostDrop(viewerId);
+  let pc;
+  try{ pc = new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]}); }
+  catch(e){ return; }
+  rtcHost.pcs[viewerId] = pc;
+  try{
+    if(camStream) camStream.getTracks().forEach(tr=>pc.addTrack(tr, camStream));
+    pc.onicecandidate = e=>{
+      if(e.candidate && e.candidate.candidate) MQ.publish(MQ_NS+"live/"+myLiveId+"/sig/"+viewerId,
+        {t:"ice", from:"host", to:viewerId, candidate:e.candidate.toJSON()});
+    };
+    pc.onconnectionstatechange = ()=>{
+      const st = pc.connectionState;
+      if(st==="failed" || st==="closed") hostDrop(viewerId);
+      else if(st==="disconnected") setTimeout(()=>{ if(pc.connectionState==="disconnected") hostDrop(viewerId); }, 15000);
+    };
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    const ans = await pc.createAnswer();
+    await pc.setLocalDescription(ans);
+    MQ.publish(MQ_NS+"live/"+myLiveId+"/sig/"+viewerId, {t:"answer", to:viewerId, sdp:pc.localDescription});
+  }catch(err){ hostDrop(viewerId); }
+}
+function hostDrop(viewerId){
+  const pc = rtcHost.pcs[viewerId];
+  if(pc){ try{ pc.close(); }catch(_){} delete rtcHost.pcs[viewerId]; }
+}
+function rtcHostStop(){ Object.keys(rtcHost.pcs).forEach(hostDrop); }
+
+/* ---- WebRTC: viewer side (watch a real live from another device) ---- */
+let watchingRemote = null; /* {liveId, info, pc, viewerId} */
+async function watchRemoteLive(liveId){
+  const info = remoteLives[liveId];
+  if(!info){ toast("That live just ended"); return; }
+  stopWatching(); stopRemoteWatch();
+  if(!window.RTCPeerConnection){ toast("Live video not supported on this device"); return; }
+  const viewerId = myDeviceId;
+  const pc = new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+  watchingRemote = {liveId, info, pc, viewerId};
+  const rv = $("remoteVideo");
+  pc.ontrack = e=>{
+    if(rv){ rv.srcObject = e.streams[0]; rv.hidden = false; try{ rv.play(); }catch(_){} }
+  };
+  pc.onicecandidate = e=>{
+    if(e.candidate && e.candidate.candidate) MQ.publish(MQ_NS+"live/"+liveId+"/sig/host",
+      {t:"ice", from:viewerId, to:"host", candidate:e.candidate.toJSON()});
+  };
+  pc.onconnectionstatechange = ()=>{
+    if(pc.connectionState==="failed"){ toast("Couldn't connect to that live"); stopRemoteWatch(); }
+  };
+  MQ.subscribe(MQ_NS+"live/"+liveId+"/sig/"+viewerId, onViewerSig);
+  MQ.subscribe(MQ_NS+"live/"+liveId+"/chat", onLiveChatMsg);
+  try{
+    pc.addTransceiver("video", {direction:"recvonly"});
+    pc.addTransceiver("audio", {direction:"recvonly"});
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    MQ.publish(MQ_NS+"live/"+liveId+"/sig/host", {t:"join", viewerId, offer:pc.localDescription});
+  }catch(err){ toast("Couldn't connect to that live"); stopRemoteWatch(); return; }
+  goTab("live");
+  paintRemoteWatch();
+  toast("Watching "+info.name+" live");
+}
+function onViewerSig(topic, msg){
+  if(!watchingRemote || !msg || !msg.t) return;
+  const pc = watchingRemote.pc;
+  if(msg.t==="answer" && msg.sdp) pc.setRemoteDescription(new RTCSessionDescription(msg.sdp)).catch(()=>{});
+  else if(msg.t==="ice" && msg.candidate) pc.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(()=>{});
+}
+function onLiveChatMsg(topic, msg){
+  if(!msg || !msg.text || msg.from===myDeviceId) return;
+  addChat(msg.name||"Trader", ": "+String(msg.text).slice(0,140), false);
+}
+function paintRemoteWatch(){
+  const info = watchingRemote.info, bar = $("watchBar");
+  if(bar){
+    bar.hidden = false;
+    $("watchBarTxt").innerHTML = '🔴 Watching <b>'+esc(info.name)+'</b> live <span class="live-pill sm">LIVE</span>';
+  }
+  const sl = $("screen-live"); if(sl) sl.classList.add("watching-remote");
+  const cam = $("faceCam"); if(cam) cam.style.display = "none";
+  const tag = $("faceCamTag"); if(tag) tag.hidden = true;
+  renderLiveNow(); renderHomeLiveRow();
+}
+function stopRemoteWatch(){
+  if(!watchingRemote) return;
+  try{ MQ.publish(MQ_NS+"live/"+watchingRemote.liveId+"/sig/host", {t:"bye", from:watchingRemote.viewerId}); }catch(_){}
+  try{ watchingRemote.pc.close(); }catch(_){}
+  watchingRemote = null;
+  const rv = $("remoteVideo"); if(rv){ try{ rv.srcObject = null; }catch(_){} rv.hidden = true; }
+  const sl = $("screen-live"); if(sl) sl.classList.remove("watching-remote");
+  const cam = $("faceCam"); if(cam) cam.style.display = "";
+  const bar = $("watchBar"); if(bar) bar.hidden = true;
+  renderLiveNow(); renderHomeLiveRow();
+}
 
 /* ---------------- MY SESSION RECORDINGS (demo) ---------------- */
 const MYREC_KEY = "tc_my_recordings_v1";
@@ -4414,6 +4768,10 @@ function renderLiveNow(){
   if(youLive.active){
     html += '<button class="ln-item you" data-ln="you"><span class="ln-av" style="--g1:#2F80FF;--g2:#1B5FD6">AT</span><span class="ln-live">LIVE</span><span class="ln-name">You</span></button>';
   }
+  Object.values(remoteLives).forEach(info=>{
+    const watching = watchingRemote && watchingRemote.liveId===info.liveId;
+    html += '<button class="ln-item remote'+(watching?' watching':'')+'" data-ln-remote="'+info.liveId+'"><span class="ln-av" style="--g1:'+(info.g?info.g[0]:"#2F80FF")+';--g2:'+(info.g?info.g[1]:"#1B5FD6")+'">'+esc(String(info.ini||"?").slice(0,2))+'</span><span class="ln-live">LIVE</span><span class="ln-name">'+esc(String(info.name).split(" ")[0])+'</span></button>';
+  });
   TRADERS.filter(t=>!t.you && t.live).forEach(t=>{
     const watching = watchingHost && watchingHost.id===t.id;
     html += '<button class="ln-item'+(watching?' watching':'')+'" data-ln="'+t.id+'"><span class="ln-av" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+t.ini+'</span><span class="ln-live">LIVE</span><span class="ln-name">'+esc(t.name.split(" ")[0])+'</span></button>';
@@ -4435,6 +4793,7 @@ function renderLiveNow(){
   const sl = $("lnSlot");
   if(sl) sl.addEventListener("click", ()=>{ toast("Reminder set — demo"); });
   el.querySelectorAll(".ln-item").forEach(b=>b.addEventListener("click", ()=>{
+    if(b.dataset.lnRemote){ watchRemoteLive(b.dataset.lnRemote); return; }
     const id = b.dataset.ln;
     if(id==="you"){ goTab("live"); return; }
     if(watchingHost && watchingHost.id===id) stopWatching(); else watchTraderLive(id);
@@ -4733,7 +5092,7 @@ function bootV15(){
   const lmb = $("liveMoreBtn");
   if(lmb) lmb.addEventListener("click", ()=>toast("Report · Share · Quality — demo"));
   /* watch mode */
-  $("watchLeave").addEventListener("click", stopWatching);
+  $("watchLeave").addEventListener("click", ()=>{ stopWatching(); stopRemoteWatch(); });
   /* cam: viewers can't move the host's camera */
   const cam = $("faceCam");
   cam.addEventListener("pointerdown", e=>{ if(cam.classList.contains("viewer")) e.stopImmediatePropagation(); }, true);
@@ -5044,6 +5403,8 @@ setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="dark" ? "dark
 renderTicketTick();
 renderAccount();
 renderLiveNow();
+renderHomeLiveRow();
+try{ mqInit(); }catch(e){}
 renderReelsHub();
 renderHome();
 try{ bootV15(); }catch(err){ console.error("[v15] boot failed:", err); }
