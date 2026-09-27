@@ -638,6 +638,27 @@ select.field{ appearance:none; }
   border-bottom-right-radius:12px; opacity:.7; z-index:6;
 }
 #faceCamVideo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+/* compact face-cam while YOU are live — face drops to a small PiP so the chart stays fully visible */
+#screen-live.you-live:not(.layout-full) #faceCam{
+  width:92px !important; height:118px !important;
+  top:auto !important; bottom:14px !important; left:auto !important; right:12px !important;
+}
+/* recording indicator */
+.rec-badge{ display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:12px; font-weight:800;
+  background:rgba(0,0,0,.5); border-radius:99px; padding:6px 10px; }
+.rec-badge i{ width:9px; height:9px; border-radius:50%; background:#EF4444; animation:recblink 1.2s infinite; }
+@keyframes recblink{ 0%,100%{ opacity:1; } 50%{ opacity:.25; } }
+/* my session recordings strip */
+.myrec-strip{ margin:8px 12px 0; }
+.myrec-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.myrec-head b{ font-size:13px; }
+.myrec-row{ display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--surface);
+  border:1px solid var(--border); border-radius:12px; margin-bottom:8px; }
+.myrec-play{ width:34px; height:34px; border-radius:50%; background:rgba(47,128,255,.14); color:var(--blue);
+  display:flex; align-items:center; justify-content:center; font-size:14px; flex:none; }
+.myrec-info{ flex:1; min-width:0; }
+.myrec-info b{ display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.myrec-info span{ font-size:11.5px; color:var(--muted); }
 .fc-empty{
   position:absolute; inset:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:9px; padding:12px; text-align:center;
@@ -2860,12 +2881,14 @@ body.rtl{ direction:rtl; }
           </div>
           <div class="you-live-bar" id="youLiveBar" hidden>
             <span class="live-pill"><i></i>YOU ARE LIVE</span>
+            <span class="rec-badge" id="recBadge"><i></i>REC</span>
             <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
             <span class="yl-stat num" id="youTimer">00:00</span>
             <span class="yl-stat"><b class="num pl-pos" id="youPL">+$0.00</b> today</span>
             <button class="ghost-btn sm" id="liveLayoutBtn" aria-label="Change layout">⛶ Layout</button>
             <button class="danger-btn sm" id="endLiveBtn">End</button>
           </div>
+          <div class="myrec-strip" id="myRecStrip" hidden></div>
           <div class="watch-bar" id="watchBar" hidden>
             <span id="watchBarTxt"></span>
             <button class="ghost-btn sm" id="watchLeave">Leave</button>
@@ -3906,7 +3929,7 @@ function trackTradeClosed(pl){
 /* Trades, price alerts and broker links survive reloads.
    Everything remains demo/simulated. */
 const TRADES_KEY = "tc_trades_v1", ALERTS_KEY = "tc_alerts_v1", BROKERS_KEY = "tc_brokers_v1";
-const APP_VERSION = "25.15";
+const APP_VERSION = "25.16";
 function paintVersion(){
   const s = $("setVerLine"); if(s) s.textContent = "Trading Community · demo build · v"+APP_VERSION;
   const p = $("profVerLine"); if(p) p.textContent = "v"+APP_VERSION+" · demo build";
@@ -5392,6 +5415,7 @@ let chatIdx = 0, viewers = 2412;
 function buildLive(){
   buildLiveChart(); /* self-hosted XAUUSD 5m chart */
   restoreFaceCam();
+  renderMyRecs(); /* my session recordings (demo) */
   for(let i=0;i<3;i++) pushFeed();
   MOCK_CHAT.slice(0,6).forEach(m=>addChat(m[0], m[1], false));
   setInterval(()=>{
@@ -6007,6 +6031,7 @@ function startLive(){
   youLive.pl = 0;
   $("goLiveBtn").hidden = true;
   $("youLiveBar").hidden = false;
+  $("screen-live").classList.add("you-live"); /* face cam auto-drops to compact PiP */
   applyFaceCamBg(liveSetup.bg);
   applyLiveLayout(liveSetup.layout);
   syncHostControls();
@@ -6033,6 +6058,8 @@ function endLive(){
   clearInterval(youLive.timerId); youLive.timerId = null;
   $("goLiveBtn").hidden = false;
   $("youLiveBar").hidden = true;
+  $("screen-live").classList.remove("you-live"); /* restore your face-cam size/position */
+  saveMyRecording(); /* session saved to My recordings (demo) */
   applyFaceCamBg("none");
   applyLiveLayout("pip");
   syncHostControls();
@@ -6056,6 +6083,34 @@ $("lsStart").addEventListener("click", ()=>{
   startLive();
 });
 $("liveHintOk").addEventListener("click", ()=>{ $("liveHint").hidden = true; clearTimeout(liveHintTimer); });
+
+/* ---------------- MY SESSION RECORDINGS (demo) ---------------- */
+const MYREC_KEY = "tc_my_recordings_v1";
+function myRecs(){
+  try{ return JSON.parse(localStorage.getItem(MYREC_KEY)||"[]"); }catch(e){ return []; }
+}
+function saveMyRecording(){
+  if(!youLive.startT) return;
+  const rec = {
+    title: liveSetup.title || (liveSetup.sym + " · Live scalps"),
+    sym: liveSetup.sym,
+    dur: fmtClock(Date.now()-youLive.startT),
+    at: new Date().toISOString().slice(0,10)
+  };
+  const arr = [rec].concat(myRecs()).slice(0,20);
+  try{ localStorage.setItem(MYREC_KEY, JSON.stringify(arr)); }catch(e){}
+  renderMyRecs();
+  toast("Recording saved — demo");
+}
+function renderMyRecs(){
+  const el = $("myRecStrip"); if(!el) return;
+  const arr = myRecs();
+  if(!arr.length){ el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false;
+  el.innerHTML = '<div class="myrec-head"><b>My session recordings</b><span class="demo-tag">Demo</span></div>' +
+    arr.map(r=>'<div class="myrec-row"><span class="myrec-play">▶</span>'+
+      '<div class="myrec-info"><b>'+esc(r.title)+'</b><span>'+esc(r.sym)+' · '+esc(r.dur)+' · '+esc(r.at)+'</span></div></div>').join("");
+}
 
 /* live card published to the TOP of the Traders tab while you are live */
 function renderYouLiveCard(){

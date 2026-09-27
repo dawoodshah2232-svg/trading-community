@@ -630,6 +630,27 @@ select.field{ appearance:none; }
   border-bottom-right-radius:12px; opacity:.7; z-index:6;
 }
 #faceCamVideo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+/* compact face-cam while YOU are live — face drops to a small PiP so the chart stays fully visible */
+#screen-live.you-live:not(.layout-full) #faceCam{
+  width:92px !important; height:118px !important;
+  top:auto !important; bottom:14px !important; left:auto !important; right:12px !important;
+}
+/* recording indicator */
+.rec-badge{ display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:12px; font-weight:800;
+  background:rgba(0,0,0,.5); border-radius:99px; padding:6px 10px; }
+.rec-badge i{ width:9px; height:9px; border-radius:50%; background:#EF4444; animation:recblink 1.2s infinite; }
+@keyframes recblink{ 0%,100%{ opacity:1; } 50%{ opacity:.25; } }
+/* my session recordings strip */
+.myrec-strip{ margin:8px 12px 0; }
+.myrec-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.myrec-head b{ font-size:13px; }
+.myrec-row{ display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--surface);
+  border:1px solid var(--border); border-radius:12px; margin-bottom:8px; }
+.myrec-play{ width:34px; height:34px; border-radius:50%; background:rgba(47,128,255,.14); color:var(--blue);
+  display:flex; align-items:center; justify-content:center; font-size:14px; flex:none; }
+.myrec-info{ flex:1; min-width:0; }
+.myrec-info b{ display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.myrec-info span{ font-size:11.5px; color:var(--muted); }
 .fc-empty{
   position:absolute; inset:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:9px; padding:12px; text-align:center;

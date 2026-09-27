@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=52">
+<link rel="stylesheet" href="styles.css?v=53">
 </head>
 <body>
 
@@ -422,12 +422,14 @@
           </div>
           <div class="you-live-bar" id="youLiveBar" hidden>
             <span class="live-pill"><i></i>YOU ARE LIVE</span>
+            <span class="rec-badge" id="recBadge"><i></i>REC</span>
             <span class="yl-stat"><b class="num" id="youViewers">0</b> watching</span>
             <span class="yl-stat num" id="youTimer">00:00</span>
             <span class="yl-stat"><b class="num pl-pos" id="youPL">+$0.00</b> today</span>
             <button class="ghost-btn sm" id="liveLayoutBtn" aria-label="Change layout">⛶ Layout</button>
             <button class="danger-btn sm" id="endLiveBtn">End</button>
           </div>
+          <div class="myrec-strip" id="myRecStrip" hidden></div>
           <div class="watch-bar" id="watchBar" hidden>
             <span id="watchBarTxt"></span>
             <button class="ghost-btn sm" id="watchLeave">Leave</button>
@@ -1271,6 +1273,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=51"></script>
+<script src="app.js?v=52"></script>
 </body>
 </html>

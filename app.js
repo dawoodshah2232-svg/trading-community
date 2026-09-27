@@ -194,7 +194,7 @@ function trackTradeClosed(pl){
 /* Trades, price alerts and broker links survive reloads.
    Everything remains demo/simulated. */
 const TRADES_KEY = "tc_trades_v1", ALERTS_KEY = "tc_alerts_v1", BROKERS_KEY = "tc_brokers_v1";
-const APP_VERSION = "25.15";
+const APP_VERSION = "25.16";
 function paintVersion(){
   const s = $("setVerLine"); if(s) s.textContent = "Trading Community · demo build · v"+APP_VERSION;
   const p = $("profVerLine"); if(p) p.textContent = "v"+APP_VERSION+" · demo build";
@@ -1680,6 +1680,7 @@ let chatIdx = 0, viewers = 2412;
 function buildLive(){
   buildLiveChart(); /* self-hosted XAUUSD 5m chart */
   restoreFaceCam();
+  renderMyRecs(); /* my session recordings (demo) */
   for(let i=0;i<3;i++) pushFeed();
   MOCK_CHAT.slice(0,6).forEach(m=>addChat(m[0], m[1], false));
   setInterval(()=>{
@@ -2295,6 +2296,7 @@ function startLive(){
   youLive.pl = 0;
   $("goLiveBtn").hidden = true;
   $("youLiveBar").hidden = false;
+  $("screen-live").classList.add("you-live"); /* face cam auto-drops to compact PiP */
   applyFaceCamBg(liveSetup.bg);
   applyLiveLayout(liveSetup.layout);
   syncHostControls();
@@ -2321,6 +2323,8 @@ function endLive(){
   clearInterval(youLive.timerId); youLive.timerId = null;
   $("goLiveBtn").hidden = false;
   $("youLiveBar").hidden = true;
+  $("screen-live").classList.remove("you-live"); /* restore your face-cam size/position */
+  saveMyRecording(); /* session saved to My recordings (demo) */
   applyFaceCamBg("none");
   applyLiveLayout("pip");
   syncHostControls();
@@ -2344,6 +2348,34 @@ $("lsStart").addEventListener("click", ()=>{
   startLive();
 });
 $("liveHintOk").addEventListener("click", ()=>{ $("liveHint").hidden = true; clearTimeout(liveHintTimer); });
+
+/* ---------------- MY SESSION RECORDINGS (demo) ---------------- */
+const MYREC_KEY = "tc_my_recordings_v1";
+function myRecs(){
+  try{ return JSON.parse(localStorage.getItem(MYREC_KEY)||"[]"); }catch(e){ return []; }
+}
+function saveMyRecording(){
+  if(!youLive.startT) return;
+  const rec = {
+    title: liveSetup.title || (liveSetup.sym + " · Live scalps"),
+    sym: liveSetup.sym,
+    dur: fmtClock(Date.now()-youLive.startT),
+    at: new Date().toISOString().slice(0,10)
+  };
+  const arr = [rec].concat(myRecs()).slice(0,20);
+  try{ localStorage.setItem(MYREC_KEY, JSON.stringify(arr)); }catch(e){}
+  renderMyRecs();
+  toast("Recording saved — demo");
+}
+function renderMyRecs(){
+  const el = $("myRecStrip"); if(!el) return;
+  const arr = myRecs();
+  if(!arr.length){ el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false;
+  el.innerHTML = '<div class="myrec-head"><b>My session recordings</b><span class="demo-tag">Demo</span></div>' +
+    arr.map(r=>'<div class="myrec-row"><span class="myrec-play">▶</span>'+
+      '<div class="myrec-info"><b>'+esc(r.title)+'</b><span>'+esc(r.sym)+' · '+esc(r.dur)+' · '+esc(r.at)+'</span></div></div>').join("");
+}
 
 /* live card published to the TOP of the Traders tab while you are live */
 function renderYouLiveCard(){
