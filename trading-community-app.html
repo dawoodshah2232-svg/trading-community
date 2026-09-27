@@ -1790,6 +1790,30 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .pf-spark{ width:100%; height:48px; display:block; margin:2px 0 10px; }
 .pf-actions{ display:flex; gap:10px; }
 .pf-actions .primary-btn{ flex:1; background:#fff; color:#15803D; border:0; font-weight:800; min-height:48px; border-radius:14px; box-shadow:none; }
+.pf-actions .pf-ghost-btn{ flex:1; background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.4);
+  font-weight:800; font-size:14px; min-height:48px; border-radius:14px; cursor:pointer; }
+/* portfolio rows (positions / orders / txns) */
+.pf-pos-row{ display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:16px; padding:12px 14px; margin:0 14px 10px; }
+.pf-sym-ic{ width:42px; height:42px; flex:none; border-radius:50%; background:var(--surface-2); display:flex; align-items:center;
+  justify-content:center; font-size:20px; font-weight:800; color:var(--text); }
+.pf-sym-ic.dep{ background:var(--green-soft); }
+.pf-pos-mid{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.pf-pos-mid b{ font-size:14px; display:flex; align-items:center; gap:8px; }
+.pf-pos-mid .fine{ font-size:12px; }
+.pf-pos-pl{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+.pf-pos-pl b{ font-size:14.5px; }
+.pf-pos-pl .pf-pct{ font-size:11.5px; font-weight:700; }
+.pf-pos-pl .link-btn{ font-size:12px; padding:2px 0; }
+/* account overview stat grid */
+.pf-ov-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:2px 14px 0; }
+.pf-ov-cell{ background:var(--surface); border:1px solid var(--border-soft); border-radius:14px; padding:10px 8px;
+  display:flex; flex-direction:column; gap:4px; min-width:0; }
+.pf-ov-cell span{ font-size:10.5px; color:var(--muted); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pf-ov-cell b{ font-size:13.5px; white-space:nowrap; }
+@media (max-width:380px){ .pf-ov-grid{ grid-template-columns:repeat(2,1fr); } }
+/* empty states with CTA */
+.empty .empty-cta{ margin-top:12px; }
 .pf-card{ margin:10px 14px 14px; background:linear-gradient(135deg,#12233F 0%, #0B1526 60%, #0A1A33 100%);
   border-radius:20px; padding:18px; color:#fff; box-shadow:var(--shadow); position:relative; overflow:hidden; }
 .pf-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
@@ -2613,6 +2637,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
             <svg class="pf-spark" id="pfSpark" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div class="pf-actions">
               <button class="primary-btn" id="pfDeposit">Deposit</button>
+              <button class="pf-ghost-btn" id="pfWithdraw">Withdraw</button>
             </div>
             <div class="pf-meta">
               <div><span>Equity</span><b class="num" id="pfEquity">$12,318.10</b></div>
@@ -2640,11 +2665,11 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
             <div id="pfTxns"></div>
           </div>
           <div class="sec-head"><h3>Account Overview</h3></div>
-          <div class="pf-overview">
-            <div><span>Real Account</span><b class="num" id="pfOvBalance">$12,450.32</b></div>
-            <div><span>Total P/L</span><b class="num pl-pos" id="pfOvPL">+$386.51</b></div>
-            <div><span>Open Trades</span><b class="num" id="pfOvOpen">2</b></div>
-            <div><span>Margin Level</span><b class="num" id="pfOvLevel">386.5%</b></div>
+          <div class="pf-ov-grid">
+            <div class="pf-ov-cell"><span>Real Account</span><b class="num" id="pfOvBalance">$12,450.32</b></div>
+            <div class="pf-ov-cell"><span>Total P/L</span><b class="num" id="pfOvPL">+$386.51</b></div>
+            <div class="pf-ov-cell"><span>Open Trades</span><b class="num" id="pfOvOpen">2</b></div>
+            <div class="pf-ov-cell"><span>Margin Level</span><b class="num" id="pfOvLevel">386.5%</b></div>
           </div>
           <p class="fine center">Simulated portfolio — demo</p>
         </section>
@@ -4943,6 +4968,18 @@ function renderPfSpark(){
   const d = "M"+pts.map(p=>p.join(",")).join(" L");
   svg.innerHTML = '<path d="'+d+' L200,48 L0,48 Z" fill="rgba(255,255,255,.18)"/><path d="'+d+'" fill="none" stroke="#fff" stroke-width="2"/>';
 }
+function symIcon(sym){
+  const m = { XAUUSD:"🪙", XAGUSD:"⚪", BTCUSD:"₿", ETHUSD:"Ξ", EURUSD:"🇪🇺", GBPUSD:"🇬🇧",
+    USDJPY:"🇯🇵", USDCHF:"🇨🇭", USDCAD:"🇨🇦", AUDUSD:"🇦🇺", NZDUSD:"🇳🇿",
+    US30:"🇺🇸", NAS100:"🇺🇸", SPX500:"🇺🇸", USOIL:"🛢️", UKOIL:"🛢️" };
+  return m[sym] || esc(String(sym).slice(0,1));
+}
+function posPct(p){
+  const pr = px(p.sym);
+  const diff = p.dir==="BUY" ? pr.bid - p.entry : p.entry - pr.ask;
+  return p.entry ? diff/p.entry*100 : 0;
+}
+const PF_EMPTY_CTA = '<div class="empty">{msg}<br><button class="primary-btn empty-cta" data-goto="trade">Start Trading</button></div>';
 function renderPortfolio(){
   /* sync money from the account engine */
   const eq = equity(), m = usedMargin();
@@ -4951,7 +4988,8 @@ function renderPortfolio(){
   const opl = openPL();
   set("pfBalanceSub", (opl>=0?"+":"") + fmt$(opl) + " today");
   set("pfFree", fmt$(eq - m)); set("pfMargin", fmt$(m));
-  set("pfOvBalance", fmt$(eq)); set("pfOvPL", fmt$(opl));
+  set("pfOvBalance", fmt$(eq));
+  const ovPL = $("pfOvPL"); if(ovPL){ ovPL.textContent = fmt$(opl); ovPL.className = "num "+plClass(opl); }
   set("pfOvOpen", state.open.length);
   set("pfOvLevel", m > 0.01 ? (eq/m*100).toFixed(1)+"%" : "—");
   renderPfSpark();
@@ -4960,16 +4998,18 @@ function renderPortfolio(){
   const pl = $("pfPositions");
   if(pl){
     pl.innerHTML = "";
-    if(!state.open.length) pl.innerHTML = '<div class="empty">No open positions.<br>Place a trade from the Trade tab.</div>';
+    if(!state.open.length) pl.innerHTML = PF_EMPTY_CTA.replace("{msg}", "No open positions yet.");
     state.open.forEach(p=>{
-      const pr = px(p.sym), plv = positionPL(p);
+      const pr = px(p.sym), plv = positionPL(p), pct = posPct(p);
+      const pctTxt = (pct>=0?"+":"")+pct.toFixed(2)+"%";
       const r = document.createElement("div");
       r.className = "pf-pos-row";
       r.innerHTML =
-        '<span class="pf-sym-ic">'+esc(p.sym.slice(0,1))+'</span>'+
+        '<span class="pf-sym-ic">'+symIcon(p.sym)+'</span>'+
         '<span class="pf-pos-mid"><b>'+p.sym+' <span class="dir '+(p.dir==="BUY"?"buy":"sell")+'">'+p.dir+'</span></b>'+
-        '<span class="fine num">'+fmtP(p.sym,p.entry)+' → '+fmtP(p.sym,pr.bid)+' · '+p.lots.toFixed(2)+'</span></span>'+
+        '<span class="fine num">'+fmtP(p.sym,p.entry)+' → '+fmtP(p.sym, p.dir==="BUY"?pr.bid:pr.ask)+' · '+p.lots.toFixed(2)+' lots</span></span>'+
         '<span class="pf-pos-pl"><b class="num '+plClass(plv)+'">'+fmt$(plv)+'</b>'+
+        '<span class="pf-pct num '+plClass(pct)+'">'+pctTxt+'</span>'+
         '<button class="link-btn" data-close="'+p.id+'">Close</button></span>';
       pl.appendChild(r);
     });
@@ -4979,14 +5019,14 @@ function renderPortfolio(){
   const po = $("pfOrders");
   if(po){
     po.innerHTML = "";
-    if(!state.pending.length) po.innerHTML = '<div class="empty">No pending orders.</div>';
+    if(!state.pending.length) po.innerHTML = PF_EMPTY_CTA.replace("{msg}", "No pending orders.");
     state.pending.forEach(o=>{
       const r = document.createElement("div");
       r.className = "pf-pos-row";
       r.innerHTML =
-        '<span class="pf-sym-ic">'+esc(o.sym.slice(0,1))+'</span>'+
+        '<span class="pf-sym-ic">'+symIcon(o.sym)+'</span>'+
         '<span class="pf-pos-mid"><b>'+o.sym+' <span class="dir '+(o.dir==="BUY"?"buy":"sell")+'">'+esc(o.type.toUpperCase())+'</span></b>'+
-        '<span class="fine num">Trigger '+fmtP(o.sym,o.price)+' · '+o.lots.toFixed(2)+'</span></span>'+
+        '<span class="fine num">Trigger '+fmtP(o.sym,o.price)+' · '+o.lots.toFixed(2)+' lots</span></span>'+
         '<span class="pf-pos-pl"><button class="link-btn" data-cancel="'+o.id+'">Cancel</button></span>';
       po.appendChild(r);
     });
@@ -4996,7 +5036,7 @@ function renderPortfolio(){
   if(pt){
     pt.innerHTML = "";
     const txns = state.history.slice().reverse().map(h=>({
-      t:"Closed "+h.sym+" "+h.dir, v:h.pl, time:h.time||""
+      t:"Closed "+h.sym+" "+h.dir, v:h.pl, time:h.time||"", sym:h.sym
     }));
     txns.unshift({ t:"Demo account funded", v:0, time:"", tag:"deposit" });
     if(!txns.length) pt.innerHTML = '<div class="empty">No transactions yet.</div>';
@@ -5004,7 +5044,7 @@ function renderPortfolio(){
       const r = document.createElement("div");
       r.className = "pf-pos-row";
       r.innerHTML =
-        '<span class="pf-sym-ic '+(x.tag==="deposit"?"dep":"")+'">'+(x.tag==="deposit"?"+":esc(x.t.slice(7,8)))+'</span>'+
+        '<span class="pf-sym-ic '+(x.tag==="deposit"?"dep":"")+'">'+(x.tag==="deposit"?"+":symIcon(x.sym||""))+'</span>'+
         '<span class="pf-pos-mid"><b>'+esc(x.t)+'</b>'+(x.time?'<span class="fine">'+esc(x.time)+'</span>':"")+'</span>'+
         '<b class="num '+plClass(x.v)+'">'+fmt$(x.v)+'</b>';
       pt.appendChild(r);
@@ -5030,6 +5070,7 @@ $("pfCloseAll").addEventListener("click", ()=>{
   toast("All positions closed — demo");
 });
 $("pfDeposit").addEventListener("click", ()=>toast("Deposits are simulated — demo"));
+$("pfWithdraw").addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
 const pfw = $("pfWithdraw"); if(pfw) pfw.addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
 
 /* ---------------- PROFILE + BROKERS ---------------- */
@@ -6564,7 +6605,10 @@ function renderHomeTraders(){
   if(id==="homeUploadReel") el.addEventListener("click", triggerReelUpload);
   if(id==="homeGoLive") el.addEventListener("click", ()=>{ goTab("live"); setTimeout(()=>$("goLiveBtn").click(), 80); });
 });
-document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.goto)));
+document.addEventListener("click", e=>{
+  const g = e.target.closest("[data-goto]");
+  if(g){ goTab(g.dataset.goto); return; }
+});
 /* keep the home live strip fresh whenever the live strip re-renders */
 const _renderLiveNow = renderLiveNow;
 renderLiveNow = function(){ _renderLiveNow(); renderHomeLive(); };

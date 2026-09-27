@@ -1949,6 +1949,18 @@ function renderPfSpark(){
   const d = "M"+pts.map(p=>p.join(",")).join(" L");
   svg.innerHTML = '<path d="'+d+' L200,48 L0,48 Z" fill="rgba(255,255,255,.18)"/><path d="'+d+'" fill="none" stroke="#fff" stroke-width="2"/>';
 }
+function symIcon(sym){
+  const m = { XAUUSD:"🪙", XAGUSD:"⚪", BTCUSD:"₿", ETHUSD:"Ξ", EURUSD:"🇪🇺", GBPUSD:"🇬🇧",
+    USDJPY:"🇯🇵", USDCHF:"🇨🇭", USDCAD:"🇨🇦", AUDUSD:"🇦🇺", NZDUSD:"🇳🇿",
+    US30:"🇺🇸", NAS100:"🇺🇸", SPX500:"🇺🇸", USOIL:"🛢️", UKOIL:"🛢️" };
+  return m[sym] || esc(String(sym).slice(0,1));
+}
+function posPct(p){
+  const pr = px(p.sym);
+  const diff = p.dir==="BUY" ? pr.bid - p.entry : p.entry - pr.ask;
+  return p.entry ? diff/p.entry*100 : 0;
+}
+const PF_EMPTY_CTA = '<div class="empty">{msg}<br><button class="primary-btn empty-cta" data-goto="trade">Start Trading</button></div>';
 function renderPortfolio(){
   /* sync money from the account engine */
   const eq = equity(), m = usedMargin();
@@ -1957,7 +1969,8 @@ function renderPortfolio(){
   const opl = openPL();
   set("pfBalanceSub", (opl>=0?"+":"") + fmt$(opl) + " today");
   set("pfFree", fmt$(eq - m)); set("pfMargin", fmt$(m));
-  set("pfOvBalance", fmt$(eq)); set("pfOvPL", fmt$(opl));
+  set("pfOvBalance", fmt$(eq));
+  const ovPL = $("pfOvPL"); if(ovPL){ ovPL.textContent = fmt$(opl); ovPL.className = "num "+plClass(opl); }
   set("pfOvOpen", state.open.length);
   set("pfOvLevel", m > 0.01 ? (eq/m*100).toFixed(1)+"%" : "—");
   renderPfSpark();
@@ -1966,16 +1979,18 @@ function renderPortfolio(){
   const pl = $("pfPositions");
   if(pl){
     pl.innerHTML = "";
-    if(!state.open.length) pl.innerHTML = '<div class="empty">No open positions.<br>Place a trade from the Trade tab.</div>';
+    if(!state.open.length) pl.innerHTML = PF_EMPTY_CTA.replace("{msg}", "No open positions yet.");
     state.open.forEach(p=>{
-      const pr = px(p.sym), plv = positionPL(p);
+      const pr = px(p.sym), plv = positionPL(p), pct = posPct(p);
+      const pctTxt = (pct>=0?"+":"")+pct.toFixed(2)+"%";
       const r = document.createElement("div");
       r.className = "pf-pos-row";
       r.innerHTML =
-        '<span class="pf-sym-ic">'+esc(p.sym.slice(0,1))+'</span>'+
+        '<span class="pf-sym-ic">'+symIcon(p.sym)+'</span>'+
         '<span class="pf-pos-mid"><b>'+p.sym+' <span class="dir '+(p.dir==="BUY"?"buy":"sell")+'">'+p.dir+'</span></b>'+
-        '<span class="fine num">'+fmtP(p.sym,p.entry)+' → '+fmtP(p.sym,pr.bid)+' · '+p.lots.toFixed(2)+'</span></span>'+
+        '<span class="fine num">'+fmtP(p.sym,p.entry)+' → '+fmtP(p.sym, p.dir==="BUY"?pr.bid:pr.ask)+' · '+p.lots.toFixed(2)+' lots</span></span>'+
         '<span class="pf-pos-pl"><b class="num '+plClass(plv)+'">'+fmt$(plv)+'</b>'+
+        '<span class="pf-pct num '+plClass(pct)+'">'+pctTxt+'</span>'+
         '<button class="link-btn" data-close="'+p.id+'">Close</button></span>';
       pl.appendChild(r);
     });
@@ -1985,14 +2000,14 @@ function renderPortfolio(){
   const po = $("pfOrders");
   if(po){
     po.innerHTML = "";
-    if(!state.pending.length) po.innerHTML = '<div class="empty">No pending orders.</div>';
+    if(!state.pending.length) po.innerHTML = PF_EMPTY_CTA.replace("{msg}", "No pending orders.");
     state.pending.forEach(o=>{
       const r = document.createElement("div");
       r.className = "pf-pos-row";
       r.innerHTML =
-        '<span class="pf-sym-ic">'+esc(o.sym.slice(0,1))+'</span>'+
+        '<span class="pf-sym-ic">'+symIcon(o.sym)+'</span>'+
         '<span class="pf-pos-mid"><b>'+o.sym+' <span class="dir '+(o.dir==="BUY"?"buy":"sell")+'">'+esc(o.type.toUpperCase())+'</span></b>'+
-        '<span class="fine num">Trigger '+fmtP(o.sym,o.price)+' · '+o.lots.toFixed(2)+'</span></span>'+
+        '<span class="fine num">Trigger '+fmtP(o.sym,o.price)+' · '+o.lots.toFixed(2)+' lots</span></span>'+
         '<span class="pf-pos-pl"><button class="link-btn" data-cancel="'+o.id+'">Cancel</button></span>';
       po.appendChild(r);
     });
@@ -2002,7 +2017,7 @@ function renderPortfolio(){
   if(pt){
     pt.innerHTML = "";
     const txns = state.history.slice().reverse().map(h=>({
-      t:"Closed "+h.sym+" "+h.dir, v:h.pl, time:h.time||""
+      t:"Closed "+h.sym+" "+h.dir, v:h.pl, time:h.time||"", sym:h.sym
     }));
     txns.unshift({ t:"Demo account funded", v:0, time:"", tag:"deposit" });
     if(!txns.length) pt.innerHTML = '<div class="empty">No transactions yet.</div>';
@@ -2010,7 +2025,7 @@ function renderPortfolio(){
       const r = document.createElement("div");
       r.className = "pf-pos-row";
       r.innerHTML =
-        '<span class="pf-sym-ic '+(x.tag==="deposit"?"dep":"")+'">'+(x.tag==="deposit"?"+":esc(x.t.slice(7,8)))+'</span>'+
+        '<span class="pf-sym-ic '+(x.tag==="deposit"?"dep":"")+'">'+(x.tag==="deposit"?"+":symIcon(x.sym||""))+'</span>'+
         '<span class="pf-pos-mid"><b>'+esc(x.t)+'</b>'+(x.time?'<span class="fine">'+esc(x.time)+'</span>':"")+'</span>'+
         '<b class="num '+plClass(x.v)+'">'+fmt$(x.v)+'</b>';
       pt.appendChild(r);
@@ -2036,6 +2051,7 @@ $("pfCloseAll").addEventListener("click", ()=>{
   toast("All positions closed — demo");
 });
 $("pfDeposit").addEventListener("click", ()=>toast("Deposits are simulated — demo"));
+$("pfWithdraw").addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
 const pfw = $("pfWithdraw"); if(pfw) pfw.addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
 
 /* ---------------- PROFILE + BROKERS ---------------- */
@@ -3570,7 +3586,10 @@ function renderHomeTraders(){
   if(id==="homeUploadReel") el.addEventListener("click", triggerReelUpload);
   if(id==="homeGoLive") el.addEventListener("click", ()=>{ goTab("live"); setTimeout(()=>$("goLiveBtn").click(), 80); });
 });
-document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.goto)));
+document.addEventListener("click", e=>{
+  const g = e.target.closest("[data-goto]");
+  if(g){ goTab(g.dataset.goto); return; }
+});
 /* keep the home live strip fresh whenever the live strip re-renders */
 const _renderLiveNow = renderLiveNow;
 renderLiveNow = function(){ _renderLiveNow(); renderHomeLive(); };

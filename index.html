@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=45">
+<link rel="stylesheet" href="styles.css?v=46">
 </head>
 <body>
 
@@ -566,6 +566,7 @@
             <svg class="pf-spark" id="pfSpark" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div class="pf-actions">
               <button class="primary-btn" id="pfDeposit">Deposit</button>
+              <button class="pf-ghost-btn" id="pfWithdraw">Withdraw</button>
             </div>
             <div class="pf-meta">
               <div><span>Equity</span><b class="num" id="pfEquity">$12,318.10</b></div>
@@ -593,11 +594,11 @@
             <div id="pfTxns"></div>
           </div>
           <div class="sec-head"><h3>Account Overview</h3></div>
-          <div class="pf-overview">
-            <div><span>Real Account</span><b class="num" id="pfOvBalance">$12,450.32</b></div>
-            <div><span>Total P/L</span><b class="num pl-pos" id="pfOvPL">+$386.51</b></div>
-            <div><span>Open Trades</span><b class="num" id="pfOvOpen">2</b></div>
-            <div><span>Margin Level</span><b class="num" id="pfOvLevel">386.5%</b></div>
+          <div class="pf-ov-grid">
+            <div class="pf-ov-cell"><span>Real Account</span><b class="num" id="pfOvBalance">$12,450.32</b></div>
+            <div class="pf-ov-cell"><span>Total P/L</span><b class="num" id="pfOvPL">+$386.51</b></div>
+            <div class="pf-ov-cell"><span>Open Trades</span><b class="num" id="pfOvOpen">2</b></div>
+            <div class="pf-ov-cell"><span>Margin Level</span><b class="num" id="pfOvLevel">386.5%</b></div>
           </div>
           <p class="fine center">Simulated portfolio — demo</p>
         </section>
@@ -944,6 +945,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=45"></script>
+<script src="app.js?v=46"></script>
 </body>
 </html>
