@@ -347,6 +347,7 @@ function goTab(tab){
   if(tab!=="live" && state.liveBuilt) stopCamera(); /* stop face-cam tracks off the live tab */
   if(tab==="trade"){ try{ buildMainChart(); }catch(e){} } /* chart may have failed at boot while this tab was hidden — retry now that it has real dimensions */
   if(tab==="community" && !$("communityTraders").innerHTML){ try{ renderCommunityTraders(); }catch(e){} }
+  if(tab==="leaderboard" && !$("leaderboardPageList").innerHTML){ try{ renderCommunityTraders(); }catch(e){} }
   if(tab==="portfolio"){ try{ renderPortfolio(); }catch(e){} }
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.tab)));
@@ -421,6 +422,7 @@ function tick(){
   renderTapeTick();
   renderTicketTick();
   renderPositionsTick();
+  renderCopiersTick(); /* play-money copier numbers stay live */
   renderAccount();
   updateChartTick(); /* roll the self-hosted candle chart forward */
   if(++tickCount % 7 === 0){ renderYouCard(); updateDataBadges(); } /* your presence card, ~5s */
@@ -2637,9 +2639,10 @@ function openCopyModal(hostId){
   const t = TRADERS.find(x=>x.id===hostId); if(!t || t.you){ if(t&&t.you) toast("That's you — demo"); return; }
   copyState.pendingHost = t.id;
   setCopyLots(0.10);
+  setCopyMode("mirror");
   $("copyWarnHost").textContent = t.name+" ("+t.handle+")";
   const a = activeAcct();
-  $("copyWarnAcct").textContent = a.broker+" "+a.type+" · "+a.login;
+  document.querySelectorAll(".copyWarnAcct").forEach(el=>{ el.textContent = a.broker+" "+a.type+" · "+a.login; });
   $("copyModal").hidden = false;
 }
 function closeCopyModal(){ $("copyModal").hidden = true; }
@@ -2649,10 +2652,16 @@ function setCopyLots(v){
 }
 function startCopy(){
   const t = TRADERS.find(x=>x.id===copyState.pendingHost); if(!t) return;
+  closeCopyModal();
+  if(copyMode==="mirror"){ openCopier(t.id, copyLotSel); return; }
   copyState.on = true; copyState.host = t.id; copyState.lots = copyLotSel;
-  paintCopyUI(); renderCopyStatus(); closeCopyModal();
+  paintCopyUI(); renderCopyStatus();
   toast("Copying "+t.handle+" at "+copyState.lots.toFixed(2)+" lots — demo, no real orders");
 }
+document.addEventListener("click", e=>{
+  const mp = e.target.closest("[data-copymode]");
+  if(mp){ setCopyMode(mp.dataset.copymode); }
+});
 function stopCopy(){
   copyState.on = false; copyState.host = null;
   paintCopyUI(); renderCopyStatus();
@@ -2697,6 +2706,162 @@ function mirrorHostTrade(dir, at){
     if(cp){ const pr = px(cp.sym); closePosition(cp, cp.dir==="BUY"?pr.bid:pr.ask, "Copy close"); }
   }
 }
+
+
+/* ================= v26: MIRROR COPY — play-money copier accounts =================
+   *** EVERY FIGURE HERE IS VIRTUAL PLAY MONEY ***
+   No broker login, no funding flow, no live order routing anywhere in this mode.
+   A copier account mirrors ONE trader's simulated activity entry-for-entry and
+   exit-for-exit, with its own $10,000 virtual balance, ranked on the Copiers
+   leaderboard tab. */
+const MIRROR_KEY = "tc_mirror_v1";
+const MIRROR_START = 10000;
+let copiers = [];
+try{ const s = JSON.parse(localStorage.getItem(MIRROR_KEY)||"null"); if(Array.isArray(s)) copiers = s; }catch(e){ copiers = []; }
+function saveCopiers(){ try{ localStorage.setItem(MIRROR_KEY, JSON.stringify(copiers)); }catch(e){} }
+const traderById = id => TRADERS.find(t=>t.id===id);
+function copierUnrealized(c){
+  return c.open.reduce((s,p)=>{
+    const pr = px(p.sym), cur = p.dir==="BUY" ? pr.bid : pr.ask;
+    return s + (p.dir==="BUY" ? (cur-p.entry) : (p.entry-cur)) * meta(p.sym).perPoint * p.lots;
+  }, 0);
+}
+function copierRealized(c){ return c.history.reduce((s,h)=>s+h.pl, 0); }
+function copierTotalPL(c){ return copierRealized(c) + copierUnrealized(c); }
+function copierEquity(c){ return c.balance + copierUnrealized(c); }
+let copyMode = "mirror"; /* modal choice: "mirror" (play-money copier) or "own" (v2 into own demo acct) */
+function setCopyMode(m){
+  copyMode = m;
+  document.querySelectorAll(".mode-pick").forEach(x=>{
+    x.classList.toggle("sel", x.dataset.copymode===m);
+    x.setAttribute("aria-checked", x.dataset.copymode===m ? "true" : "false");
+  });
+  const t = TRADERS.find(x=>x.id===copyState.pendingHost);
+  const h = t ? t.handle : "@host";
+  const d = $("copyModeDesc");
+  if(d) d.innerHTML = m==="mirror"
+    ? "A <b>$10,000 play-money</b> copier opens and mirrors <b>"+esc(h)+"</b> entry-for-entry, exit-for-exit."
+    : "Every trade "+esc(h)+" takes is <b>automatically mirrored</b> in your demo account at your lot size below.";
+  const acc = $("copyAccept");
+  if(acc) acc.textContent = m==="mirror" ? "Open $10,000 play-money copier" : "I understand — start copying";
+}
+function openCopier(traderId, lots){
+  const t = traderById(traderId); if(!t || t.you){ if(t&&t.you) toast("That's you — demo"); return; }
+  if(copiers.some(c=>c.traderId===traderId)){ toast("Already mirroring "+t.handle+" — play money"); goTab("leaderboard"); setLbTab("copiers"); return; }
+  copiers.push({ id:"mc"+Date.now(), traderId, lots:Math.min(5,Math.max(0.01,lots||0.10)),
+    balance:MIRROR_START, createdAt:Date.now(), open:[], history:[] });
+  saveCopiers(); renderCopiers();
+  toast("Play-money copier opened for "+t.handle+" · $10,000 virtual");
+  goTab("leaderboard"); setLbTab("copiers");
+}
+function stopCopier(id){
+  const i = copiers.findIndex(c=>c.id===id); if(i<0) return;
+  const c = copiers[i], t = traderById(c.traderId);
+  /* settle open positions at current market into the virtual balance */
+  c.open.forEach(p=>{
+    const pr = px(p.sym), exit = p.dir==="BUY" ? pr.bid : pr.ask;
+    const pl = (p.dir==="BUY" ? (exit-p.entry) : (p.entry-exit)) * meta(p.sym).perPoint * p.lots;
+    c.balance += pl;
+    c.history.push({ sym:p.sym, dir:p.dir, lots:p.lots, entry:p.entry, exit, pl, t:Date.now(), reason:"Copier stopped" });
+  });
+  copiers.splice(i,1); saveCopiers(); renderCopiers();
+  toast("Copier for "+(t?t.handle:"@trader")+" closed · final "+fmt$(c.balance-MIRROR_START)+" play money");
+}
+/* simulated trader activity: each copied trader "trades" on its own cadence;
+   every entry AND exit is mirrored into that trader's copier account at live ticks */
+function mirrorEngine(){
+  if(!copiers.length) return;
+  let changed = false;
+  copiers.forEach(c=>{
+    const t = traderById(c.traderId); if(!t) return;
+    /* trader exit: close the oldest mirrored position */
+    if(c.open.length && Math.random() < 0.38){
+      const p = c.open.shift(), pr = px(p.sym);
+      const exit = p.dir==="BUY" ? pr.bid : pr.ask;
+      const pl = (p.dir==="BUY" ? (exit-p.entry) : (p.entry-exit)) * meta(p.sym).perPoint * p.lots;
+      c.balance += pl;
+      c.history.push({ sym:p.sym, dir:p.dir, lots:p.lots, entry:p.entry, exit, pl, t:Date.now(), reason:"Trader exit" });
+      changed = true;
+    }
+    /* trader entry: open a new mirrored position */
+    if(c.open.length < 3 && Math.random() < 0.5){
+      const syms = (t.trades||[]).map(x=>x.s).filter(s=>SYMBOLS[s] && mktOpen(s));
+      const sym = syms.length ? syms[Math.floor(Math.random()*syms.length)] : "XAUUSD";
+      const dir = Math.random() > 0.45 ? "BUY" : "SELL", pr = px(sym);
+      c.open.push({ id:"mcp"+Date.now()+Math.floor(Math.random()*999), sym, dir,
+        entry: dir==="BUY" ? pr.ask : pr.bid, lots:c.lots, t:Date.now() });
+      changed = true;
+    }
+  });
+  if(changed){ saveCopiers(); renderCopiers(); }
+}
+setInterval(mirrorEngine, 12000);
+/* leaderboard tabs: traders | copiers */
+document.addEventListener("click", e=>{
+  const lt = e.target.closest("#lbViewTabs [data-lbtab]");
+  if(lt){ setLbTab(lt.dataset.lbtab); }
+});
+let lbTab = "traders";
+function setLbTab(tab){
+  lbTab = tab;
+  document.querySelectorAll("#lbViewTabs .ctab").forEach(x=>x.classList.toggle("active", x.dataset.lbtab===tab));
+  const tp = $("lbTradersPane"), cp = $("lbCopiersPane");
+  if(tp) tp.hidden = tab!=="traders";
+  if(cp) cp.hidden = tab!=="copiers";
+  if(tab==="copiers") renderCopiers(); else renderCommunityTraders();
+}
+function renderCopiers(){
+  const list = $("copierBoardList"); if(!list) return;
+  list.innerHTML = "";
+  if(!copiers.length){
+    list.innerHTML = '<div class="empty">No copier accounts yet.<br>Tap <b>Copy</b> on any trader to open a $10,000 play-money copier.<br>'+
+      '<button class="primary-btn empty-cta" data-goto="community">Find traders</button></div>';
+    return;
+  }
+  copiers.slice().sort((a,b)=>copierTotalPL(b)-copierTotalPL(a)).forEach((c,i)=>{
+    const t = traderById(c.traderId); if(!t) return;
+    const pl = copierTotalPL(c), eq = copierEquity(c);
+    const card = document.createElement("div");
+    card.className = "copier-card";
+    card.innerHTML =
+      '<div class="copier-head"><span class="rank-n'+(i<3?' medal-'+(i+1):'')+'">'+(i+1)+'</span>'+avImg(t,"sm")+
+      '<span class="copier-id"><b>'+esc(t.handle)+'</b><span class="fine">'+c.lots.toFixed(2)+' lots · '+c.open.length+' open · '+c.history.length+' closed</span></span>'+
+      '<span class="play-tag">PLAY MONEY</span></div>'+
+      '<div class="copier-nums"><div><span>Virtual equity</span><b class="num" data-mceq="'+c.id+'">'+fmt$(eq)+'</b></div>'+
+      '<div><span>Copier P/L</span><b class="num '+plClass(pl)+'" data-mcpl="'+c.id+'">'+(pl>=0?"+":"")+fmt$(pl)+'</b></div>'+
+      '<button class="danger-btn sm" data-stopcopier="'+c.id+'">Stop</button></div>'+
+      (c.open.length ? '<div class="copier-pos">'+c.open.map(p=>{
+        const pr = px(p.sym), cur = p.dir==="BUY"?pr.bid:pr.ask;
+        const upl = (p.dir==="BUY"?(cur-p.entry):(p.entry-cur))*meta(p.sym).perPoint*p.lots;
+        return '<div class="mc-pos"><span class="dir '+(p.dir==="BUY"?"buy":"sell")+'">'+p.dir+'</span>'+
+          '<b>'+p.sym+'</b><span class="num">'+p.lots.toFixed(2)+'</span>'+
+          '<span class="num '+plClass(upl)+'" data-mcpos="'+p.id+'">'+(upl>=0?"+":"")+fmt$(upl)+'</span></div>';
+      }).join("")+'</div>' : '<div class="fine">Waiting for '+esc(t.handle)+'\'s next trade…</div>');
+    list.appendChild(card);
+  });
+  injectIcons();
+}
+/* live-tick refresh of visible copier numbers (same pattern as renderPositionsTick) */
+function renderCopiersTick(){
+  if(lbTab!=="copiers") return;
+  copiers.forEach(c=>{
+    const eqEl = document.querySelector('[data-mceq="'+c.id+'"]');
+    if(eqEl) eqEl.textContent = fmt$(copierEquity(c));
+    const pl = copierTotalPL(c);
+    const plEl = document.querySelector('[data-mcpl="'+c.id+'"]');
+    if(plEl){ plEl.textContent = (pl>=0?"+":"")+fmt$(pl); plEl.className = "num "+plClass(pl); }
+    c.open.forEach(p=>{
+      const el = document.querySelector('[data-mcpos="'+p.id+'"]'); if(!el) return;
+      const pr = px(p.sym), cur = p.dir==="BUY"?pr.bid:pr.ask;
+      const upl = (p.dir==="BUY"?(cur-p.entry):(p.entry-cur))*meta(p.sym).perPoint*p.lots;
+      el.textContent = (upl>=0?"+":"")+fmt$(upl); el.className = "num "+plClass(upl);
+    });
+  });
+}
+document.addEventListener("click", e=>{
+  const s = e.target.closest("[data-stopcopier]");
+  if(s){ e.stopPropagation(); stopCopier(s.dataset.stopcopier); }
+});
 
 
 /* --- multi-account system: demo + live accounts, switchable --- */

@@ -1206,6 +1206,30 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .copy-status{ border-color:var(--green); }
 .copy-status b{ color:var(--green); }
 
+/* --- mirror copy (play-money copiers) --- */
+.mode-picks{ display:grid; gap:8px; margin:12px 0 4px; }
+.mode-pick{ text-align:left; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md);
+  padding:12px 14px; cursor:pointer; font:inherit; color:var(--text); display:grid; gap:4px; }
+.mode-pick span{ font-size:12.5px; color:var(--muted); line-height:1.5; }
+.mode-pick.sel{ border-color:var(--green); background:var(--green-soft); }
+.mode-pick.sel b:first-child{ color:var(--green); }
+.play-tag{ display:inline-block; font-size:10px; font-weight:800; letter-spacing:.07em; color:var(--green);
+  background:var(--green-soft); border-radius:6px; padding:3px 8px; text-transform:uppercase; white-space:nowrap; }
+.copier-note{ margin:2px 2px 12px; }
+.copier-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md);
+  padding:12px 14px; margin:0 0 10px; }
+.copier-head{ display:flex; align-items:center; gap:8px; }
+.copier-id{ flex:1; min-width:0; display:grid; }
+.copier-id b{ font-size:14px; } .copier-id .fine{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.copier-nums{ display:flex; align-items:center; gap:14px; margin-top:10px; }
+.copier-nums > div{ display:grid; gap:2px; } .copier-nums > div span{ font-size:11px; color:var(--faint); }
+.copier-nums > div b{ font-size:15px; }
+.copier-nums .danger-btn{ margin-left:auto; }
+.copier-pos{ margin-top:10px; border-top:1px dashed var(--border); padding-top:8px; display:grid; gap:6px; }
+.mc-pos{ display:flex; align-items:center; gap:8px; font-size:12.5px; }
+.mc-pos .dir{ font-weight:800; font-size:11px; } .mc-pos .dir.buy{ color:var(--green); } .mc-pos .dir.sell{ color:var(--red); }
+.mc-pos b{ font-size:12.5px; } .mc-pos .num:last-child{ margin-left:auto; }
+
 /* --- KYC --- */
 .kyc-btn{ justify-content:flex-start; gap:8px; }
 .kyc-status{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; background:var(--surface-2); color:var(--muted); white-space:nowrap; flex:none; }

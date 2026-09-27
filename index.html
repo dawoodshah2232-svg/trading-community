@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=47">
+<link rel="stylesheet" href="styles.css?v=48">
 </head>
 <body>
 
@@ -613,6 +613,11 @@
         <!-- ============ LEADERBOARD ============ -->
         <section class="screen" id="screen-leaderboard" aria-label="Leaderboard">
           <div class="page-head"><div><h2>Leaderboard</h2><span class="fine">Ranked by returns — demo</span></div></div>
+          <div class="ctabs" id="lbViewTabs" role="tablist" aria-label="Leaderboard view">
+            <button class="ctab active" data-lbtab="traders" role="tab">Traders</button>
+            <button class="ctab" data-lbtab="copiers" role="tab">Copiers · Play money</button>
+          </div>
+          <div id="lbTradersPane">
           <div class="period-pills" id="lbPeriodPills" role="tablist" aria-label="Ranking period">
             <button class="ppill active" data-lbperiod="30D" role="tab">30D</button>
             <button class="ppill" data-lbperiod="90D" role="tab">90D</button>
@@ -620,6 +625,11 @@
             <button class="ppill" data-lbperiod="ALL" role="tab">All</button>
           </div>
           <div id="leaderboardPageList"></div>
+          </div>
+          <div id="lbCopiersPane" hidden>
+            <p class="fine copier-note">Each copier mirrors one trader with <b>$10,000 virtual</b>. Every figure here is play money — no real funds, no broker involved.</p>
+            <div id="copierBoardList"></div>
+          </div>
         </section>
 
         <!-- ============ CLASSES ============ -->
@@ -764,11 +774,20 @@
     <div class="warn-ic">!</div>
     <h3>Copy this trader?</h3>
     <p class="modal-sub" id="copyWarnHost">@daudtradefx</p>
+    <div class="mode-picks" role="radiogroup" aria-label="Copy mode">
+      <button class="mode-pick sel" data-copymode="mirror" role="radio" aria-checked="true">
+        <b>🪞 Play-money copier</b>
+        <span>A <b>$10,000 virtual</b> account mirrors every entry &amp; exit. Ranked on the Copiers leaderboard. No broker needed.</span>
+      </button>
+      <button class="mode-pick" data-copymode="own" role="radio" aria-checked="false">
+        <b>📋 Mirror into my demo account</b>
+        <span>Host trades land directly in your <b class="copyWarnAcct">demo</b> account.</span>
+      </button>
+    </div>
     <div class="warn-body">
-      <p>Every trade the host takes will be <b>automatically mirrored</b> in your <b id="copyWarnAcct">Exness demo</b> account.</p>
+      <p id="copyModeDesc"></p>
       <ul>
-        <li>Host buys → you buy · host sells → you sell, instantly.</li>
-        <li>You choose your own lot size below.</li>
+        <li>Every figure is virtual play money — no real funds move.</li>
         <li>Trading involves risk — past results don't guarantee future returns.</li>
       </ul>
     </div>
@@ -945,6 +964,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=46"></script>
+<script src="app.js?v=47"></script>
 </body>
 </html>
