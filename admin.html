@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin · Trade.FlexSpot (demo)</title>
+<style>
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root{
+  --bg:#0B1220; --surface:#121A2B; --surface2:#182338; --border:#223052;
+  --text:#EAF0FA; --muted:#8FA1C2; --faint:#5B6B8C;
+  --brand:#2F80FF; --green:#22C55E; --red:#F23645; --gold:#F5A623;
+  --r:14px;
+}
+html,body{ margin:0; padding:0; }
+body{
+  font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background:var(--bg); color:var(--text); min-height:100vh; padding:0 0 60px;
+  -webkit-font-smoothing:antialiased;
+}
+/* ---------- password lock ---------- */
+.adm-lock{ position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(1200px 600px at 50% -10%, #16233F 0%, var(--bg) 60%); padding:20px; }
+.adm-lock[hidden]{ display:none; }
+.adm-lock-card{ width:100%; max-width:340px; background:var(--surface); border:1px solid var(--border);
+  border-radius:20px; padding:28px 24px; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.5); }
+.adm-lock-card h2{ margin:14px 0 6px; font-size:20px; letter-spacing:-.01em; }
+.adm-lock-sub{ color:var(--muted); font-size:13.5px; margin:0 0 18px; }
+.field{ width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  border-radius:12px; padding:12px 14px; font:inherit; font-size:15px; outline:none; }
+.field:focus{ border-color:var(--brand); }
+textarea.field{ min-height:88px; resize:vertical; }
+select.field{ appearance:none; }
+label.fld{ display:block; margin:10px 0; text-align:left; }
+label.fld > span{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+.primary-btn{ display:block; width:100%; background:linear-gradient(135deg,#2F80FF,#1B5FD6); color:#fff; border:0;
+  border-radius:12px; padding:13px; font:inherit; font-size:15px; font-weight:800; cursor:pointer; margin-top:6px; }
+.primary-btn:active{ transform:scale(.98); }
+.adm-lock-err{ color:var(--red); font-size:13px; margin:10px 0 0; }
+.logo-mark{ width:52px; height:52px; margin:0 auto; }
+/* ---------- shell ---------- */
+.adm-wrap{ max-width:720px; margin:0 auto; padding:18px 14px 0; }
+.adm-head{ display:flex; align-items:center; gap:12px; margin:6px 2px 14px; }
+.adm-head h1{ font-size:21px; margin:0; letter-spacing:-.01em; }
+.demo-tag{ font-size:11px; font-weight:800; background:rgba(245,166,35,.16); color:var(--gold);
+  border:1px solid rgba(245,166,35,.4); padding:3px 9px; border-radius:99px; letter-spacing:.04em; }
+.adm-head .sp{ flex:1; }
+.link-btn{ color:var(--brand); font-size:13.5px; font-weight:700; text-decoration:none; }
+.adm-note{ background:rgba(47,128,255,.08); border:1px solid rgba(47,128,255,.3); color:#BFD6FF;
+  font-size:12.5px; line-height:1.55; border-radius:var(--r); padding:11px 13px; margin:0 2px 14px; }
+.stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+.stat{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:12px 10px; text-align:center; }
+.stat b{ display:block; font-size:19px; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+.stat span{ font-size:11px; color:var(--muted); font-weight:600; }
+.card{ background:var(--surface); border:1px solid var(--border); border-radius:18px; margin-bottom:12px; overflow:hidden; }
+.card > summary{ list-style:none; cursor:pointer; padding:15px 16px; display:flex; align-items:center; gap:10px; font-weight:800; font-size:15.5px; }
+.card > summary::-webkit-details-marker{ display:none; }
+.card > summary .chev{ margin-left:auto; color:var(--faint); transition:transform .2s; }
+.card[open] > summary .chev{ transform:rotate(90deg); }
+.card .body{ padding:2px 16px 16px; border-top:1px solid var(--border); }
+.row{ display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); }
+.row:last-child{ border-bottom:0; }
+.row .tx{ flex:1; min-width:0; }
+.row .tx b{ display:block; font-size:14px; }
+.row .tx span{ font-size:12px; color:var(--muted); display:block; margin-top:1px; }
+.btn{ border:0; border-radius:10px; padding:8px 13px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; flex-shrink:0; }
+.btn-blue{ background:rgba(47,128,255,.16); color:#7FB2FF; border:1px solid rgba(47,128,255,.4); }
+.btn-red{ background:rgba(242,54,69,.12); color:#FF8A94; border:1px solid rgba(242,54,69,.4); }
+.btn-green{ background:rgba(34,197,94,.14); color:#5FE08F; border:1px solid rgba(34,197,94,.4); }
+.btn-ghost{ background:transparent; color:var(--muted); border:1px solid var(--border); }
+.form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
+.hidden-tag{ font-size:10.5px; font-weight:800; color:var(--gold); border:1px solid var(--gold); border-radius:99px; padding:2px 8px; }
+.kv{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
+.kv:last-child{ border-bottom:0; }
+.kv span{ color:var(--muted); } .kv b{ font-variant-numeric:tabular-nums; text-align:right; }
+.toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(8px); background:#101828; color:#fff;
+  border:1px solid rgba(255,255,255,.14); border-radius:99px; padding:11px 20px; font-size:13.5px; font-weight:700;
+  opacity:0; pointer-events:none; transition:all .25s; z-index:200; max-width:92vw; text-align:center; }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+.mini{ font-size:12px; color:var(--faint); line-height:1.55; margin:8px 0 0; }
+.pill-live{ font-size:11px; font-weight:800; color:var(--green); }
+</style>
+</head>
+<body>
+
+<!-- password gate : same demo password as the app (223219) -->
+<div class="adm-lock" id="admLock" hidden>
+  <div class="adm-lock-card">
+    <div class="logo-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="alg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#22C55E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#alg)"/><path d="M11 27v-7M11 15v-5M8.5 22.5h5M8.5 17h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M20 29V19M20 13V9M17.5 23.5h5M17.5 15h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M26.5 27.5l8-8M26.5 21h8v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h2>Admin Panel</h2>
+    <p class="adm-lock-sub">Trade.FlexSpot demo admin — enter the password.</p>
+    <input type="password" id="admPass" class="field" placeholder="Password" autocomplete="off" inputmode="numeric">
+    <button class="primary-btn" id="admPassGo">Enter</button>
+    <p class="adm-lock-err" id="admPassErr" hidden>Wrong password — try again.</p>
+  </div>
+</div>
+
+<div class="adm-wrap" id="admApp" hidden>
+  <div class="adm-head">
+    <h1>Admin</h1><span class="demo-tag">DEMO</span><span class="sp"></span>
+    <a class="link-btn" href="index.html">Open app →</a>
+  </div>
+  <p class="adm-note">📱 Changes you make here apply <b>on this device only</b> (they're stored in this browser's demo storage and the app reads them instantly). Real multi-user sync for all users needs the server backend — that's the recommended next step.</p>
+
+  <div class="stat-grid" id="statGrid"></div>
+
+  <details class="card" open>
+    <summary>📢 Announcements <span class="chev">›</span></summary>
+    <div class="body">
+      <div id="annList"></div>
+      <label class="fld"><span>Tag</span><input class="field" id="annTag" placeholder="Contest / Analysis / Update"></label>
+      <label class="fld"><span>Message</span><textarea class="field" id="annBody" placeholder="Write the announcement…"></textarea></label>
+      <button class="primary-btn" id="annAdd">Publish announcement</button>
+      <p class="mini">Published posts appear pinned at the top of the app's Community screen.</p>
+    </div>
+  </details>
+
+  <details class="card">
+    <summary>👥 Traders <span class="chev">›</span></summary>
+    <div class="body">
+      <div id="traderList"></div>
+      <div id="traderForm" hidden>
+        <input type="hidden" id="trId">
+        <div class="form-grid">
+          <label class="fld"><span>Name</span><input class="field" id="trName"></label>
+          <label class="fld"><span>Handle</span><input class="field" id="trHandle"></label>
+        </div>
+        <label class="fld"><span>Bio</span><input class="field" id="trBio"></label>
+        <div class="form-grid">
+          <label class="fld"><span>Return %</span><input class="field" id="trRet" inputmode="decimal"></label>
+          <label class="fld"><span>Followers</span><input class="field" id="trFollowers" inputmode="numeric"></label>
+          <label class="fld"><span>Win rate %</span><input class="field" id="trWin" inputmode="numeric"></label>
+          <label class="fld"><span>Total P/L $</span><input class="field" id="trPl" inputmode="decimal"></label>
+        </div>
+        <label class="fld"><span>Live now?</span>
+          <select class="field" id="trLive"><option value="0">No</option><option value="1">Yes — live</option></select>
+        </label>
+        <button class="primary-btn" id="trSave">Save trader</button>
+        <button class="btn btn-ghost" id="trCancel" style="width:100%;margin-top:8px">Cancel</button>
+      </div>
+      <button class="btn btn-blue" id="trAddNew" style="margin-top:10px">+ Add new trader</button>
+      <p class="mini">Edits apply to the app's Traders, Community, Leaderboard and Home lists on this device.</p>
+    </div>
+  </details>
+
+  <details class="card">
+    <summary>🎓 Classes <span class="chev">›</span></summary>
+    <div class="body">
+      <div id="courseList"></div>
+      <div id="courseForm" hidden>
+        <input type="hidden" id="cId">
+        <label class="fld"><span>Title</span><input class="field" id="cTitle"></label>
+        <label class="fld"><span>Subtitle</span><input class="field" id="cSub" placeholder="6 lessons · English"></label>
+        <div class="form-grid">
+          <label class="fld"><span>Price $ (0 = free)</span><input class="field" id="cPrice" inputmode="decimal"></label>
+          <label class="fld"><span>Emoji icon</span><input class="field" id="cEmoji" placeholder="📈"></label>
+        </div>
+        <label class="fld"><span>Description</span><textarea class="field" id="cDesc"></textarea></label>
+        <button class="primary-btn" id="cSave">Save course</button>
+        <button class="btn btn-ghost" id="cCancel" style="width:100%;margin-top:8px">Cancel</button>
+      </div>
+      <button class="btn btn-blue" id="cAddNew" style="margin-top:10px">+ Add new course</button>
+    </div>
+  </details>
+
+  <details class="card">
+    <summary>📅 Scheduled lives <span class="chev">›</span></summary>
+    <div class="body">
+      <div id="schedList"></div>
+      <label class="fld"><span>Title</span><input class="field" id="scTitle" placeholder="London open scalps"></label>
+      <div class="form-grid">
+        <label class="fld"><span>Host</span><input class="field" id="scHost" placeholder="Ali Khan"></label>
+        <label class="fld"><span>Date &amp; time</span><input class="field" id="scAt" type="datetime-local"></label>
+      </div>
+      <button class="primary-btn" id="scAdd">Schedule live</button>
+    </div>
+  </details>
+
+  <details class="card">
+    <summary>🏆 Weekly contest <span class="chev">›</span></summary>
+    <div class="body">
+      <label class="fld"><span>Contest subtitle / prize line</span>
+        <input class="field" id="contestPrize" placeholder="Demo P/L this week · prizes announced soon">
+      </label>
+      <button class="primary-btn" id="contestSave">Save</button>
+      <p class="mini">Shown under "Weekly Demo Contest" on the app's Leaderboard.</p>
+    </div>
+  </details>
+
+  <details class="card">
+    <summary>🔗 Referrals <span class="chev">›</span></summary>
+    <div class="body" id="refBody"></div>
+  </details>
+
+  <details class="card">
+    <summary>📱 Demo user (this device) <span class="chev">›</span></summary>
+    <div class="body" id="userBody"></div>
+  </details>
+
+  <details class="card">
+    <summary>🗑 Danger zone <span class="chev">›</span></summary>
+    <div class="body">
+      <p class="mini" style="margin-top:0">Clears ALL demo data on this device (trades, overrides, enrollments, everything) and reloads.</p>
+      <button class="btn btn-red" id="resetAll" style="width:100%;padding:12px">Reset all demo data</button>
+    </div>
+  </details>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============ gate : same demo password as the app ============ */
+document.addEventListener("DOMContentLoaded",function(){
+  var PASS="223219", KEY="tc_demo_pass_v1";
+  function open(){ document.getElementById("admLock").hidden=true; document.getElementById("admApp").hidden=false; init(); }
+  try{ if(sessionStorage.getItem(KEY)===PASS){ open(); return; } }catch(e){}
+  document.getElementById("admLock").hidden=false;
+  function go(){
+    var v=(document.getElementById("admPass").value||"").trim();
+    if(v===PASS){ try{sessionStorage.setItem(KEY,PASS);}catch(e){} open(); }
+    else{ document.getElementById("admPassErr").hidden=false; document.getElementById("admPass").value=""; document.getElementById("admPass").focus(); }
+  }
+  document.getElementById("admPassGo").addEventListener("click",go);
+  document.getElementById("admPass").addEventListener("keydown",function(e){ if(e.key==="Enter") go(); });
+  setTimeout(function(){ var i=document.getElementById("admPass"); if(i) i.focus(); },300);
+});
+
+/* ============ helpers ============ */
+function lsGet(k,fb){ try{ var v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?fb:v; }catch(e){ return fb; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+var toastT=null;
+function toast(m){ var t=document.getElementById("toast"); t.textContent=m; t.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(function(){ t.classList.remove("show"); },2200); }
+
+/* default traders mirror app.js TRADERS (compact) */
+var DEF_TRADERS=[
+  {id:"daud",name:"Ali Khan",handle:"@alikhantfx",bio:"XAUUSD scalper · London session · 8 yrs trading",ret:284.5,followers:48200,win:67,pl:4210,live:true},
+  {id:"sara",name:"Sara Malik",handle:"@saramalik",bio:"FX swing trader · fundamentals + technicals",ret:187.2,followers:21700,win:61,pl:2980,live:false},
+  {id:"arjun",name:"CryptoNadeem",handle:"@cryptonadeem",bio:"Crypto + indices · risk-first, always",ret:142.1,followers:15300,win:58,pl:2140,live:false},
+  {id:"lena",name:"Nadia Trades",handle:"@nadiatrades",bio:"Gold & silver specialist · patient entries",ret:118.6,followers:9800,win:64,pl:1875,live:false},
+  {id:"hassan",name:"FX_Hassan",handle:"@fx_hassan",bio:"Intraday FX · London & New York",ret:96.4,followers:9300,win:59,pl:1620,live:false},
+  {id:"zeeshan",name:"Zeeshan",handle:"@zeeshanfx",bio:"Scalper · gold & indices",ret:84.2,followers:4100,win:57,pl:1180,live:false},
+  {id:"baba",name:"ForexBaba",handle:"@forexbaba",bio:"Swing trader · majors & crosses",ret:72.1,followers:6900,win:55,pl:940,live:false},
+  {id:"malik",name:"Malik FX",handle:"@malikfx",bio:"Crypto scalps · BTC & ETH",ret:64.3,followers:3800,win:54,pl:720,live:false}
+];
+var DEF_COURSES=[
+  {id:"c1",title:"Price Action Mastery",sub:"6 lessons · English",price:0,emoji:"📈",desc:"Read raw price like a pro: market structure, liquidity grabs and entries without a single indicator."},
+  {id:"c2",title:"Gold Scalping — Private Room",sub:"6 lessons · private",price:5,emoji:"🥇",desc:"My private scalping room: exact gold entries, live session recordings, and every strategy PDF I trade from."},
+  {id:"c3",title:"Risk & Psychology",sub:"5 lessons · English",price:0,emoji:"🧠",desc:"Position sizing, drawdown rules and the mindset that keeps traders alive long enough to win."}
+];
+var GRADS=[["#2F80FF","#1B5FD6"],["#B678F0","#5E2B8A"],["#5B8DEF","#2B4A8A"],["#22C55E","#166534"],["#F0A05B","#8A4A1B"],["#5BC8F0","#1B5F8A"],["#B6F05B","#4A8A1B"],["#F05B8A","#8A1B4A"]];
+
+/* effective trader list = defaults + adds, with edits applied, minus hidden */
+function effTraders(){
+  var list=DEF_TRADERS.map(function(t){ return Object.assign({},t); });
+  var edit=lsGet("tc_traders_edit_v1",[]), add=lsGet("tc_traders_add_v1",[]), hide=lsGet("tc_traders_hide_v1",[]);
+  if(Array.isArray(edit)) edit.forEach(function(o){ var t=list.find(function(x){return x.id===o.id;}); if(t) Object.assign(t,o); });
+  if(Array.isArray(add)) add.forEach(function(o){ if(o&&o.id&&!list.find(function(x){return x.id===o.id;})) list.push(Object.assign({},o)); });
+  if(Array.isArray(hide)) list=list.filter(function(t){ return hide.indexOf(t.id)<0; });
+  return {list:list, hidden:hide};
+}
+function effCourses(){
+  var list=DEF_COURSES.map(function(t){ return Object.assign({},t); });
+  var edit=lsGet("tc_courses_edit_v1",[]), add=lsGet("tc_courses_add_v1",[]), hide=lsGet("tc_courses_hide_v1",[]);
+  if(Array.isArray(edit)) edit.forEach(function(o){ var c=list.find(function(x){return x.id===o.id;}); if(c) Object.assign(c,o); });
+  if(Array.isArray(add)) add.forEach(function(o){ if(o&&o.id&&!list.find(function(x){return x.id===o.id;})) list.push(Object.assign({},o)); });
+  if(Array.isArray(hide)) list=list.filter(function(c){ return hide.indexOf(c.id)<0; });
+  return {list:list, hidden:hide};
+}
+function getAnns(){
+  var a=lsGet("tc_announce_v1",null);
+  if(Array.isArray(a)&&a.length) return {list:a, custom:true};
+  return {list:[
+    {id:"ann1",tag:"Contest",time:"2h",body:"Welcome to the Trading Community demo! Our first Weekly Demo Contest is now live — climb the leaderboard with your demo P/L. Prizes will be announced soon. Everything here is simulated — good luck, traders!"},
+    {id:"ann2",tag:"Analysis",time:"5h",body:"NFP Friday: expecting a hot print on the headline number, but watch wage growth — a soft print there could spark a fast reversal in gold. My plan: wait for the spike, fade the exhaustion. Full breakdown in the live session. Not financial advice — demo community."}
+  ], custom:false};
+}
+function fmt$(n){ return (n<0?"−$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+/* ============ dashboard ============ */
+function init(){
+  renderStats(); renderAnns(); renderTraders(); renderCourses(); renderSched(); renderContestCfg(); renderRefs(); renderUser();
+
+  /* announcements */
+  document.getElementById("annAdd").addEventListener("click",function(){
+    var tag=document.getElementById("annTag").value.trim()||"Update";
+    var body=document.getElementById("annBody").value.trim();
+    if(!body){ toast("Write the message first"); return; }
+    var cur=getAnns();
+    var list=cur.custom?cur.list.slice():[];
+    list.unshift({id:"a"+Date.now(),tag:tag,time:"now",body:body});
+    lsSet("tc_announce_v1",list);
+    document.getElementById("annTag").value=""; document.getElementById("annBody").value="";
+    renderAnns(); renderStats(); toast("Announcement published — live in the app");
+  });
+
+  /* traders */
+  document.getElementById("trAddNew").addEventListener("click",function(){ openTraderForm(null); });
+  document.getElementById("trCancel").addEventListener("click",function(){ document.getElementById("traderForm").hidden=true; });
+  document.getElementById("trSave").addEventListener("click",saveTrader);
+
+  /* courses */
+  document.getElementById("cAddNew").addEventListener("click",function(){ openCourseForm(null); });
+  document.getElementById("cCancel").addEventListener("click",function(){ document.getElementById("courseForm").hidden=true; });
+  document.getElementById("cSave").addEventListener("click",saveCourse);
+
+  /* scheduled lives */
+  document.getElementById("scAdd").addEventListener("click",function(){
+    var title=document.getElementById("scTitle").value.trim(), host=document.getElementById("scHost").value.trim()||"You",
+        at=document.getElementById("scAt").value;
+    if(!title||!at){ toast("Title and date/time required"); return; }
+    var a=lsGet("tc_scheduled_v1",[])||[];
+    a.push({id:"sc"+Date.now(),title:title,host:host,at:new Date(at).toISOString(),ini:host.split(/\s+/).map(function(w){return w[0];}).join("").slice(0,2).toUpperCase(),g:["#2F80FF","#1B5FD6"]});
+    lsSet("tc_scheduled_v1",a);
+    document.getElementById("scTitle").value=""; document.getElementById("scHost").value=""; document.getElementById("scAt").value="";
+    renderSched(); toast("Live scheduled — shows in the app");
+  });
+
+  /* contest */
+  document.getElementById("contestSave").addEventListener("click",function(){
+    var p=document.getElementById("contestPrize").value.trim();
+    lsSet("tc_contest_v1",{prize:p||"Demo P/L this week · prizes announced soon"});
+    toast("Contest line saved");
+  });
+
+  /* reset */
+  document.getElementById("resetAll").addEventListener("click",function(){
+    if(!confirm("Reset ALL demo data on this device?")) return;
+    try{ var ks=[]; for(var i=0;i<localStorage.length;i++) ks.push(localStorage.key(i));
+      ks.forEach(function(k){ if(k&&k.indexOf("tc_")===0) localStorage.removeItem(k); });
+    }catch(e){}
+    toast("All demo data cleared"); setTimeout(function(){ location.reload(); },800);
+  });
+}
+
+function renderStats(){
+  var tr=lsGet("tc_trades_v1",null), anns=getAnns(), trs=effTraders(), crs=effCourses(),
+      enr=lsGet("tc_enroll_v1",{}), ref=lsGet("tc_ref_v1",{});
+  var bal=tr&&typeof tr.balance==="number"?tr.balance:10000;
+  var open=tr&&tr.open?tr.open.length:0;
+  var inv=ref&&ref.invited?ref.invited.length:0;
+  var cells=[
+    [fmt$(bal),"Demo balance"],[open,"Open trades"],[anns.list.length,"Announcements"],
+    [trs.list.length,"Traders"],[Object.keys(enr||{}).length,"Enrollments"],[inv,"Referrals"]
+  ];
+  document.getElementById("statGrid").innerHTML=cells.map(function(c){
+    return '<div class="stat"><b>'+esc(c[0])+'</b><span>'+c[1]+'</span></div>';
+  }).join("");
+}
+
+function renderAnns(){
+  var cur=getAnns();
+  var el=document.getElementById("annList");
+  el.innerHTML=(cur.custom?"":'<p class="mini" style="margin-top:0">Showing defaults — publish one to take over this feed.</p>')+
+    cur.list.map(function(p){
+      return '<div class="row"><div class="tx"><b>'+esc(p.tag)+' <span style="color:var(--faint)">· '+esc(p.time)+'</span></b>'+
+      '<span>'+esc(p.body).slice(0,90)+(p.body.length>90?"…":"")+'</span></div>'+
+      '<button class="btn btn-red" data-anndel="'+p.id+'">Delete</button></div>';
+    }).join("")+
+    (cur.custom?'<button class="btn btn-ghost" id="annReset" style="margin-top:8px">Restore defaults</button>':"");
+  el.querySelectorAll("[data-anndel]").forEach(function(b){ b.addEventListener("click",function(){
+    var list=cur.list.filter(function(p){ return p.id!==b.getAttribute("data-anndel"); });
+    lsSet("tc_announce_v1",list); renderAnns(); renderStats(); toast("Deleted");
+  });});
+  var r=document.getElementById("annReset");
+  if(r) r.addEventListener("click",function(){ localStorage.removeItem("tc_announce_v1"); renderAnns(); renderStats(); toast("Defaults restored"); });
+}
+
+function renderTraders(){
+  var eff=effTraders(), el=document.getElementById("traderList");
+  el.innerHTML=eff.list.map(function(t){
+    var hid=eff.hidden.indexOf(t.id)>=0;
+    return '<div class="row"><div class="tx"><b>'+esc(t.name)+' <span style="color:var(--faint)">'+esc(t.handle)+'</span>'+
+      (t.live?' <span class="pill-live">● LIVE</span>':"")+(hid?' <span class="hidden-tag">HIDDEN</span>':"")+'</b>'+
+      '<span>+'+t.ret+'% · '+(t.followers>=1000?(t.followers/1000).toFixed(1)+"k":t.followers)+' followers</span></div>'+
+      '<button class="btn btn-blue" data-tredit="'+t.id+'">Edit</button>'+
+      (hid?'<button class="btn btn-green" data-trshow="'+t.id+'">Show</button>'
+          :'<button class="btn btn-ghost" data-trhide="'+t.id+'">Hide</button>')+'</div>';
+  }).join("");
+  el.querySelectorAll("[data-tredit]").forEach(function(b){ b.addEventListener("click",function(){ openTraderForm(b.getAttribute("data-tredit")); }); });
+  el.querySelectorAll("[data-trhide]").forEach(function(b){ b.addEventListener("click",function(){
+    var h=lsGet("tc_traders_hide_v1",[]); h.push(b.getAttribute("data-trhide")); lsSet("tc_traders_hide_v1",h);
+    renderTraders(); renderStats(); toast("Trader hidden from the app");
+  });});
+  el.querySelectorAll("[data-trshow]").forEach(function(b){ b.addEventListener("click",function(){
+    var id=b.getAttribute("data-trshow"), h=lsGet("tc_traders_hide_v1",[]).filter(function(x){return x!==id;});
+    lsSet("tc_traders_hide_v1",h); renderTraders(); renderStats(); toast("Trader visible again");
+  });});
+}
+function openTraderForm(id){
+  var t=id?effTraders().list.find(function(x){return x.id===id;}):null;
+  document.getElementById("trId").value=id||"";
+  document.getElementById("trName").value=t?t.name:"";
+  document.getElementById("trHandle").value=t?t.handle:"@";
+  document.getElementById("trBio").value=t?t.bio:"";
+  document.getElementById("trRet").value=t?t.ret:"";
+  document.getElementById("trFollowers").value=t?t.followers:"";
+  document.getElementById("trWin").value=t?t.win:"";
+  document.getElementById("trPl").value=t?t.pl:"";
+  document.getElementById("trLive").value=t&&t.live?"1":"0";
+  document.getElementById("traderForm").hidden=false;
+  document.getElementById("traderForm").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function saveTrader(){
+  var id=document.getElementById("trId").value;
+  var o={ name:document.getElementById("trName").value.trim(),
+    handle:document.getElementById("trHandle").value.trim(),
+    bio:document.getElementById("trBio").value.trim(),
+    ret:parseFloat(document.getElementById("trRet").value)||0,
+    followers:parseInt(document.getElementById("trFollowers").value,10)||0,
+    win:parseInt(document.getElementById("trWin").value,10)||50,
+    pl:parseFloat(document.getElementById("trPl").value)||0,
+    live:document.getElementById("trLive").value==="1" };
+  if(!o.name){ toast("Name required"); return; }
+  if(id){
+    o.id=id;
+    var e=lsGet("tc_traders_edit_v1",[]).filter(function(x){return x.id!==id;});
+    e.push(o); lsSet("tc_traders_edit_v1",e);
+    toast("Trader updated in the app");
+  }else{
+    o.id="tr"+Date.now();
+    o.ini=o.name.split(/\s+/).map(function(w){return w[0];}).join("").slice(0,2).toUpperCase();
+    o.g=GRADS[Math.floor(Math.random()*GRADS.length)]; o.pic=""; o.following=false; o.followingN=0;
+    o.trades=[];
+    var a=lsGet("tc_traders_add_v1",[]); a.push(o); lsSet("tc_traders_add_v1",a);
+    toast("Trader added to the app");
+  }
+  document.getElementById("traderForm").hidden=true; renderTraders(); renderStats();
+}
+
+function renderCourses(){
+  var eff=effCourses(), el=document.getElementById("courseList");
+  el.innerHTML=eff.list.map(function(c){
+    var hid=eff.hidden.indexOf(c.id)>=0;
+    return '<div class="row"><div class="tx"><b>'+esc(c.emoji||"🎓")+" "+esc(c.title)+
+      (hid?' <span class="hidden-tag">HIDDEN</span>':"")+'</b>'+
+      '<span>'+esc(c.sub||"")+(c.price?" · $"+c.price:" · free")+'</span></div>'+
+      '<button class="btn btn-blue" data-cedit="'+c.id+'">Edit</button>'+
+      (hid?'<button class="btn btn-green" data-cshow="'+c.id+'">Show</button>'
+          :'<button class="btn btn-ghost" data-chide="'+c.id+'">Hide</button>')+'</div>';
+  }).join("");
+  el.querySelectorAll("[data-cedit]").forEach(function(b){ b.addEventListener("click",function(){ openCourseForm(b.getAttribute("data-cedit")); }); });
+  el.querySelectorAll("[data-chide]").forEach(function(b){ b.addEventListener("click",function(){
+    var h=lsGet("tc_courses_hide_v1",[]); h.push(b.getAttribute("data-chide")); lsSet("tc_courses_hide_v1",h);
+    renderCourses(); renderStats(); toast("Course hidden from the app");
+  });});
+  el.querySelectorAll("[data-cshow]").forEach(function(b){ b.addEventListener("click",function(){
+    var id=b.getAttribute("data-cshow"), h=lsGet("tc_courses_hide_v1",[]).filter(function(x){return x!==id;});
+    lsSet("tc_courses_hide_v1",h); renderCourses(); renderStats(); toast("Course visible again");
+  });});
+}
+function openCourseForm(id){
+  var c=id?effCourses().list.find(function(x){return x.id===id;}):null;
+  document.getElementById("cId").value=id||"";
+  document.getElementById("cTitle").value=c?c.title:"";
+  document.getElementById("cSub").value=c?c.sub:"";
+  document.getElementById("cPrice").value=c?c.price:"";
+  document.getElementById("cEmoji").value=c?c.emoji:"";
+  document.getElementById("cDesc").value=c?c.desc:"";
+  document.getElementById("courseForm").hidden=false;
+  document.getElementById("courseForm").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function saveCourse(){
+  var id=document.getElementById("cId").value;
+  var o={ title:document.getElementById("cTitle").value.trim(),
+    sub:document.getElementById("cSub").value.trim(),
+    price:parseFloat(document.getElementById("cPrice").value)||0,
+    emoji:document.getElementById("cEmoji").value.trim()||"🎓",
+    desc:document.getElementById("cDesc").value.trim() };
+  if(!o.title){ toast("Title required"); return; }
+  if(id){
+    o.id=id;
+    var e=lsGet("tc_courses_edit_v1",[]).filter(function(x){return x.id!==id;});
+    e.push(o); lsSet("tc_courses_edit_v1",e);
+    toast("Course updated in the app");
+  }else{
+    o.id="c"+Date.now(); o.lessons=[]; o.materials=[]; o.strategies=[]; o.trades=[]; o.edu="daud";
+    o.g=GRADS[Math.floor(Math.random()*GRADS.length)];
+    var a=lsGet("tc_courses_add_v1",[]); a.push(o); lsSet("tc_courses_add_v1",a);
+    toast("Course added to the app");
+  }
+  document.getElementById("courseForm").hidden=true; renderCourses(); renderStats();
+}
+
+function renderSched(){
+  var a=lsGet("tc_scheduled_v1",[])||[], el=document.getElementById("schedList");
+  if(!a.length){ el.innerHTML='<p class="mini">No upcoming lives scheduled.</p>'; return; }
+  el.innerHTML=a.slice().sort(function(x,y){ return new Date(x.at)-new Date(y.at); }).map(function(e){
+    var d=new Date(e.at);
+    return '<div class="row"><div class="tx"><b>'+esc(e.title)+'</b>'+
+      '<span>'+esc(e.host)+' · '+d.toLocaleString()+'</span></div>'+
+      '<button class="btn btn-red" data-scdel="'+e.id+'">✕</button></div>';
+  }).join("");
+  el.querySelectorAll("[data-scdel]").forEach(function(b){ b.addEventListener("click",function(){
+    var id=b.getAttribute("data-scdel");
+    lsSet("tc_scheduled_v1",(lsGet("tc_scheduled_v1",[])||[]).filter(function(e){return e.id!==id;}));
+    renderSched(); toast("Removed");
+  });});
+}
+
+function renderContestCfg(){
+  var c=lsGet("tc_contest_v1",null);
+  document.getElementById("contestPrize").value=(c&&c.prize)||"Demo P/L this week · prizes announced soon";
+}
+
+function renderRefs(){
+  var r=lsGet("tc_ref_v1",null), el=document.getElementById("refBody");
+  var inv=(r&&r.invited)||[];
+  el.innerHTML='<div class="kv"><span>Your referral code</span><b>'+esc((r&&r.code)||"—")+'</b></div>'+
+    '<div class="kv"><span>Invited (demo)</span><b>'+inv.length+'</b></div>'+
+    '<div class="kv"><span>Bonus earned (demo)</span><b>'+fmt$((r&&r.bonus)||0)+'</b></div>'+
+    (inv.length?inv.map(function(i){return '<div class="row"><div class="tx"><b>'+esc(i.name||i.code||"invite")+'</b><span>'+esc(i.at||"")+'</span></div></div>';}).join(""):"")+
+    '<p class="mini">Referral data is per-device demo data.</p>';
+}
+
+function renderUser(){
+  var tr=lsGet("tc_trades_v1",null), enr=lsGet("tc_enroll_v1",{}),
+      st=lsGet("tc_streak_v1",null), ach=lsGet("tc_achieve_v1",{}),
+      bal=tr&&typeof tr.balance==="number"?tr.balance:10000,
+      open=tr&&tr.open?tr.open.length:0, hist=tr&&tr.history?tr.history.length:0;
+  document.getElementById("userBody").innerHTML=
+    '<div class="kv"><span>Demo balance</span><b>'+fmt$(bal)+'</b></div>'+
+    '<div class="kv"><span>Open trades</span><b>'+open+'</b></div>'+
+    '<div class="kv"><span>Closed trades</span><b>'+hist+'</b></div>'+
+    '<div class="kv"><span>Class enrollments</span><b>'+Object.keys(enr||{}).length+'</b></div>'+
+    '<div class="kv"><span>Login streak</span><b>'+((st&&st.n)||0)+' days</b></div>'+
+    '<div class="kv"><span>Achievements</span><b>'+Object.keys(ach||{}).length+'</b></div>'+
+    '<p class="mini">This is the demo profile stored in this browser. There is no server user list yet — that comes with the backend.</p>';
+}
+</script>
+</body>
+</html>

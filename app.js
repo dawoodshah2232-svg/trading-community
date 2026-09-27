@@ -2391,6 +2391,15 @@ const TRADERS = [
     win:54, pl:720, live:false,
     trades:[ {s:"BTCUSD",d:"BUY",pl:88.40},{s:"ETHUSD",d:"SELL",pl:32.10},{s:"BTCUSD",d:"SELL",pl:-24.60} ] },
 ];
+/* ---- ADMIN OVERRIDES (admin.html writes these keys; applied first, before any render) ---- */
+try{
+  const tEdit = JSON.parse(localStorage.getItem("tc_traders_edit_v1")||"[]");
+  if(Array.isArray(tEdit)) tEdit.forEach(o=>{ const t = TRADERS.find(x=>x.id===o.id); if(t) Object.assign(t, o); });
+  const tAdd = JSON.parse(localStorage.getItem("tc_traders_add_v1")||"[]");
+  if(Array.isArray(tAdd)) tAdd.forEach(o=>{ if(o && o.id && !TRADERS.find(x=>x.id===o.id)) TRADERS.push(o); });
+  const tHide = JSON.parse(localStorage.getItem("tc_traders_hide_v1")||"[]");
+  if(Array.isArray(tHide)) for(let i=TRADERS.length-1;i>=0;i--) if(tHide.indexOf(TRADERS[i].id)>=0) TRADERS.splice(i,1);
+}catch(e){}
 const fmtK = n => n>=1000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
 /* avatar with photo (falls back to initials if the photo fails) —
    the initial sits underneath; the photo absolutely covers it so it can never peek out */
@@ -2654,6 +2663,9 @@ function weeklyPL(t){
 }
 function renderContest(){
   const el = $("contestRows"); if(!el) return;
+  try{ const cfg = JSON.parse(localStorage.getItem("tc_contest_v1")||"null");
+    if(cfg && cfg.prize){ const s = $("contestSub"); if(s) s.textContent = cfg.prize; }
+  }catch(e){}
   const youT = TRADERS.find(t=>t.you) || { name:"You", ini:"AT", g:["#2F80FF","#1B5FD6"] };
   const rows = TRADERS.filter(t=>!t.you).map(t=>({ t, pl:weeklyPL(t), you:false }));
   rows.push({ t:youT, pl:Math.round(yourTodayPL()), you:true });
@@ -2674,15 +2686,21 @@ const OWNER_POSTS = [
   { id:"ann2", tag:"Analysis", time:"5h",
     body:"NFP Friday: expecting a hot print on the headline number, but watch wage growth — a soft print there could spark a fast reversal in gold. My plan: wait for the spike, fade the exhaustion. Full breakdown in the live session. Not financial advice — demo community." }
 ];
+function getOwnerPosts(){
+  /* admin.html writes tc_announce_v1 — checked first so owner posts update live on this device */
+  try{ const o = JSON.parse(localStorage.getItem("tc_announce_v1")||"null"); if(Array.isArray(o) && o.length) return o; }catch(e){}
+  return OWNER_POSTS;
+}
 function renderOwnerPosts(){
   const el = $("ownerAnnounce"); if(!el) return;
+  const posts = getOwnerPosts();
   el.innerHTML = '<div class="announce-head"><span>📌</span><b>Announcements</b><span class="demo-tag">Demo</span></div>' +
-    OWNER_POSTS.map(p=>
+    posts.map(p=>
       '<div class="card announce-card">'+
       '<div class="announce-top"><span class="owner-tag">Owner</span><span class="verified">✓</span>'+
-      '<span class="fine">'+esc(p.time)+' · '+esc(p.tag)+'</span></div>'+
+      '<span class="fine">'+esc(p.time||"now")+' · '+esc(p.tag||"Update")+'</span></div>'+
       '<p class="announce-body"></p></div>').join("");
-  el.querySelectorAll(".announce-body").forEach((b,i)=>{ b.textContent = OWNER_POSTS[i].body; });
+  el.querySelectorAll(".announce-body").forEach((b,i)=>{ b.textContent = posts[i].body||""; });
 }
 
 /* ---------------- COMMUNITY SCREEN ---------------- */
@@ -4101,6 +4119,15 @@ const COURSES = [
       { sym:"BTCUSD", side:"SELL", entry:"97,400", exit:"96,100", r:"+2.1R", when:"Wed", note:"Correlated risk checked first (no USD longs open)" }
     ] }
 ];
+/* ---- ADMIN OVERRIDES for classes (admin.html writes these keys; applied first) ---- */
+try{
+  const cEdit = JSON.parse(localStorage.getItem("tc_courses_edit_v1")||"[]");
+  if(Array.isArray(cEdit)) cEdit.forEach(o=>{ const c = COURSES.find(x=>x.id===o.id); if(c) Object.assign(c, o); });
+  const cAdd = JSON.parse(localStorage.getItem("tc_courses_add_v1")||"[]");
+  if(Array.isArray(cAdd)) cAdd.forEach(o=>{ if(o && o.id && !COURSES.find(x=>x.id===o.id)) COURSES.push(o); });
+  const cHide = JSON.parse(localStorage.getItem("tc_courses_hide_v1")||"[]");
+  if(Array.isArray(cHide)) for(let i=COURSES.length-1;i>=0;i--) if(cHide.indexOf(COURSES[i].id)>=0) COURSES.splice(i,1);
+}catch(e){}
 let courseProg = {};
 try{ courseProg = JSON.parse(localStorage.getItem("tc_prog_v1")||"{}"); }catch(e){ courseProg = {}; }
 function saveProg(){ try{ localStorage.setItem("tc_prog_v1", JSON.stringify(courseProg)); }catch(e){} }
