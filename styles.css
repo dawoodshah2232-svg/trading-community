@@ -2019,7 +2019,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 
 /* ---------- desktop live room ---------- */
 @media (min-width:1024px){
-  #screen-live{ display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:20px; align-items:start; padding:4px; }
+  #screen-live.active{ display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:20px; align-items:start; padding:4px; }
   #screen-live .lv-stage{ grid-column:1; grid-row:1; max-width:none; margin:0; }
   #screen-live .lv-video{ height:460px; border-radius:20px; margin:0; }
   #screen-live .lv-info{ padding:16px 4px 0; }
