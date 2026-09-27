@@ -5004,6 +5004,7 @@ $("epPhotoInput").addEventListener("change", e=>{
 
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
 function bootApp(){
+renderYouIdentity();
 loadTrades(); loadAlerts(); loadBrokers();
 injectIcons(); paintVersion();
 unlockAch("early"); bumpStreak(); renderAchievements();
@@ -5060,12 +5061,25 @@ function tcApplyProfile(p){
   var t = TRADERS.find(function(x){ return x.you; });
   if(t){ t.name = p.name; if(p.handle) t.handle = p.handle; if(p.ini) t.ini = p.ini; }
 }
+/* sync the saved identity into every "you" surface (profile, sidebar, header) */
+function renderYouIdentity(){
+  var you = TRADERS.find(function(t){ return t.you; }); if(!you) return;
+  var pn = $("profName"); if(pn) pn.textContent = you.name;
+  var ph = $("profHandle"); if(ph) ph.textContent = you.handle;
+  var pb = $("profBio"); if(pb) pb.textContent = you.bio || "—";
+  var sn = $("sideName"); if(sn) sn.textContent = you.name;
+  if(!you.photo && !you.pic){
+    ["profAvatar","avatarBtn","sideAvatar"].forEach(function(id){
+      var el = $(id); if(el && !el.querySelector("img")) el.textContent = you.ini;
+    });
+  }
+}
 (function(){
   var booted = false;
   function start(){ if(booted) return; booted = true; bootApp(); }
   var lock = document.getElementById("tcLock");
   var p = tcProfile();
-  if(p && p.name){ if(lock) lock.hidden = true; tcApplyProfile(p); start(); return; }
+  if(p && p.name){ if(lock) lock.hidden = true; tcApplyProfile(p); renderYouIdentity(); start(); return; }
   if(lock) lock.hidden = false;
   function go(){
     var v = (document.getElementById("tcName").value || "").trim().replace(/\s+/g, " ").slice(0, 40);
@@ -5075,6 +5089,9 @@ function tcApplyProfile(p){
     var handle = "@" + v.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 20);
     var prof = { name:v, handle:handle, ini:ini };
     tcSaveProfile(prof); tcApplyProfile(prof);
+    var t = TRADERS.find(function(x){ return x.you; });
+    if(t){ t.pic = null; t.photo = null; } /* fresh account: initials avatar, not the demo stock photo */
+    renderYouIdentity();
     if(lock) lock.hidden = true;
     start();
   }
