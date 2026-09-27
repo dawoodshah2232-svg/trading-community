@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=34">
+<link rel="stylesheet" href="styles.css?v=35">
 </head>
 <body>
 
@@ -15,16 +15,23 @@
 
     <!-- Desktop sidebar -->
     <aside class="sidebar">
-      <div class="side-brand"><div class="brand-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="blg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#22C55E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#blg1)"/><path d="M11 27v-7M11 15v-5M8.5 22.5h5M8.5 17h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M20 29V19M20 13V9M17.5 23.5h5M17.5 15h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M26.5 27.5l8-8M26.5 21h8v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Trading Community</b><span>Paper trading terminal</span></div></div>
+      <div class="side-brand"><div class="brand-logo"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="blg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#22C55E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#blg1)"/><path d="M11 27v-7M11 15v-5M8.5 22.5h5M8.5 17h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M20 29V19M20 13V9M17.5 23.5h5M17.5 15h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M26.5 27.5l8-8M26.5 21h8v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><b>Trade.FlexSpot</b><span>Trading community</span></div></div>
       <nav class="side-nav" id="sideNav" aria-label="Primary">
         <button class="snav active" data-tab="home"><span class="ic" data-icon="home"></span><span>Home</span></button>
         <button class="snav" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span><i class="tab-badge" id="posBadgeSide" hidden></i></button>
         <button class="snav" data-tab="live"><span class="ic" data-icon="live"></span><span>Live</span><i class="live-dot"></i></button>
         <button class="snav" data-tab="traders"><span class="ic" data-icon="community"></span><span>Traders</span></button>
+        <button class="snav" data-tab="reels"><span class="ic" data-icon="reel"></span><span>Reels</span></button>
+        <button class="snav" data-tab="ideas"><span class="ic" data-icon="bulb"></span><span>Trade Ideas</span></button>
+        <button class="snav" data-tab="leaderboard"><span class="ic" data-icon="trophy"></span><span>Leaderboard</span></button>
+        <button class="snav" data-tab="classes"><span class="ic" data-icon="grad"></span><span>Classes</span></button>
+        <button class="snav" data-tab="community"><span class="ic" data-icon="chat"></span><span>Community</span></button>
+        <button class="snav" data-tab="portfolio"><span class="ic" data-icon="wallet"></span><span>Portfolio</span></button>
+        <button class="snav" data-tab="brokers"><span class="ic" data-icon="bank"></span><span>Broker Accounts</span></button>
         <button class="snav" data-tab="profile"><span class="ic" data-icon="profile"></span><span>Profile</span></button>
+        <button class="snav" data-tab="settings"><span class="ic" data-icon="gear"></span><span>Settings</span></button>
       </nav>
       <div class="side-foot">
-        <button class="side-row" id="themeToggleSide"><span class="ic" data-icon="theme"></span><span>Appearance</span><b id="themeNameSide">Dark</b></button>
         <div class="side-user"><div class="avatar sm" id="sideAvatar">AT</div><div><b id="sideName">Alex Trader</b><span id="sideEmail">Demo account</span></div></div>
       </div>
     </aside>
@@ -38,6 +45,7 @@
           <div class="px num" id="hdrPrice">—</div>
           <div class="chg-pill num" id="hdrChg">—</div>
         </div>
+        <div class="appbar-search"><span class="ic sm" data-icon="search"></span><input id="globalSearch" placeholder="Search traders, symbols, ideas…" autocomplete="off" aria-label="Search"><div class="gsearch-drop" id="gsearchDrop" hidden></div></div>
         <div class="appbar-sp"></div>
         <button class="icon-btn" id="themeBtn" aria-label="Toggle theme"><span class="ic" data-icon="theme"></span></button>
         <button class="icon-btn" id="bellBtn" aria-label="Price alerts"><span class="ic" data-icon="bell"></span><i class="dot" id="alertDot" hidden></i></button>
@@ -48,27 +56,79 @@
 
         <!-- ============ HOME ============ -->
         <section class="screen active" id="screen-home" aria-label="Home">
-          <div class="home-top">
-            <div><h2 id="homeHello">Welcome back</h2><span class="fine">Live streams, reels &amp; trade ideas — one feed · demo</span></div>
-            <span class="demo-tag">Demo</span>
+          <div class="mh-search"><span class="ic sm" data-icon="search"></span><input id="homeSearch" placeholder="Search traders, symbols, ideas…" autocomplete="off" aria-label="Search"><div class="gsearch-drop" id="homeSearchDrop" hidden></div></div>
+          <div class="live-hero" id="liveHero">
+            <img class="live-hero-bg" src="https://picsum.photos/seed/tradingdesk7/800/420" alt="" loading="lazy">
+            <div class="live-hero-grad"></div>
+            <div class="live-hero-top"><span class="live-pill"><i></i>LIVE</span><span class="live-viewers"><span class="ic xs" data-icon="eye"></span>2.4K</span></div>
+            <div class="live-hero-bottom">
+              <h3>Live Trading with Ali</h3>
+              <p>XAUUSD Live Analysis • Q&amp;A • Trade Setups</p>
+              <div class="live-hero-row"><span id="liveHeroAv"></span><span class="live-hero-name">Ali Khan <span class="verified">✓</span></span><button class="watch-live-btn" id="liveHeroBtn">Watch Live</button></div>
+            </div>
           </div>
-          <div class="sec-head"><h3>Live now</h3><button class="link-btn" data-goto="live">Open Live</button></div>
-          <div class="live-now" id="homeLiveStrip" aria-label="Live now"></div>
-          <div class="qa-row">
-            <button class="qa" id="homePostIdea"><span class="ic" data-icon="send"></span><span>Post idea</span></button>
-            <button class="qa" id="homeUploadReel"><span class="ic" data-icon="reel"></span><span>Upload reel</span></button>
-            <button class="qa go" id="homeGoLive"><span class="golive-dot"></span><span>Go live</span></button>
+          <div class="mkt-chips" id="homeMktChips" aria-label="Market overview"></div>
+          <div class="sec-head"><h3>Top Traders</h3><button class="link-btn" data-goto="community">See All ›</button></div>
+          <div class="tt-scroll" id="homeTopTraders"></div>
+          <div class="sec-head"><h3>Reels &amp; Trade Ideas</h3><button class="link-btn" data-goto="community">See All ›</button></div>
+          <div class="reels-scroll" id="homeReelsRow"></div>
+          <!-- desktop home dashboard -->
+          <div class="home-desk">
+            <div class="hd-main">
+              <div class="hd-hero" id="hdHero">
+                <img src="https://picsum.photos/seed/tradingdesk7/1000/420" alt="" loading="lazy">
+                <div class="hd-hero-grad"></div>
+                <div class="hd-hero-top"><span class="live-pill"><i></i>LIVE</span><span class="live-viewers"><span class="ic xs" data-icon="eye"></span>2.4K</span></div>
+                <div class="hd-hero-bottom">
+                  <h3>Live Trading with Ali</h3>
+                  <p>XAUUSD Live Analysis • Q&amp;A • Trade Setups</p>
+                  <button class="watch-live-btn" id="hdHeroBtn">Watch Live</button>
+                </div>
+              </div>
+              <div class="hd-sec">
+                <div class="hd-sec-head"><h3>Reels &amp; Short Ideas</h3><button class="link-btn" data-goto="reels">See All ›</button></div>
+                <div class="hd-reels" id="hdReels"></div>
+              </div>
+              <div class="hd-sec">
+                <div class="hd-sec-head"><h3>Popular Trade Ideas</h3><button class="link-btn" data-goto="ideas">See All ›</button></div>
+                <div class="hd-ideas" id="hdIdeas"></div>
+              </div>
+            </div>
+            <div class="hd-side">
+              <div class="hd-acct">
+                <div class="hd-acct-head"><b>Your Account</b><span class="acct-tag">Real Account</span></div>
+                <span class="fine">Equity</span>
+                <div class="hd-eq num" id="hdEquity">$12,450.32</div>
+                <div class="hd-eq-chg num pl-pos" id="hdEqChg">+2.35% (+$285.40)</div>
+                <canvas class="hd-spark" id="hdSpark" width="300" height="60"></canvas>
+                <div class="hd-acct-grid">
+                  <div><span>Balance</span><b class="num" id="hdBal">$12,120.00</b></div>
+                  <div><span>Equity</span><b class="num" id="hdEq2">$12,450.32</b></div>
+                  <div><span>Free Margin</span><b class="num" id="hdFree">$9,230.11</b></div>
+                  <div><span>Margin</span><b class="num" id="hdMarg">$3,220.21</b></div>
+                </div>
+                <div class="hd-acct-btns"><button class="pf-dep" id="hdDeposit">Deposit</button><button class="pf-wd" id="hdTradeNow">Trade Now</button></div>
+              </div>
+              <div class="hd-card">
+                <div class="hd-sec-head"><h3>Top Traders</h3><button class="link-btn" data-goto="leaderboard">See All ›</button></div>
+                <div id="hdTraders"></div>
+              </div>
+              <div class="hd-card">
+                <div class="hd-sec-head"><h3>Community Sentiment</h3></div>
+                <div class="hd-sent-sym"><span class="flag">🇺🇸</span><b>XAUUSD</b></div>
+                <div class="poll-bars">
+                  <div class="poll-row"><span>Bullish</span><div class="poll-track"><i id="hdBullFill" style="width:68%"></i></div><b class="num pl-pos" id="hdBullPct">68%</b></div>
+                  <div class="poll-row"><span>Bearish</span><div class="poll-track"><i id="hdBearFill" style="width:32%"></i></div><b class="num pl-neg" id="hdBearPct">32%</b></div>
+                </div>
+                <span class="fine num">1,245 votes</span>
+              </div>
+            </div>
           </div>
-          <div class="sec-head"><h3>Reels</h3><button class="link-btn" data-goto="live">See all</button></div>
-          <div class="h-reels" id="homeReelsRow"></div>
-          <div class="sec-head"><h3>Trade ideas</h3><button class="link-btn" data-goto="traders">See all</button></div>
-          <div id="homeIdeas"></div>
-          <div class="sec-head"><h3>Top traders</h3><button class="link-btn" data-goto="traders">See all</button></div>
-          <div class="h-traders" id="homeTraders"></div>
         </section>
 
         <!-- ============ TRADE TERMINAL ============ -->
         <section class="screen" id="screen-trade" aria-label="Trade">
+          <div class="desk-symstrip" id="deskSymStrip" aria-label="Watchlist"></div>
           <!-- Account strip -->
 
           <button class="acct-switch" id="acctSwitch" aria-label="Switch trading account"><span class="acct-dot" id="acctDot"></span><span><b id="acctName">Exness</b><span class="acct-type" id="acctType">Demo</span></span><span class="ic sm" data-icon="chev"></span></button>
@@ -89,7 +149,7 @@
             </div>
             <div class="sym-px">
               <div class="num big" id="symPrice">—</div>
-              <div class="spread-tag">Spread <b class="num" id="hdrSpread">—</b></div>
+              <div class="sym-chg num" id="symChg">—</div>
             </div>
           </div>
 
@@ -106,6 +166,14 @@
               </div>
               <button class="idea-fab" id="shareIdeaBtn"><span class="ic xs" data-icon="send"></span><span class="if-tx">Post idea</span></button>
               <button class="ind-btn" id="indBtn" aria-label="Chart indicators">Indicators</button>
+            </div>
+            <div class="indchip-row" id="indRow" aria-label="Indicators">
+              <button class="ind-chip" data-ind="ma">MA</button>
+              <button class="ind-chip" data-ind="ema">EMA</button>
+              <button class="ind-chip" data-ind="rsi">RSI</button>
+              <button class="ind-chip" data-ind="macd">MACD</button>
+              <button class="ind-chip" data-ind="bb">Bollinger</button>
+              <button class="ind-expand" id="indExpand" aria-label="All indicators"><span class="ic sm" data-icon="expand"></span></button>
             </div>
             <div class="chart-wrap" id="tradeChartWrap">
                 <div class="lw-legend num" id="chartLegend"><b id="lgSym">XAUUSD</b><span class="lg-tf" id="lgTF">1m</span><span class="mkt-pill" id="mktPill"></span><span class="data-badge" id="dataBadge"></span><span class="lg-ohlc">O <i id="lgO">—</i></span><span class="lg-ohlc">H <i id="lgH">—</i></span><span class="lg-ohlc">L <i id="lgL">—</i></span><span class="lg-ohlc">C <i id="lgC">—</i></span><span id="lgChg" class="num">—</span></div>
@@ -157,8 +225,8 @@
                   <div class="fld"><label for="slPrice">Stop loss</label><input class="field num" id="slPrice" inputmode="decimal" placeholder="—" autocomplete="off"></div>
                 </div>
               <div class="exec-row">
-                <button class="exec sell" id="sellBtn"><span>Sell</span><b class="num" id="sellPx">—</b></button>
                 <button class="exec buy" id="buyBtn"><span>Buy</span><b class="num" id="buyPx">—</b></button>
+                <button class="exec sell" id="sellBtn"><span>Sell</span><b class="num" id="sellPx">—</b></button>
               </div>
               <div class="risk-line">Est. margin <b class="num" id="estMargin">$0.00</b><span class="sep">·</span>Risk <b class="num" id="estRisk">—</b></div>
               <p class="fine">Demo execution — no real orders are placed.</p>
@@ -222,13 +290,53 @@
 
         <!-- ============ LIVE ============ -->
         <section class="screen" id="screen-live" aria-label="Live">
-          <div class="live-head">
-            <div class="live-id"><div class="avatar" id="liveAvatar">DR</div><div><b>Daud <span class="handle">@daudtradefx</span></b><span class="live-sub">XAUUSD · London session scalps</span></div></div>
-            <div class="live-meta"><span class="live-pill"><i></i>LIVE</span><span class="num" id="viewerCount">2,412</span><span class="copy-chip" id="copyChip" hidden>📋 Copying</span></div>
-          </div>
-          <div class="live-toprow">
-            <button class="golive-mini" id="goLiveBtn"><span class="golive-dot"></span><b>Go Live</b></button>
-            <div class="live-now" id="liveNowStrip" aria-label="Live now"></div>
+          <div class="lv-stage">
+            <div class="lv-video" id="liveVideoWrap">
+              <img class="lv-bg" src="https://picsum.photos/seed/alilive9/800/620" alt="" loading="lazy">
+              <div class="lv-grad"></div>
+              <div class="lv-topbar">
+                <button class="lv-icbtn" id="liveBack" aria-label="Back"><span class="ic sm" data-icon="chevL"></span></button>
+                <span class="live-pill"><i></i>LIVE</span>
+                <span class="lv-viewers"><span class="ic xs" data-icon="eye"></span><span class="num" id="viewerCount">2,412</span></span>
+                <span class="copy-chip" id="copyChip" hidden>📋 Copying</span>
+                <span class="lv-spacer"></span>
+                <button class="lv-icbtn" id="camFlipBtn" aria-label="Camera options"><span class="ic sm" data-icon="cam"></span></button>
+                <button class="lv-icbtn" id="liveMoreBtn" aria-label="More options"><span class="ic sm" data-icon="dots"></span></button>
+              </div>
+              <div class="live-hearts" id="liveHearts" aria-hidden="true"></div>
+              <div class="face-cam" id="faceCam" aria-label="Streamer camera">
+                <div class="cam-bg bg-none" id="faceCamBg"></div>
+                <span class="fc-tag" id="faceCamTag" hidden></span>
+                <video id="faceCamVideo" autoplay playsinline muted hidden></video>
+                <div class="fc-empty" id="faceCamEmpty">
+                  <span class="ic fc-cam-ic" data-icon="cam"></span>
+                  <span class="fc-label">Face cam</span>
+                  <button class="fc-cam-btn" id="camToggleBtn">Enable camera</button>
+                </div>
+                <i class="fc-resize" id="fcResize"></i>
+              </div>
+              <button class="golive-mini lv-golive" id="goLiveBtn"><span class="golive-dot"></span><b>Go Live</b></button>
+            </div>
+            <div class="lv-info">
+              <h3>Live Trading with Ali</h3>
+              <p class="fine">XAUUSD Analysis • Live Trades • Q&amp;A</p>
+              <div class="lv-host">
+                <div class="avatar" id="liveAvatar">AK</div>
+                <div class="lv-host-tx"><b>Ali Khan <span class="verified">✓</span></b><span class="fine">Pro Trader • <span class="num">128K</span> followers</span></div>
+                <button class="follow-btn sm" id="liveFollowBtn">Follow</button>
+                <button class="copy-open-btn" id="liveCopyBtn2">Copy Trades</button>
+              </div>
+              <div class="lv-engage">
+                <button class="engage-btn" id="heartBtn"><span class="ic sm" data-icon="like"></span><b class="num" id="likeCount">1.2K</b></button>
+                <button class="engage-btn" id="liveShareBtn"><span class="ic sm" data-icon="share"></span><span>Share</span></button>
+                <button class="engage-btn" id="liveSaveBtn" aria-label="Save stream"><span class="ic sm" data-icon="bookmark"></span></button>
+              </div>
+              <div class="lv-tabs" id="liveTabs" role="tablist" aria-label="Live sections">
+                <button class="lv-tab active" data-lv="chat" role="tab">Live Chat</button>
+                <button class="lv-tab" data-lv="ideas" role="tab">Trade Ideas <i class="lv-dot"></i></button>
+                <button class="lv-tab" data-lv="about" role="tab">About</button>
+              </div>
+            </div>
           </div>
           <div class="you-live-bar" id="youLiveBar" hidden>
             <span class="live-pill"><i></i>YOU ARE LIVE</span>
@@ -250,37 +358,34 @@
             </ol>
             <button class="ghost-btn sm" id="liveHintOk">Got it</button>
           </div>
-          <div class="chart-wrap live-chart" id="liveChartWrap">
+          <div class="chart-wrap live-chart" id="liveChartWrap" hidden>
             <div class="tv-host" id="tvChartLive"></div>
-            <div class="live-hearts" id="liveHearts" aria-hidden="true"></div>
-            <div class="face-cam" id="faceCam" aria-label="Streamer camera">
-              <div class="cam-bg bg-none" id="faceCamBg"></div>
-              <span class="fc-tag" id="faceCamTag" hidden></span>
-              <video id="faceCamVideo" autoplay playsinline muted hidden></video>
-              <div class="fc-empty" id="faceCamEmpty">
-                <span class="ic fc-cam-ic" data-icon="cam"></span>
-                <span class="fc-label">Face cam</span>
-                <button class="fc-cam-btn" id="camToggleBtn">Enable camera</button>
-              </div>
-              <i class="fc-resize" id="fcResize"></i>
+          </div>
+          <div class="lv-page active" id="lvPageChat">
+            <div class="chat" id="liveChat"></div>
+            <div class="chat-bar">
+              <input class="field" id="chatInput" placeholder="Type a message…" maxlength="140" autocomplete="off">
+              <button class="icon-btn" id="chatEmojiBtn" aria-label="Emoji"><span class="ic sm" data-icon="smile"></span></button>
+              <button class="icon-btn primary" id="chatSend" aria-label="Send message"><span class="ic sm" data-icon="send"></span></button>
             </div>
           </div>
-          <div class="live-grid">
-            <div class="live-col">
-              <div class="sec-head"><h3>Live trades</h3>
-                <button class="copy-switch" id="copySwitch" aria-pressed="false"><i></i><span>Copy trades</span></button>
-              </div>
-              <div class="feed" id="liveFeed"></div>
+          <div class="lv-page" id="lvPageIdeas" hidden>
+            <div class="sec-head"><h3>Live trades</h3>
+              <button class="copy-switch" id="copySwitch" aria-pressed="false"><i></i><span>Copy trades</span></button>
             </div>
-            <div class="live-col">
-              <div class="sec-head"><h3>Chat</h3></div>
-              <div class="chat-scroll"><div class="chat" id="liveChat"></div></div>
-              <div class="chat-bar">
-                <input class="field" id="chatInput" placeholder="Say something…" maxlength="140" autocomplete="off">
-                <button class="icon-btn heart" id="heartBtn" aria-label="Send a like">♥</button>
-                <button class="icon-btn primary" id="chatSend" aria-label="Send message"><span class="ic" data-icon="send"></span></button>
-              </div>
+            <div class="feed" id="liveFeed"></div>
+          </div>
+          <div class="lv-page" id="lvPageAbout" hidden>
+            <div class="lv-about">
+              <div class="lv-about-row"><span>Trader</span><b>Ali Khan @alikhantfx</b></div>
+              <div class="lv-about-row"><span>Focus</span><b>XAUUSD · London session scalps</b></div>
+              <div class="lv-about-row"><span>Win rate</span><b class="num">62%</b></div>
+              <div class="lv-about-row"><span>Total return</span><b class="num pl-pos">+284.5%</b></div>
+              <p class="fine">Streaming is simulated in this demo — no real broadcast leaves your device.</p>
             </div>
+          </div>
+          <div class="live-toprow">
+            <div class="live-now" id="liveNowStrip" aria-label="Live now"></div>
           </div>
           <div class="reels-hub">
             <div class="sec-head">
@@ -401,6 +506,139 @@
           </div>
         </section>
 
+        <!-- ============ COMMUNITY ============ -->
+        <section class="screen" id="screen-community" aria-label="Community">
+          <div class="ctabs" id="communityTabs" role="tablist" aria-label="Community sections">
+            <button class="ctab active" data-ctab="traders" role="tab">Top Traders</button>
+            <button class="ctab" data-ctab="feed" role="tab">Community</button>
+            <button class="ctab" data-ctab="ideas" role="tab">Trade Ideas</button>
+            <button class="ctab" data-ctab="reels" role="tab">Reels</button>
+          </div>
+          <div class="cpage active" id="cpage-traders" role="tabpanel">
+            <div class="period-pills" id="periodPills" role="tablist" aria-label="Ranking period">
+              <button class="ppill active" data-period="30D" role="tab">30D</button>
+              <button class="ppill" data-period="90D" role="tab">90D</button>
+              <button class="ppill" data-period="1Y" role="tab">1Y</button>
+              <button class="ppill" data-period="ALL" role="tab">All</button>
+            </div>
+            <div id="communityTraders"></div>
+          </div>
+          <div class="cpage" id="cpage-feed" role="tabpanel" hidden>
+            <div class="composer">
+              <div class="avatar sm" id="composerAvatar">AT</div>
+              <input class="field" id="composerDeskInput" placeholder="Share a trade idea…" aria-label="Write a post">
+              <button class="icon-btn primary" id="composerDeskPost" aria-label="Post"><span class="ic sm" data-icon="send"></span></button>
+            </div>
+            <div id="communityPosts"></div>
+          </div>
+          <div class="cpage" id="cpage-ideas" role="tabpanel" hidden>
+            <div id="communityIdeas"></div>
+          </div>
+          <div class="cpage" id="cpage-reels" role="tabpanel" hidden>
+            <div class="reels-grid" id="communityReels"></div>
+          </div>
+        </section>
+
+        <!-- ============ PORTFOLIO ============ -->
+        <section class="screen" id="screen-portfolio" aria-label="Portfolio">
+          <div class="pf-balance-card">
+            <div class="pf-balance-top"><span>Total Balance</span><button class="icon-btn sm" id="pfEye" aria-label="Toggle balance visibility"><span class="ic sm" data-icon="eye"></span></button></div>
+            <div class="pf-balance num" id="pfBalance">$12,450.32</div>
+            <div class="pf-balance-sub num" id="pfBalanceSub">+2.35% · +$285.40 (Today)</div>
+            <svg class="pf-spark" id="pfSpark" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="pf-actions">
+              <button class="primary-btn" id="pfDeposit">Deposit</button>
+              <button class="ghost-btn" id="pfWithdraw">Withdraw</button>
+            </div>
+            <div class="pf-meta">
+              <div><span>Equity</span><b class="num" id="pfEquity">$12,318.10</b></div>
+              <div><span>Free Margin</span><b class="num" id="pfFree">$9,230.11</b></div>
+              <div><span>Margin</span><b class="num" id="pfMargin">$3,088.00</b></div>
+            </div>
+          </div>
+          <div class="ptabs" id="pfTabs" role="tablist" aria-label="Portfolio sections">
+            <button class="ptab active" data-pftab="positions" role="tab">Positions</button>
+            <button class="ptab" data-pftab="history" role="tab">History</button>
+            <button class="ptab" data-pftab="orders" role="tab">Orders</button>
+            <button class="ptab" data-pftab="txns" role="tab">Transactions</button>
+          </div>
+          <div class="ppage active" id="ppage-positions" role="tabpanel">
+            <div class="sec-head"><h3>Open Positions <span class="count-pill" id="pfPosCount"></span></h3><button class="link-btn" id="pfCloseAll">Close All</button></div>
+            <div id="pfPositions"></div>
+          </div>
+          <div class="ppage" id="ppage-history" role="tabpanel" hidden>
+            <div id="pfHistory"></div>
+          </div>
+          <div class="ppage" id="ppage-orders" role="tabpanel" hidden>
+            <div id="pfOrders"></div>
+          </div>
+          <div class="ppage" id="ppage-txns" role="tabpanel" hidden>
+            <div id="pfTxns"></div>
+          </div>
+          <div class="sec-head"><h3>Account Overview</h3></div>
+          <div class="pf-overview">
+            <div><span>Real Account</span><b class="num" id="pfOvBalance">$12,450.32</b></div>
+            <div><span>Total P/L</span><b class="num pl-pos" id="pfOvPL">+$386.51</b></div>
+            <div><span>Open Trades</span><b class="num" id="pfOvOpen">2</b></div>
+            <div><span>Margin Level</span><b class="num" id="pfOvLevel">386.5%</b></div>
+          </div>
+          <p class="fine center">Simulated portfolio — demo</p>
+        </section>
+
+        <!-- ============ REELS ============ -->
+        <section class="screen" id="screen-reels" aria-label="Reels">
+          <div class="page-head"><div><h2>Reels</h2><span class="fine">Every reel from the community — demo</span></div>
+            <button class="primary-btn sm" id="reelsPageUpload"><span class="ic xs" data-icon="plus"></span> Upload reel</button></div>
+          <div class="reel-grid page-grid" id="reelsPageGrid"></div>
+        </section>
+
+        <!-- ============ TRADE IDEAS ============ -->
+        <section class="screen" id="screen-ideas" aria-label="Trade ideas">
+          <div class="page-head"><div><h2>Trade Ideas</h2><span class="fine">Setups from top traders — demo</span></div>
+            <button class="primary-btn sm" id="ideasPagePost"><span class="ic xs" data-icon="send"></span> Post idea</button></div>
+          <div id="ideasPageList"></div>
+        </section>
+
+        <!-- ============ LEADERBOARD ============ -->
+        <section class="screen" id="screen-leaderboard" aria-label="Leaderboard">
+          <div class="page-head"><div><h2>Leaderboard</h2><span class="fine">Ranked by returns — demo</span></div></div>
+          <div class="period-pills" id="lbPeriodPills" role="tablist" aria-label="Ranking period">
+            <button class="ppill active" data-lbperiod="30D" role="tab">30D</button>
+            <button class="ppill" data-lbperiod="90D" role="tab">90D</button>
+            <button class="ppill" data-lbperiod="1Y" role="tab">1Y</button>
+            <button class="ppill" data-lbperiod="ALL" role="tab">All</button>
+          </div>
+          <div id="leaderboardPageList"></div>
+        </section>
+
+        <!-- ============ CLASSES ============ -->
+        <section class="screen" id="screen-classes" aria-label="Classes">
+          <div class="page-head"><div><h2>Classes</h2><span class="fine">Learn from pro traders — demo</span></div></div>
+          <div id="classesPageList"></div>
+        </section>
+
+        <!-- ============ BROKER ACCOUNTS ============ -->
+        <section class="screen" id="screen-brokers" aria-label="Broker accounts">
+          <div class="page-head"><div><h2>Broker Accounts</h2><span class="fine">Connect a broker to mirror trades — demo</span></div>
+            <button class="ghost-btn sm" id="brokersPageAdd"><span class="ic xs" data-icon="plus"></span> Add broker</button></div>
+          <div id="brokersPageList"></div>
+          <p class="fine center">Connections are simulated — no real credentials are used.</p>
+        </section>
+
+        <!-- ============ SETTINGS ============ -->
+        <section class="screen" id="screen-settings" aria-label="Settings">
+          <div class="page-head"><div><h2>Settings</h2><span class="fine">App preferences — demo</span></div></div>
+          <div class="set-card">
+            <div class="set-row"><span><b>Appearance</b><span class="fine">Light or dark theme</span></span>
+              <button class="theme-toggle" id="setThemeToggle" aria-label="Toggle theme"><span class="ic sm" data-icon="sun"></span><span class="ic sm" data-icon="moon"></span><i class="tt-knob"></i></button></div>
+            <div class="set-row"><span><b>Notifications</b><span class="fine">Price alerts, live streams, follows</span></span>
+              <button class="switch-row" id="setNotifToggle" aria-pressed="true"><span class="switch on"><i></i></span></button></div>
+            <div class="set-row"><span><b>Reset demo</b><span class="fine">Clear all demo data and start fresh</span></span>
+              <button class="danger-btn sm" id="setResetDemo">Reset</button></div>
+          </div>
+          <p class="fine center">Trading Community · demo build · v35</p>
+        </section>
+
       </main>
 
       <!-- Mobile bottom nav -->
@@ -408,8 +646,8 @@
         <button class="tab active" data-tab="home"><span class="ic" data-icon="home"></span><span>Home</span></button>
         <button class="tab" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span><i class="tab-badge" id="posBadge" hidden></i></button>
         <button class="tab tab-fab" data-tab="live"><span class="live-fab"><span class="ic" data-icon="live"></span></span><span>Live</span></button>
-        <button class="tab" data-tab="traders"><span class="ic" data-icon="community"></span><span>Traders</span></button>
-        <button class="tab" data-tab="profile"><span class="ic" data-icon="profile"></span><span>Profile</span></button>
+        <button class="tab" data-tab="community"><span class="ic" data-icon="community"></span><span>Community</span></button>
+        <button class="tab" data-tab="portfolio"><span class="ic" data-icon="wallet"></span><span>Portfolio</span></button>
       </nav>
     </div>
   </div>
@@ -695,6 +933,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=34"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>

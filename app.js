@@ -51,6 +51,20 @@ const ICONS = {
   heart:'<path d="M12 20.5s-7.6-4.8-9.4-9.3C1.3 7.9 3.5 5 6.7 5c2 0 3.8 1.2 5.3 3.1C13.5 6.2 15.3 5 17.3 5c3.2 0 5.4 2.9 4.1 6.2-1.8 4.5-9.4 9.3-9.4 9.3z"/>',
   comment:'<path d="M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v8a2.5 2.5 0 01-2.5 2.5H9l-5 4.5z"/>',
   share:'<path d="M12 3.5V14"/><path d="M8 7.5l4-4 4 4"/><path d="M5 12.5V19a1.5 1.5 0 001.5 1.5h11A1.5 1.5 0 0019 19v-6.5"/>',
+  bulb:'<path d="M9.5 18h5"/><path d="M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.7.5 1.5 1.2 1.5 2.1h4c0-.9.8-1.6 1.5-2.1A6 6 0 0012 3z"/>',
+  trophy:'<path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 5H4.5a.5.5 0 00-.5.6C4.2 8 6 9.5 8 9.7M16 5h3.5a.5.5 0 01.5.6C19.8 8 18 9.5 16 9.7"/><path d="M12 13v4M8.5 20h7M10 17h4"/>',
+  grad:'<path d="M2.5 9L12 5l9.5 4L12 13z"/><path d="M6.5 10.8V15c0 1.7 2.5 3 5.5 3s5.5-1.3 5.5-3v-4.2"/><path d="M21.5 9v5"/>',
+  gear:'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/>',
+  chat:'<path d="M4 6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5v7a2.5 2.5 0 01-2.5 2.5H9l-5 4z"/>',
+  wallet:'<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/><path d="M16.5 14.5h.01"/>',
+  eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  expand:'<path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/>',
+  chevL:'<path d="M14.5 6L8.5 12l6 6"/>',
+  dots:'<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
+  like:'<path d="M7 11.5V20H4a1 1 0 01-1-1v-7.5a1 1 0 011-1zm2 8.5l4.5-9c.8-1.6 3-2 4.4-1l-1.6 4H20a2 2 0 012 2.4l-1.2 5.6A2 2 0 0118.8 20z"/>',
+  share:'<path d="M12 3l7 7h-4v6h-6v-6H5z"/><path d="M5 13v7h14v-7"/>',
+  bookmark:'<path d="M7 4h10a1 1 0 011 1v15l-6-4-6 4V5a1 1 0 011-1z"/>',
+  smile:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8"/><circle cx="9" cy="9.5" r="1"/><circle cx="15" cy="9.5" r="1"/>',
 };
 function injectIcons(){
   document.querySelectorAll("[data-icon]").forEach(el=>{
@@ -229,9 +243,9 @@ function closeNotifSheet(){
 }
 /* seed demo notifications */
 state.notifs.push(
-  { id:"n"+(state.notifSeq++), icon:"live", title:"@daudtradefx is live", body:"London scalps — XAUUSD live trading started 12 min ago", time:"12m", unread:true, onTap:()=>goTab("live") },
+  { id:"n"+(state.notifSeq++), icon:"live", title:"@alikhantfx is live", body:"London scalps — XAUUSD live trading started 12 min ago", time:"12m", unread:true, onTap:()=>goTab("live") },
   { id:"n"+(state.notifSeq++), icon:"community", title:"New follower", body:"@saramalik started following you", time:"1h", unread:true, onTap:null },
-  { id:"n"+(state.notifSeq++), icon:"heart", title:"Post liked", body:"@arjunfx and 23 others liked your XAUUSD idea", time:"3h", unread:true, onTap:null },
+  { id:"n"+(state.notifSeq++), icon:"heart", title:"Post liked", body:"@cryptonadeem and 23 others liked your XAUUSD idea", time:"3h", unread:true, onTap:null },
   { id:"n"+(state.notifSeq++), icon:"bell", title:"Welcome", body:"Price alerts, new followers and live streams will appear here", time:"1d", unread:false, onTap:null }
 );
 updateNotifDot();
@@ -292,25 +306,81 @@ function flash(el, up){
 function theme(){ return document.documentElement.dataset.theme || "dark"; }
 function setTheme(t){
   document.documentElement.dataset.theme = t;
-  $("themeNameSide").textContent = t === "dark" ? "Dark" : "Light";
+  const tns = $("themeNameSide"); if(tns) tns.textContent = t === "dark" ? "Dark" : "Light";
   const stn = $("setThemeName"); if(stn) stn.textContent = t === "dark" ? "Dark" : "Light";
   try{ localStorage.setItem("tc_theme_v1", t); }catch(e){}
   applyChartTheme(); /* recolor the self-hosted chart */
 }
 $("themeBtn").addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
-$("themeToggleSide").addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
+const tts = $("themeToggleSide"); if(tts) tts.addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
+const stt = $("setThemeToggle"); if(stt) stt.addEventListener("click", ()=>setTheme(theme()==="dark"?"light":"dark"));
+const snt = $("setNotifToggle");
+if(snt) snt.addEventListener("click", ()=>{ const sw = snt.querySelector(".switch"); const on = !sw.classList.contains("on"); sw.classList.toggle("on", on); snt.setAttribute("aria-pressed", on); toast(on?"Notifications on — demo":"Notifications off — demo"); });
+const srd = $("setResetDemo");
+if(srd) srd.addEventListener("click", ()=>{ if(confirm("Reset all demo data and reload?")){ try{ localStorage.clear(); }catch(e){} location.reload(); } });
+const rpu = $("reelsPageUpload"); if(rpu) rpu.addEventListener("click", ()=>triggerReelUpload());
+const ipp = $("ideasPagePost"); if(ipp) ipp.addEventListener("click", ()=>{ if(typeof openIdeaSheet==="function") openIdeaSheet(); else toast("Posting — demo"); });
+const bpa = $("brokersPageAdd"); if(bpa) bpa.addEventListener("click", ()=>toast("Add your broker — demo"));
+document.querySelectorAll("#lbPeriodPills [data-lbperiod]").forEach(b=>b.addEventListener("click", ()=>{
+  document.querySelectorAll("#lbPeriodPills .ppill").forEach(x=>x.classList.toggle("active", x===b));
+  lbPeriod = b.dataset.lbperiod; renderCommunityTraders();
+}));
 
 /* ---------------- TABS ---------------- */
 function goTab(tab){
   document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  $("screen-"+tab).classList.add("active");
+  const scr = $("screen-"+tab);
+  if(!scr){ console.warn("[goTab] no screen for tab:", tab); return; }
+  scr.classList.add("active");
+  document.body.dataset.tab = tab;
   document.querySelector(".content").scrollTop = 0;
   if(tab==="live" && !state.liveBuilt){ state.liveBuilt = true; buildLive(); }
   if(tab!=="live" && state.liveBuilt) stopCamera(); /* stop face-cam tracks off the live tab */
   if(tab==="trade"){ try{ buildMainChart(); }catch(e){} } /* chart may have failed at boot while this tab was hidden — retry now that it has real dimensions */
+  if(tab==="community" && !$("communityTraders").innerHTML){ try{ renderCommunityTraders(); }catch(e){} }
+  if(tab==="portfolio"){ try{ renderPortfolio(); }catch(e){} }
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.tab)));
+
+/* ---------------- GLOBAL SEARCH (desktop topbar + home) ---------------- */
+function attachSearch(inputId, dropId){
+  const input = $(inputId), drop = $(dropId);
+  if(!input || !drop) return;
+  input.addEventListener("input", ()=>runGlobalSearch(input, drop, input.value));
+  input.addEventListener("keydown", e=>{ if(e.key==="Escape") drop.hidden = true; });
+}
+function runGlobalSearch(input, drop, q){
+  q = (q||"").trim().toLowerCase();
+  if(q.length < 2){ drop.hidden = true; drop.innerHTML = ""; return; }
+  const tHits = TRADERS.filter(t=>(t.name+" "+t.handle).toLowerCase().includes(q)).slice(0,4);
+  const sHits = SYM_ORDER.filter(s=>s.toLowerCase().includes(q) || (SYMBOLS[s].name||"").toLowerCase().includes(q)).slice(0,4);
+  if(!tHits.length && !sHits.length){
+    drop.innerHTML = '<div class="gs-empty">No results for &ldquo;'+esc(q)+'&rdquo;</div>';
+    drop.hidden = false; return;
+  }
+  let h = "";
+  tHits.forEach(t=>{
+    h += '<button class="gs-row" data-gs-t="'+t.id+'">'+avImg(t,"sm")+
+         '<span class="gs-tx"><b>'+esc(t.name)+'</b><span class="fine">'+esc(t.handle)+' · Trader</span></span></button>';
+  });
+  sHits.forEach(s=>{
+    h += '<button class="gs-row" data-gs-s="'+s+'"><span class="gs-sym num">'+s+'</span>'+
+         '<span class="gs-tx"><b>'+esc(SYMBOLS[s].name||s)+'</b><span class="fine">Symbol · tap to trade</span></span></button>';
+  });
+  drop.innerHTML = h; drop.hidden = false;
+  drop.querySelectorAll("[data-gs-t]").forEach(b=>b.addEventListener("click", ()=>{
+    drop.hidden = true; input.value = ""; openTraderProfile(b.dataset.gsT);
+  }));
+  drop.querySelectorAll("[data-gs-s]").forEach(b=>b.addEventListener("click", ()=>{
+    drop.hidden = true; input.value = ""; setSymbol(b.dataset.gsS); goTab("trade");
+  }));
+}
+document.addEventListener("click", e=>{
+  document.querySelectorAll(".gsearch-drop").forEach(d=>{
+    if(!d.hidden && !e.target.closest(".appbar-search") && !e.target.closest(".mh-search")) d.hidden = true;
+  });
+});
 $("avatarBtn").addEventListener("click", ()=>goTab("profile"));
 $("bellBtn").addEventListener("click", openNotifSheet);
 $("notifX").addEventListener("click", closeNotifSheet);
@@ -388,7 +458,21 @@ function renderWatchlistTick(){
   });
 }
 
-/* ---------------- SYMBOL HEADER + SHEET ---------------- */
+/* trade symbol strip (desktop) */
+function renderDeskSymStrip(){
+  const el = $("deskSymStrip"); if(!el) return;
+  const syms = ["XAUUSD","EURUSD","GBPUSD","BTCUSD","US30"];
+  el.innerHTML = syms.filter(s=>SYMBOLS[s]).map(s=>{
+    const pr = px(s), chg = SYMBOLS[s].chg || 0, up = chg >= 0;
+    return '<button class="dss-chip'+(state.sym===s?" active":"")+'" data-dss="'+s+'">'+
+      '<b>'+s+'</b><span class="num">'+fmtP(s, pr.bid)+'</span>'+
+      '<span class="num '+(up?"pl-pos":"pl-neg")+'">'+(up?"+":"")+chg.toFixed(2)+'%</span></button>';
+  }).join("")+'<button class="dss-add" id="dssAdd" aria-label="Add symbol">+</button>';
+  el.querySelectorAll("[data-dss]").forEach(b=>b.addEventListener("click", ()=>setSymbol(b.dataset.dss)));
+  const add = $("dssAdd"); if(add) add.addEventListener("click", ()=>toast("Add symbol — demo"));
+}
+const _setSymbolOrig = setSymbol;
+setSymbol = function(s){ _setSymbolOrig(s); renderDeskSymStrip(); };
 function setSymbol(s){
   if(!SYMBOLS[s]) return;
   state.sym = s;
@@ -416,7 +500,13 @@ function renderHeaderTick(){
   const c = $("hdrChg");
   c.textContent = (pr.chg>=0?"+":"") + pr.chg.toFixed(2) + "%";
   c.className = "chg-pill num " + (pr.chg>=0 ? "up" : "down");
-  $("hdrSpread").textContent = fmtP(s, meta(s).spread);
+  const sc = $("symChg");
+  if(sc){
+    const abs = Math.abs(pr.bid * pr.chg / 100);
+    sc.textContent = (pr.chg>=0?"+":"−") + abs.toFixed(2) + " (" + (pr.chg>=0?"+":"") + pr.chg.toFixed(2) + "%)";
+    sc.className = "sym-chg num " + (pr.chg>=0 ? "pl-pos" : "pl-neg");
+  }
+  const hs = $("hdrSpread"); if(hs) hs.textContent = fmtP(s, meta(s).spread);
 }
 $("symPicker").addEventListener("click", ()=>{
   sheetQuery = ""; $("sheetSearch").value = ""; /* fresh search each open */
@@ -1153,14 +1243,14 @@ document.addEventListener("click", e=>{
     if(p){
       const pr = px(p.sym);
       closePosition(p, p.dir==="BUY" ? pr.bid : pr.ask, null);
-      renderPositions();
+      renderPositions(); renderPortfolio();
     }
     return;
   }
   const x = e.target.closest("[data-cancel]");
   if(x){
     state.pending = state.pending.filter(o=>o.id!==x.dataset.cancel);
-    renderPositions();
+    renderPositions(); renderPortfolio();
     toast("Pending order cancelled — demo");
   }
 });
@@ -1228,7 +1318,7 @@ function sendChat(){
 }
 $("copySwitch").addEventListener("click", function(){
   if(copyState.on) stopCopy();
-  else openCopyModal("daud"); /* the demo live room hosts @daudtradefx */
+  else openCopyModal("daud"); /* the demo live room hosts @alikhantfx */
 });
 
 /* draggable + resizable face-cam, position persisted */
@@ -1473,26 +1563,46 @@ function renderYouLiveCard(){
 
 /* ---------------- COMMUNITY (social) ---------------- */
 const TRADERS = [
-  { id:"daud", name:"Marcus Cole", handle:"@daudtradefx", ini:"DR", pic:"https://randomuser.me/api/portraits/men/32.jpg", g:["#2F80FF","#1B5FD6"],
+  { id:"daud", ret:284.5, name:"Ali Khan", handle:"@alikhantfx", ini:"AK", pic:"https://randomuser.me/api/portraits/men/32.jpg", g:["#2F80FF","#1B5FD6"],
     bio:"XAUUSD scalper · London session · 8 yrs trading", following:false, followers:48200, followingN:312,
     win:67, pl:4210, live:true,
     monthly:[820, -140, 1150, 640, 980, -220, 1310, 760, 540, 890, 410, 690],
     trades:[ {s:"XAUUSD",d:"BUY",pl:184.20},{s:"EURUSD",d:"SELL",pl:96.40},{s:"BTCUSD",d:"BUY",pl:-58.10} ] },
-  { id:"sara", name:"Sara Malik", handle:"@saramalik", ini:"SM", pic:"https://randomuser.me/api/portraits/women/44.jpg", g:["#B678F0","#5E2B8A"],
+  { id:"sara", ret:187.2, name:"Sara Malik", handle:"@saramalik", ini:"SM", pic:"https://randomuser.me/api/portraits/women/44.jpg", g:["#B678F0","#5E2B8A"],
     bio:"FX swing trader · fundamentals + technicals", following:false, followers:21700, followingN:428,
     win:61, pl:2980, live:false,
     monthly:[410, 320, -90, 520, 610, 280, -140, 490, 350, 420, 260, 380],
     trades:[ {s:"EURUSD",d:"BUY",pl:142.80},{s:"GBPUSD",d:"BUY",pl:88.20},{s:"USDJPY",d:"SELL",pl:-34.50} ] },
-  { id:"arjun", name:"Arjun Rao", handle:"@arjunfx", ini:"AR", pic:"https://randomuser.me/api/portraits/men/45.jpg", g:["#5B8DEF","#2B4A8A"],
+  { id:"arjun", ret:142.1, name:"CryptoNadeem", handle:"@cryptonadeem", ini:"CN", pic:"https://randomuser.me/api/portraits/men/45.jpg", g:["#5B8DEF","#2B4A8A"],
     bio:"Crypto + indices · risk-first, always", following:false, followers:15300, followingN:196,
     win:58, pl:2140, live:false,
     monthly:[260, 180, 340, -120, 290, 410, 220, -60, 310, 190, 240, 200],
     trades:[ {s:"BTCUSD",d:"BUY",pl:212.60},{s:"NAS100",d:"SELL",pl:74.30},{s:"ETHUSD",d:"BUY",pl:-41.20} ] },
-  { id:"lena", name:"Lena Fischer", handle:"@lenafx", ini:"LF", pic:"https://randomuser.me/api/portraits/women/68.jpg", g:["#22C55E","#166534"],
+  { id:"lena", ret:118.6, name:"Nadia Trades", handle:"@nadiatrades", ini:"NT", pic:"https://randomuser.me/api/portraits/women/68.jpg", g:["#22C55E","#166534"],
     bio:"Gold & silver specialist · patient entries", following:false, followers:9800, followingN:154,
     win:64, pl:1875, live:false,
     monthly:[180, 240, 120, 300, -80, 260, 190, 220, 140, 260, 110, 170],
     trades:[ {s:"XAUUSD",d:"SELL",pl:118.90},{s:"XAGUSD",d:"BUY",pl:62.40},{s:"XAUUSD",d:"BUY",pl:-28.70} ] },
+  { id:"hassan", ret:96.4, name:"FX_Hassan", handle:"@fx_hassan", ini:"FH", pic:"https://randomuser.me/api/portraits/men/54.jpg", g:["#F0A05B","#8A4A1B"],
+    bio:"Intraday FX · London & New York", following:false, followers:9300, followingN:188,
+    win:59, pl:1620, live:false,
+    monthly:[140, 90, 210, -60, 170, 120, 200, 80, 150, 110, 90, 130],
+    trades:[ {s:"GBPUSD",d:"BUY",pl:96.20},{s:"EURUSD",d:"SELL",pl:54.80},{s:"USDJPY",d:"BUY",pl:-22.40} ] },
+  { id:"zeeshan", ret:84.2, name:"Zeeshan", handle:"@zeeshanfx", ini:"ZK", pic:"https://randomuser.me/api/portraits/men/67.jpg", g:["#5BC8F0","#1B5F8A"],
+    bio:"Scalper · gold & indices", following:false, followers:4100, followingN:96,
+    win:57, pl:1180, live:false,
+    monthly:[90, 120, 60, 140, -40, 110, 80, 130, 70, 100, 60, 90],
+    trades:[ {s:"XAUUSD",d:"BUY",pl:72.40},{s:"NAS100",d:"SELL",pl:48.10},{s:"XAUUSD",d:"SELL",pl:-18.90} ] },
+  { id:"baba", ret:72.1, name:"ForexBaba", handle:"@forexbaba", ini:"FB", pic:"https://randomuser.me/api/portraits/men/75.jpg", g:["#B6F05B","#4A8A1B"],
+    bio:"Swing trader · majors & crosses", following:false, followers:6900, followingN:142,
+    win:55, pl:940, live:false,
+    monthly:[70, 40, 110, 60, 90, -30, 80, 70, 50, 90, 40, 60],
+    trades:[ {s:"EURUSD",d:"BUY",pl:64.20},{s:"AUDUSD",d:"SELL",pl:38.60},{s:"GBPUSD",d:"BUY",pl:-15.30} ] },
+  { id:"malik", ret:64.3, name:"Malik FX", handle:"@malikfx", ini:"MF", pic:"https://randomuser.me/api/portraits/men/22.jpg", g:["#F05B8A","#8A1B4A"],
+    bio:"Crypto scalps · BTC & ETH", following:false, followers:3800, followingN:88,
+    win:54, pl:720, live:false,
+    monthly:[50, 80, 30, 90, 60, 40, 70, -20, 60, 50, 40, 50],
+    trades:[ {s:"BTCUSD",d:"BUY",pl:88.40},{s:"ETHUSD",d:"SELL",pl:32.10},{s:"BTCUSD",d:"SELL",pl:-24.60} ] },
 ];
 const fmtK = n => n>=1000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
 /* avatar with photo (falls back to initials if the photo fails) */
@@ -1644,7 +1754,7 @@ const MOCK_POSTS = [
     comments:[] },
   { id:"p3", tid:"arjun", time:"3h", likes:158, liked:false,
     body:"BTC funding neutral, spot bid on every dip. 98k is the line in the sand — lose it and I stand aside. Trade the plan, not the feeling.",
-    comments:[ {n:"Lena Fischer", t:"That 98k level held beautifully.", time:"2h"}, {n:"Marcus Cole", t:"Patience pays.", time:"1h"} ] },
+    comments:[ {n:"Nadia Trades", t:"That 98k level held beautifully.", time:"2h"}, {n:"Ali Khan", t:"Patience pays.", time:"1h"} ] },
 ];
 function traderOf(p){ return TRADERS.find(t=>t.id===p.tid) || TRADERS[0]; }
 function postCard(p){
@@ -1691,8 +1801,11 @@ function renderComments(p){
   box.querySelectorAll(".comment p").forEach((el,i)=>{ el.textContent = p.comments[i].t; });
 }
 function renderPosts(){
-  const list = $("postList"); list.innerHTML = "";
-  MOCK_POSTS.forEach(p=>list.appendChild(postCard(p)));
+  ["postList","communityPosts"].forEach(id=>{
+    const list = $(id); if(!list) return;
+    list.innerHTML = "";
+    MOCK_POSTS.forEach(p=>list.appendChild(postCard(p)));
+  });
 }
 document.addEventListener("click", e=>{
   let b = e.target.closest("[data-like]");
@@ -1739,6 +1852,172 @@ $("composerPost").addEventListener("click", ()=>{
 });
 $("composerInput").addEventListener("keydown", e=>{ if(e.key==="Enter") $("composerPost").click(); });
 
+/* ---------------- COMMUNITY SCREEN ---------------- */
+let communityTab = "traders", lbPeriod = "30D";
+function periodJitter(id, period){
+  let h = 0; const s = id + period;
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return 0.85 + (h % 30) / 100; /* deterministic 0.85–1.14 */
+}
+function renderCommunityTraders(){
+  const lists = [$("communityTraders"), $("leaderboardPageList")].filter(Boolean);
+  if(!lists.length) return;
+  const rows = TRADERS.filter(t=>!t.you).slice()
+    .sort((a,b)=> (b.ret*periodJitter(b.id,lbPeriod)) - (a.ret*periodJitter(a.id,lbPeriod)));
+  lists.forEach(list=>{
+    list.innerHTML = "";
+    rows.forEach((t,i)=>{
+      const r = document.createElement("div");
+      r.className = "rank-row";
+      r.innerHTML =
+        '<span class="rank-n">'+(i+1)+'</span>'+
+        '<button class="rank-id" data-tprof="'+t.id+'">'+avImg(t,"sm")+
+        '<span><b>'+esc(t.name)+'</b><span class="fine">'+fmtK(t.followers)+' followers</span></span></button>'+
+        '<span class="rank-val num pl-pos">+'+(t.ret*periodJitter(t.id,lbPeriod)).toFixed(1)+'%</span>'+
+        '<button class="copy-btn" data-copytrader="'+t.id+'">Copy</button>';
+      list.appendChild(r);
+    });
+  });
+  injectIcons();
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-copytrader]"); if(!b) return;
+  e.stopPropagation();
+  openCopyModal(b.dataset.copytrader);
+});
+$("communityTabs").addEventListener("click", e=>{
+  const b = e.target.closest("[data-ctab]"); if(!b) return;
+  communityTab = b.dataset.ctab;
+  document.querySelectorAll("#communityTabs .ctab").forEach(x=>x.classList.toggle("active", x===b));
+  ["traders","feed","ideas","reels"].forEach(t=>{
+    const p = $("cpage-"+t); if(!p) return;
+    p.hidden = t !== communityTab;
+    p.classList.toggle("active", t === communityTab);
+  });
+});
+$("periodPills").addEventListener("click", e=>{
+  const b = e.target.closest("[data-period]"); if(!b) return;
+  lbPeriod = b.dataset.period;
+  document.querySelectorAll("#periodPills .ppill").forEach(x=>x.classList.toggle("active", x===b));
+  renderCommunityTraders();
+});
+/* desktop community composer */
+function publishDeskPost(){
+  const inp = $("composerDeskInput"); if(!inp) return;
+  const v = inp.value.trim(); if(!v){ toast("Write something first"); return; }
+  MOCK_POSTS.unshift({ id:"p"+Date.now(), tid:"you", time:"now", likes:0, liked:false, body:v, comments:[] });
+  inp.value = "";
+  renderPosts();
+  toast("Posted — demo");
+}
+$("composerDeskPost").addEventListener("click", publishDeskPost);
+$("composerDeskInput").addEventListener("keydown", e=>{ if(e.key==="Enter") publishDeskPost(); });
+
+/* ---------------- PORTFOLIO SCREEN ---------------- */
+function pfSetVisible(hidden){
+  const b = $("pfBalance"), s = $("pfBalanceSub");
+  [b,s].forEach(el=>{ if(el) el.classList.toggle("masked", hidden); });
+}
+$("pfEye").addEventListener("click", ()=>{
+  const b = $("pfBalance");
+  pfSetVisible(!b.classList.contains("masked"));
+});
+function renderPfSpark(){
+  const svg = $("pfSpark"); if(!svg) return;
+  const m = TRADERS[0].monthly, max = Math.max(...m), min = Math.min(...m);
+  const pts = m.map((v,i)=>[ (i/(m.length-1)*200).toFixed(1), (44 - (v-min)/(max-min)*40).toFixed(1) ]);
+  const d = "M"+pts.map(p=>p.join(",")).join(" L");
+  svg.innerHTML = '<path d="'+d+' L200,48 L0,48 Z" fill="rgba(255,255,255,.18)"/><path d="'+d+'" fill="none" stroke="#fff" stroke-width="2"/>';
+}
+function renderPortfolio(){
+  /* sync money from the account engine */
+  const eq = equity(), m = usedMargin();
+  const set = (id,v)=>{ const el=$(id); if(el) el.textContent = v; };
+  set("pfBalance", fmt$(eq)); set("pfEquity", fmt$(eq));
+  const opl = openPL();
+  set("pfBalanceSub", (opl>=0?"+":"") + fmt$(opl) + " today");
+  set("pfFree", fmt$(eq - m)); set("pfMargin", fmt$(m));
+  set("pfOvBalance", fmt$(eq)); set("pfOvPL", fmt$(opl));
+  set("pfOvOpen", state.open.length);
+  set("pfOvLevel", m > 0.01 ? (eq/m*100).toFixed(1)+"%" : "—");
+  renderPfSpark();
+  /* positions */
+  const pc = $("pfPosCount"); if(pc) pc.textContent = state.open.length;
+  const pl = $("pfPositions");
+  if(pl){
+    pl.innerHTML = "";
+    if(!state.open.length) pl.innerHTML = '<div class="empty">No open positions.<br>Place a trade from the Trade tab.</div>';
+    state.open.forEach(p=>{
+      const pr = px(p.sym), plv = positionPL(p);
+      const r = document.createElement("div");
+      r.className = "pf-pos-row";
+      r.innerHTML =
+        '<span class="pf-sym-ic">'+esc(p.sym.slice(0,1))+'</span>'+
+        '<span class="pf-pos-mid"><b>'+p.sym+' <span class="dir '+(p.dir==="BUY"?"buy":"sell")+'">'+p.dir+'</span></b>'+
+        '<span class="fine num">'+fmtP(p.sym,p.entry)+' → '+fmtP(p.sym,pr.bid)+' · '+p.lots.toFixed(2)+'</span></span>'+
+        '<span class="pf-pos-pl"><b class="num '+plClass(plv)+'">'+fmt$(plv)+'</b>'+
+        '<button class="link-btn" data-close="'+p.id+'">Close</button></span>';
+      pl.appendChild(r);
+    });
+  }
+  renderHistory($("pfHistory"));
+  /* pending orders */
+  const po = $("pfOrders");
+  if(po){
+    po.innerHTML = "";
+    if(!state.pending.length) po.innerHTML = '<div class="empty">No pending orders.</div>';
+    state.pending.forEach(o=>{
+      const r = document.createElement("div");
+      r.className = "pf-pos-row";
+      r.innerHTML =
+        '<span class="pf-sym-ic">'+esc(o.sym.slice(0,1))+'</span>'+
+        '<span class="pf-pos-mid"><b>'+o.sym+' <span class="dir '+(o.dir==="BUY"?"buy":"sell")+'">'+esc(o.type.toUpperCase())+'</span></b>'+
+        '<span class="fine num">Trigger '+fmtP(o.sym,o.price)+' · '+o.lots.toFixed(2)+'</span></span>'+
+        '<span class="pf-pos-pl"><button class="link-btn" data-cancel="'+o.id+'">Cancel</button></span>';
+      po.appendChild(r);
+    });
+  }
+  /* transactions: deposits + closed trades */
+  const pt = $("pfTxns");
+  if(pt){
+    pt.innerHTML = "";
+    const txns = state.history.slice().reverse().map(h=>({
+      t:"Closed "+h.sym+" "+h.dir, v:h.pl, time:h.time||""
+    }));
+    txns.unshift({ t:"Demo account funded", v:0, time:"", tag:"deposit" });
+    if(!txns.length) pt.innerHTML = '<div class="empty">No transactions yet.</div>';
+    txns.forEach(x=>{
+      const r = document.createElement("div");
+      r.className = "pf-pos-row";
+      r.innerHTML =
+        '<span class="pf-sym-ic '+(x.tag==="deposit"?"dep":"")+'">'+(x.tag==="deposit"?"+":esc(x.t.slice(7,8)))+'</span>'+
+        '<span class="pf-pos-mid"><b>'+esc(x.t)+'</b>'+(x.time?'<span class="fine">'+esc(x.time)+'</span>':"")+'</span>'+
+        '<b class="num '+plClass(x.v)+'">'+fmt$(x.v)+'</b>';
+      pt.appendChild(r);
+    });
+  }
+}
+$("pfTabs").addEventListener("click", e=>{
+  const b = e.target.closest("[data-pftab]"); if(!b) return;
+  document.querySelectorAll("#pfTabs .ptab").forEach(x=>x.classList.toggle("active", x===b));
+  ["positions","history","orders","txns"].forEach(t=>{
+    const p = $("ppage-"+t); if(!p) return;
+    p.hidden = t !== b.dataset.pftab;
+    p.classList.toggle("active", t === b.dataset.pftab);
+  });
+});
+$("pfCloseAll").addEventListener("click", ()=>{
+  if(!state.open.length){ toast("No open positions — demo"); return; }
+  state.open.slice().forEach(p=>{
+    const pr = px(p.sym);
+    closePosition(p, p.dir==="BUY" ? pr.bid : pr.ask, null);
+  });
+  renderPositions(); renderPortfolio();
+  toast("All positions closed — demo");
+});
+$("pfDeposit").addEventListener("click", ()=>toast("Deposits are simulated — demo"));
+$("pfWithdraw").addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
+
 /* ---------------- PROFILE + BROKERS ---------------- */
 const BROKERS = [
   { name:"Exness",     sub:"MT4 / MT5",            g:["#2F80FF","#1B5FD6"], ini:"EX", server:"Exness-MT5Real", connected:false, logo:"assets/brokers/exness.png" },
@@ -1755,20 +2034,24 @@ function brokerLogoHTML(b, cls){
   return '<div class="broker-logo has-img '+(cls||"")+'"><img src="'+b.logo+'" alt="'+esc(b.name)+' logo" loading="lazy" onerror="this.closest(\'.broker-logo\').outerHTML=\''+fb.replace(/'/g,"\\'")+'\'"></div>';
 }
 function renderBrokers(){
-  const list = $("brokerList"); list.innerHTML = "";
-  BROKERS.forEach((b,i)=>{
-    const r = document.createElement("div");
-    r.className = "broker-row";
+  ["brokerList","brokersPageList"].forEach(lid=>{
+    const list = $(lid); if(!list) return;
+    list.innerHTML = "";
+    BROKERS.forEach((b,i)=>{
+      const r = document.createElement("div");
+      r.className = "broker-row";
     r.innerHTML =
       brokerLogoHTML(b)+
       '<div><b>'+esc(b.name)+'</b><span>'+esc(b.sub)+(b.connected?' · <span class="pl-pos">Live link · demo</span>':"")+'</span></div>'+
       '<button class="conn-btn'+(b.connected?" connected":"")+'" data-broker="'+i+'">'+
       (b.connected?'<span class="conn-dot"></span>Connected':"Connect")+'</button>';
-    list.appendChild(r);
+      list.appendChild(r);
+    });
   });
 }
-$("brokerList").addEventListener("click", e=>{
+document.addEventListener("click", e=>{
   const btn = e.target.closest("[data-broker]"); if(!btn) return;
+  if(!e.target.closest("#brokerList") && !e.target.closest("#brokersPageList")) return;
   const i = +btn.dataset.broker;
   if(BROKERS[i].connected){ toast(BROKERS[i].name+" already linked — demo"); return; }
   openBrokerModal(i);
@@ -1909,35 +2192,91 @@ function drawEquity(cv, monthly){
 /* --- IG-style trader profile (replaces renderTraderProfile) --- */
 function igProfileHTML(t){
   const copyingThis = copyState.on && copyState.host === t.id;
+  const ret = t.ret != null ? t.ret : 0;
   return ''+
-  '<div class="ig-head">'+
-    avImg(t, "xl", (t.live?'<span class="trader-live">LIVE</span>':''))+
-    '<div class="ig-id"><b>'+esc(t.name)+(t.kycVerified?' ✓':'')+'</b><span class="handle">'+esc(t.handle)+'</span>'+
-    '<p class="ig-bio">'+esc(t.bio)+'</p></div>'+
+  '<div class="tp-cover"><img src="https://picsum.photos/seed/tpcover-'+t.id+'/800/300" alt="" loading="lazy"><div class="tp-cover-grad"></div></div>'+
+  '<div class="tp-head">'+
+    '<div class="tp-av">'+avImg(t, "xl", (t.live?'<span class="trader-live">LIVE</span>':''))+'</div>'+
+    '<b class="tp-name">'+esc(t.name)+(t.kycVerified?' <span class="verified">✓</span>':'')+'</b>'+
+    '<span class="handle">'+esc(t.handle)+'</span>'+
+    '<span class="tp-role">Pro Trader | Technical Analysis Specialist</span>'+
+    '<p class="tp-bio">'+esc(t.bio||'Sharing real trades, analysis and education.')+'</p>'+
+    '<div class="tp-badges"><span class="tp-badge"><span class="ic xs" data-icon="trophy"></span> Top Trader</span>'+
+    (t.live?'<span class="tp-badge live"><span class="live-pill"><i></i></span> Live Daily</span>':'')+'</div>'+
   '</div>'+
-  '<div class="ig-actions">'+
+  (copyingThis?'<div class="tp-copying"><span class="copying-chip">📋 Copying '+esc(t.handle)+' · '+copyState.lots.toFixed(2)+' lots</span></div>':'')+
+  '<div class="tp-stats">'+
+    '<div><b class="num">'+fmtK(t.followers)+'</b><span>Followers</span></div>'+
+    '<div><b class="num">'+fmtK(t.followingN||0)+'</b><span>Following</span></div>'+
+    '<div><b class="num pl-pos">+'+ret.toFixed(1)+'%</b><span>Total Returns</span></div>'+
+    '<div><b class="num">'+t.win+'%</b><span>Win Rate</span></div>'+
+  '</div>'+
+  '<div class="tp-actions">'+
     (t.you
       ? '<button class="ghost-btn" id="tprofEdit">Edit profile</button>'
       : '<button class="'+(t.following?"ghost-btn":"primary-btn")+'" id="tprofFollow">'+(t.following?"Following":"Follow")+'</button>')+
     (t.live?'<button class="watch-live-btn" id="tprofWatch"><span class="live-pill"><i></i>LIVE</span> Watch now</button>':'')+
-    (t.live?'<button class="ghost-btn" id="tprofCopy">📋 Copy</button>':'')+
-    (t.you?'':'<button class="ghost-btn" id="tprofMsg">Message</button>')+
+    (t.you?'':'<button class="ghost-btn" id="tprofCopy">Copy Trades</button>')+
+    (t.you?'':'<button class="icon-btn" id="tprofMsg" aria-label="More"><span class="ic sm" data-icon="dots"></span></button>')+
   '</div>'+
-  (copyingThis?'<div><span class="copying-chip">📋 Copying '+esc(t.handle)+' · '+copyState.lots.toFixed(2)+' lots</span></div>':'')+
-  '<div class="ig-stats">'+
-    '<div class="ig-stat"><b class="num">'+(t.posts?t.posts.length:0)+'</b><span>Posts</span></div>'+
-    '<div class="ig-stat"><b class="num">'+fmtK(t.followers)+'</b><span>Followers</span></div>'+
-    '<div class="ig-stat"><b class="num">'+fmtK(t.followingN)+'</b><span>Following</span></div>'+
-    '<div class="ig-stat"><b class="num">'+t.win+'%</b><span>Win rate</span></div>'+
+  '<div class="tp-tabs" id="tprofTabs" role="tablist">'+
+    '<button class="tp-tab active" data-ttab="overview" role="tab">Overview</button>'+
+    '<button class="tp-tab" data-ttab="trades" role="tab">Trades</button>'+
+    '<button class="tp-tab" data-ttab="posts" role="tab">Posts</button>'+
+    '<button class="tp-tab" data-ttab="stats" role="tab">Stats</button>'+
   '</div>'+
-  '<div class="ig-tabs" id="tprofTabs">'+
-    '<button class="ig-tab active" data-ttab="posts">Posts</button>'+
-    '<button class="ig-tab" data-ttab="reels">Reels</button>'+
-    '<button class="ig-tab" data-ttab="trades">Trades</button>'+
-  '</div>'+
-  '<div id="tprofTab-posts"></div>'+
-  '<div id="tprofTab-reels" hidden></div>'+
-  '<div id="tprofTab-trades" hidden></div>';
+  '<div id="tprofTab-overview" role="tabpanel"></div>'+
+  '<div id="tprofTab-trades" role="tabpanel" hidden></div>'+
+  '<div id="tprofTab-posts" role="tabpanel" hidden></div>'+
+  '<div id="tprofTab-stats" role="tabpanel" hidden></div>';
+}
+function renderTprofOverview(t){
+  const el = $("tprofTab-overview"); if(!el) return;
+  const ret = t.ret != null ? t.ret : 0;
+  const trades = t.trades || [];
+  const wins = trades.filter(x=>x.pl>0);
+  const avg = wins.length ? wins.reduce((a,x)=>a+x.pl,0)/wins.length : 0;
+  const worst = trades.length ? Math.min(...trades.map(x=>x.pl)) : 0;
+  el.innerHTML =
+    '<div class="tp-perf"><span>Performance</span><b class="num pl-pos">+'+ret.toFixed(1)+'%</b></div>'+
+    '<div class="period-pills tp-periods" id="tpPeriods">'+
+      '<button class="ppill" data-pp="1M">1M</button><button class="ppill" data-pp="3M">3M</button>'+
+      '<button class="ppill" data-pp="6M">6M</button><button class="ppill active" data-pp="1Y">1Y</button>'+
+      '<button class="ppill" data-pp="All">All</button></div>'+
+    '<div class="card tp-chart-card"><canvas class="eq-canvas" id="tprofEq" width="640" height="240"></canvas></div>'+
+    '<div class="tp-stat-grid">'+
+      '<div><b class="num">'+(1200+ (t.followers%300))+'</b><span>Total Trades</span></div>'+
+      '<div><b class="num">'+fmt$(avg)+'</b><span>Avg. Profit</span></div>'+
+      '<div><b class="num">'+t.win+'%</b><span>Win Rate</span></div>'+
+      '<div><b class="num pl-neg">'+worst.toFixed(1)+'%</b><span>Max Drawdown</span></div>'+
+    '</div>'+
+    '<div class="tp-extra">'+
+      '<div class="tp-extra-card"><h4>Trading Stats</h4>'+
+        '<div class="tp-kv"><span>Total Trades</span><b class="num">1,245</b></div>'+
+        '<div class="tp-kv"><span>Win Rate</span><b class="num">'+t.win+'%</b></div>'+
+        '<div class="tp-kv"><span>Profit Factor</span><b class="num">2.4</b></div>'+
+        '<div class="tp-kv"><span>Max Drawdown</span><b class="num pl-neg">8.6%</b></div>'+
+        '<div class="tp-kv"><span>Avg. Trade</span><b class="num">12.4 pips</b></div>'+
+        '<div class="tp-kv"><span>Avg. Hold Time</span><b class="num">4h 32m</b></div></div>'+
+      '<div class="tp-extra-card"><h4>Top Symbols</h4>'+
+        [["XAUUSD",42],["EURUSD",18],["GBPUSD",14],["BTCUSD",12],["US30",8],["Others",6]].map(x=>
+          '<div class="tp-sym"><b>'+x[0]+'</b><div class="poll-track"><i style="width:'+x[1]+'%"></i></div><span class="num">'+x[1]+'%</span></div>').join("")+
+      '</div>'+
+    '</div>';
+  const cv = $("tprofEq");
+  if(cv && typeof drawSpark === "function") drawSpark(cv, (t.monthly||[]).reduce((a,b)=>a+b,0), true);
+}
+function renderTprofStats(t){
+  const el = $("tprofTab-stats"); if(!el) return;
+  el.innerHTML =
+    '<div class="sec-head"><h3>Monthly P/L</h3><span class="fine">Demo</span></div>'+
+    '<div class="card"><div class="mchart">'+monthlyBars(t.monthly)+'</div><div class="mchart-x"><span>Jan</span><span>Dec</span></div></div>'+
+    '<div class="tp-stat-grid">'+
+      '<div><b class="num">'+fmtK(t.followers)+'</b><span>Followers</span></div>'+
+      '<div><b class="num">'+fmt$(t.pl)+'</b><span>Net Profit</span></div>'+
+      '<div><b class="num">'+t.win+'%</b><span>Win Rate</span></div>'+
+      '<div><b class="num">'+(t.trades||[]).length+'</b><span>Tracked Trades</span></div>'+
+    '</div>';
 }
 function renderTraderProfile(id){
   const t = TRADERS.find(x=>x.id===id); if(!t) return;
@@ -1946,10 +2285,10 @@ function renderTraderProfile(id){
   /* tabs */
   $("tprofTabs").addEventListener("click", e=>{
     const b = e.target.closest("[data-ttab]"); if(!b) return;
-    body.querySelectorAll(".ig-tab").forEach(x=>x.classList.toggle("active", x===b));
-    ["posts","reels","trades"].forEach(k=>{ $("tprofTab-"+k).hidden = (k!==b.dataset.ttab); });
+    body.querySelectorAll(".tp-tab").forEach(x=>x.classList.toggle("active", x===b));
+    ["overview","trades","posts","stats"].forEach(k=>{ $("tprofTab-"+k).hidden = (k!==b.dataset.ttab); });
   });
-  renderTprofPosts(t); renderTprofReels(t); renderTprofTrades(t);
+  renderTprofOverview(t); renderTprofPosts(t); renderTprofTrades(t); renderTprofStats(t);
   /* actions */
   const fw = $("tprofFollow");
   if(fw) fw.addEventListener("click", ()=>{
@@ -2483,21 +2822,23 @@ try{ courseProg = JSON.parse(localStorage.getItem("tc_prog_v1")||"{}"); }catch(e
 function saveProg(){ try{ localStorage.setItem("tc_prog_v1", JSON.stringify(courseProg)); }catch(e){} }
 function courseDoneCount(c){ return c.lessons.filter((_,i)=>courseProg[c.id+":"+i]).length; }
 function renderCourses(){
-  const list = $("courseList"); if(!list) return;
-  list.innerHTML = "";
-  COURSES.forEach(c=>{
-    const done = courseDoneCount(c), pct = Math.round(done/c.lessons.length*100);
-    const edu = TRADERS.find(t=>t.id===c.edu);
-    const card = document.createElement("button");
-    card.className = "course-card";
-    card.innerHTML =
-      '<div class="course-thumb" style="--g1:'+c.g[0]+';--g2:'+c.g[1]+'">'+c.emoji+'</div>'+
-      '<div class="c-info"><b>'+esc(c.title)+'</b>'+
-      '<span class="c-sub">'+esc(c.sub)+' · by '+(edu?esc(edu.name):"")+'</span>'+
-      '<div class="prog"><i style="width:'+pct+'%"></i></div>'+
-      '<span class="prog-lbl">'+(c.price? '<b class="num" style="color:var(--blue)">$'+c.price+'</b> · private' : '<b style="color:var(--green)">FREE</b>')+' · '+done+'/'+c.lessons.length+' lessons</span></div>';
-    card.addEventListener("click", ()=>openCourse(c.id));
-    list.appendChild(card);
+  ["courseList","classesPageList"].forEach(lid=>{
+    const list = $(lid); if(!list) return;
+    list.innerHTML = "";
+    COURSES.forEach(c=>{
+      const done = courseDoneCount(c), pct = Math.round(done/c.lessons.length*100);
+      const edu = TRADERS.find(t=>t.id===c.edu);
+      const card = document.createElement("button");
+      card.className = "course-card";
+      card.innerHTML =
+        '<div class="course-thumb" style="--g1:'+c.g[0]+';--g2:'+c.g[1]+'">'+c.emoji+'</div>'+
+        '<div class="c-info"><b>'+esc(c.title)+'</b>'+
+        '<span class="c-sub">'+esc(c.sub)+' · by '+(edu?esc(edu.name):"")+'</span>'+
+        '<div class="prog"><i style="width:'+pct+'%"></i></div>'+
+        '<span class="prog-lbl">'+(c.price? '<b class="num" style="color:var(--blue)">$'+c.price+'</b> · private' : '<b style="color:var(--green)">FREE</b>')+' · '+done+'/'+c.lessons.length+' lessons</span></div>';
+      card.addEventListener("click", ()=>openCourse(c.id));
+      list.appendChild(card);
+    });
   });
 }
 function courseLocked(c){ return c.price>0 && !c.enrolled; }
@@ -2666,19 +3007,23 @@ function allReels(){
   return out.sort((a,b)=>(b.r.likes||0)-(a.r.likes||0));
 }
 function renderReelsHub(){
-  const g = $("reelsHubGrid"); if(!g) return;
+  const grids = ["reelsHubGrid","communityReels","reelsPageGrid"].map(id=>$(id)).filter(Boolean);
+  if(!grids.length) return;
   const items = allReels().filter(({r})=>r.visibility!=="private");
   const c = $("reelsHubCount"); if(c) c.textContent = items.length + " reels";
-  g.innerHTML = items.map(({t,r})=>
+  const html = items.map(({t,r})=>
     '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
     '<span class="rt-play"><i>▶</i></span>'+
     '<span class="rt-handle">'+esc(t.handle)+'</span>'+
     '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views||"0")+'</span></span></button>').join("");
-  g.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
-    const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
-    const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
-    openReel(t, r, items);
-  }));
+  grids.forEach(g=>{
+    g.innerHTML = html;
+    g.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
+      const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
+      const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
+      openReel(t, r, items);
+    }));
+  });
 }
 
 /* --- quick one-tap buy/sell on the chart (uses ticket lots + type) --- */
@@ -2880,6 +3225,45 @@ function bootV15(){
   $("reelClose").addEventListener("click", closeReel);
   /* hearts */
   $("heartBtn").addEventListener("click", ()=>{ floatHeart(); setTimeout(floatHeart, 120); });
+  /* live screen: watch-mode wiring */
+  const lb = $("liveBack"); if(lb) lb.addEventListener("click", ()=>goTab("home"));
+  $("liveTabs").addEventListener("click", e=>{
+    const b = e.target.closest("[data-lv]"); if(!b) return;
+    document.querySelectorAll("#liveTabs .lv-tab").forEach(x=>x.classList.toggle("active", x===b));
+    const desk = window.matchMedia && window.matchMedia("(min-width:1024px)").matches;
+    ["chat","ideas","about"].forEach(t=>{
+      const p = $("lvPage"+t[0].toUpperCase()+t.slice(1)); if(!p) return;
+      const show = desk ? (t==="chat" ? true : t===b.dataset.lv) : t===b.dataset.lv;
+      p.hidden = !show;
+      p.classList.toggle("active", show);
+    });
+    if(b.dataset.lv === "about"){ try{ buildLiveChart(); }catch(e){} }
+  });
+  const lfb = $("liveFollowBtn");
+  if(lfb) lfb.addEventListener("click", ()=>{
+    const t = TRADERS.find(x=>x.id==="daud"); if(!t) return;
+    t.following = !t.following;
+    lfb.textContent = t.following ? "Following" : "Follow";
+    lfb.classList.toggle("following", t.following);
+    toast(t.following ? "Following Ali Khan — demo" : "Unfollowed — demo");
+  });
+  const lcb = $("liveCopyBtn2");
+  if(lcb) lcb.addEventListener("click", ()=>openCopyModal("daud"));
+  const lsb = $("liveShareBtn");
+  if(lsb) lsb.addEventListener("click", ()=>{
+    const txt = "Live Trading with Ali — XAUUSD live (demo)";
+    if(navigator.share){ navigator.share({ title:"Trading Community", text:txt }).catch(()=>{}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>toast("Link copied (demo)")).catch(()=>toast("Share — demo")); }
+    else toast("Share — demo");
+  });
+  const lsv = $("liveSaveBtn");
+  if(lsv) lsv.addEventListener("click", ()=>{ lsv.classList.toggle("saved"); toast(lsv.classList.contains("saved") ? "Saved — demo" : "Unsaved — demo"); });
+  const ceb = $("chatEmojiBtn");
+  if(ceb) ceb.addEventListener("click", ()=>{ const i = $("chatInput"); i.value += "🔥"; i.focus(); });
+  const cfb = $("camFlipBtn");
+  if(cfb) cfb.addEventListener("click", ()=>toast("Camera options — demo"));
+  const lmb = $("liveMoreBtn");
+  if(lmb) lmb.addEventListener("click", ()=>toast("Report · Share · Quality — demo"));
   /* watch mode */
   $("watchLeave").addEventListener("click", stopWatching);
   /* cam: viewers can't move the host's camera */
@@ -2918,14 +3302,67 @@ function bootV15(){
 
 /* ================= v19 REWORK: unified Home, discover search, edit profile ================= */
 
-/* ---------------- HOME FEED ---------------- */
-function renderHome(){
-  const h = new Date().getHours();
-  const greet = h<5 ? "Up late" : h<12 ? "Good morning" : h<17 ? "Good afternoon" : "Good evening";
-  const you = TRADERS.find(t=>t.you);
-  $("homeHello").textContent = greet + (you ? ", " + you.name.split(" ")[0] : "");
-  renderHomeLive(); renderHomeReels(); renderHomeIdeas(); renderHomeTraders();
+/* ---------------- HOME FEED (reference layout) ---------------- */
+function renderHomeMktChips(){
+  const el = $("homeMktChips"); if(!el) return;
+  const syms = ["XAUUSD","EURUSD","BTCUSD"];
+  el.innerHTML = syms.map(s=>{
+    const m = SYMBOLS[s], pr = px(s);
+    const chg = m.chg || 0, up = chg >= 0;
+    return '<button class="mkt-chip" data-mkt="'+s+'">'+
+      '<span class="mkt-ic">'+esc(s.slice(0,1))+'</span>'+
+      '<span class="mkt-tx"><b>'+s+'</b><b class="num">'+fmtP(s, pr.bid)+'</b>'+
+      '<span class="num '+(up?"pl-pos":"pl-neg")+'">'+(up?"▲ ":"▼ ")+Math.abs(chg).toFixed(2)+'%</span></span></button>';
+  }).join("");
+  el.querySelectorAll("[data-mkt]").forEach(b=>b.addEventListener("click", ()=>{
+    setSymbol(b.dataset.mkt); goTab("trade");
+  }));
 }
+
+function renderHomeDesk(){
+  const desk = document.querySelector(".home-desk"); if(!desk) return;
+  /* hero */
+  const hb = $("hdHeroBtn"); if(hb && !hb.dataset.w){ hb.dataset.w = "1"; hb.addEventListener("click", ()=>goTab("live")); }
+  const hd = $("hdHero"); if(hd && !hd.dataset.w){ hd.dataset.w = "1"; hd.addEventListener("click", e=>{ if(!e.target.closest("button")) goTab("live"); }); }
+  /* reels */
+  const reels = allReels().filter(({r})=>r.visibility!=="private").slice(0,4);
+  const hr = $("hdReels");
+  if(hr) hr.innerHTML = reels.map(({t,r},i)=>
+    '<button class="hd-reel" data-hr="'+i+'"><img src="https://picsum.photos/seed/hdreel'+r.id+'/300/420" alt="" loading="lazy">'+
+    '<span class="rm-grad"></span><span class="rm-tx"><b>'+esc(r.title||"Reel")+'</b><span>▶ '+esc(r.views||"0")+'</span></span>'+
+    '<span class="rm-dur num">0:'+(28+i*7)+'</span></button>').join("");
+  if(hr) hr.querySelectorAll("[data-hr]").forEach(b=>b.addEventListener("click", ()=>{
+    const {t,r} = reels[+b.dataset.hr]; openReel(t, r, reels);
+  }));
+  /* top traders */
+  const top = TRADERS.filter(t=>!t.you).slice().sort((a,b)=>(b.ret||0)-(a.ret||0)).slice(0,4);
+  const ht = $("hdTraders");
+  if(ht) ht.innerHTML = top.map((t,i)=>
+    '<div class="hd-tr"><span class="rank-n">'+(i+1)+'</span>'+
+    '<button class="rank-id" data-tprof="'+t.id+'">'+avImg(t,"sm")+
+    '<span class="hd-tr-id"><b>'+esc(t.name)+'</b><span>'+fmtK(t.followers)+' followers</span></span></button>'+
+    '<span class="hd-tr-ret num">+'+t.ret.toFixed(1)+'%</span>'+
+    '<button class="copy-btn" data-copytrader="'+t.id+'">Copy</button></div>').join("");
+  /* popular ideas */
+  const ideas = MOCK_POSTS.filter(p=>p.idea).slice(0,2);
+  const hi = $("hdIdeas");
+  if(hi) hi.innerHTML = ideas.map(p=>{
+    const t = traderOf(p), d = p.idea;
+    return '<div class="hd-idea"><div class="hd-idea-top">'+avImg(t,"sm")+
+      '<b>'+esc(d.sym)+'</b><span class="dir-tag '+(d.dir==="BUY"?"buy":"sell")+'">'+esc(d.dir)+'</span>'+
+      '<span class="likes">♥ <b class="num">'+p.likes.toLocaleString("en-US")+'</b></span></div>'+
+      '<p>'+esc(p.body)+'</p>'+
+      '<span class="fine">'+esc(t.name)+' · '+esc(p.time)+'</span></div>';
+  }).join("");
+  /* account card */
+  const dep = $("hdDeposit"); if(dep && !dep.dataset.w){ dep.dataset.w="1"; dep.addEventListener("click", ()=>toast("Deposit — demo")); }
+  const tn = $("hdTradeNow"); if(tn && !tn.dataset.w){ tn.dataset.w="1"; tn.addEventListener("click", ()=>goTab("trade")); }
+  const cv = $("hdSpark");
+  if(cv && typeof drawSpark === "function") drawSpark(cv, 4242, true);
+  injectIcons();
+}
+const _renderHomeOrig = renderHome;
+renderHome = function(){ _renderHomeOrig(); renderHomeDesk(); };
 function renderHomeLive(){
   const el = $("homeLiveStrip"); if(!el) return;
   let html = "";
@@ -2960,10 +3397,12 @@ function renderHomeReels(){
   }));
 }
 function renderHomeIdeas(){
-  const el = $("homeIdeas"); if(!el) return;
+  const targets = ["homeIdeas","communityIdeas","ideasPageList"].map(id=>$(id)).filter(Boolean);
+  if(!targets.length) return;
   const ideas = MOCK_POSTS.filter(p=>p.idea).slice(0,4);
-  if(!ideas.length){ el.innerHTML = '<div class="empty">No ideas yet — post one from the chart.</div>'; return; }
-  el.innerHTML = "";
+  targets.forEach(el=>{
+    if(!ideas.length){ el.innerHTML = '<div class="empty">No ideas yet — post one from the chart.</div>'; return; }
+    el.innerHTML = "";
   ideas.forEach(p=>{
     const t = traderOf(p), d = p.idea;
     const c = document.createElement("article");
@@ -2977,21 +3416,28 @@ function renderHomeIdeas(){
       (d.n?'<span>Backtest <b class="num">'+d.win+'%</b> / '+d.n+'</span>':'')+
       '<button class="idea-like'+(p.liked?" liked":"")+'" data-like="'+p.id+'" aria-pressed="'+p.liked+'">♥ <b class="num">'+p.likes+'</b></button></div>';
     el.appendChild(c);
+    });
   });
 }
 function renderHomeTraders(){
-  const el = $("homeTraders"); if(!el) return;
+  const el = $("homeTopTraders"); if(!el) return;
   const top = TRADERS.filter(t=>!t.you).slice().sort((a,b)=>b.followers-a.followers).slice(0,6);
-  el.innerHTML = top.map(t=>
-    '<button class="ht-card" data-tprof="'+t.id+'">'+
-    avImg(t, "", (t.live?'<span class="trader-live">LIVE</span>':''))+
-    '<b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span>'+
-    '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></button>').join("");
+  el.innerHTML = top.map((t,i)=>
+    '<div class="tt-card">'+
+    '<span class="rank-badge">#'+(i+1)+'</span>'+
+    '<button class="tt-id" data-tprof="'+t.id+'">'+avImg(t, "", (t.live?'<span class="trader-live">LIVE</span>':""))+
+    '<b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span></button>'+
+    '<div class="tcard-stats"><span>'+fmtK(t.followers)+'</span><b class="num pl-pos">+'+t.ret.toFixed(1)+'%</b></div>'+
+    '<button class="follow-btn sm'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button></div>'
+  ).join("");
 }
 /* home quick actions + see-all links */
-$("homePostIdea").addEventListener("click", openIdeaSheet);
-$("homeUploadReel").addEventListener("click", triggerReelUpload);
-$("homeGoLive").addEventListener("click", ()=>{ goTab("live"); setTimeout(()=>$("goLiveBtn").click(), 80); });
+["homePostIdea","homeUploadReel","homeGoLive"].forEach(id=>{
+  const el = $(id); if(!el) return;
+  if(id==="homePostIdea") el.addEventListener("click", openIdeaSheet);
+  if(id==="homeUploadReel") el.addEventListener("click", triggerReelUpload);
+  if(id==="homeGoLive") el.addEventListener("click", ()=>{ goTab("live"); setTimeout(()=>$("goLiveBtn").click(), 80); });
+});
 document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.goto)));
 /* keep the home live strip fresh whenever the live strip re-renders */
 const _renderLiveNow = renderLiveNow;
@@ -3078,25 +3524,35 @@ $("epPhotoInput").addEventListener("change", e=>{
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
 function bootApp(){
 injectIcons();
+document.body.dataset.tab = "home";
 /* your photo in the header / sidebar / profile (falls back to initials) */
 (function(){
   const you = TRADERS.find(t=>t.you);
   if(!you || !you.pic) return;
   const img = '<img src="'+you.pic+'" alt="" loading="lazy" onerror="this.remove()">';
   ["profAvatar","avatarBtn","sideAvatar"].forEach(id=>{ const el=$(id); if(el && !el.querySelector("img")) el.innerHTML = img + el.innerHTML; });
+  const host = TRADERS.find(t=>t.id==="daud");
+  if(host && host.pic){
+    const la = $("liveAvatar");
+    if(la && !la.querySelector("img")) la.innerHTML = '<img src="'+host.pic+'" alt="" loading="lazy" onerror="this.remove()">AK';
+  }
 })();
 renderWatchlist();
 renderAlerts();
 renderPoll();
 renderPosts();
 renderTraders();
+renderCommunityTraders();
+attachSearch("globalSearch", "gsearchDrop");
+attachSearch("homeSearch", "homeSearchDrop");
 renderYouCard();
 renderBrokers();
 renderPositions();
+renderPortfolio();
 renderDepth(true);
 renderTape(true);
 setSymbol("XAUUSD");
-setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="light" ? "light" : "dark"; }catch(e){ return "dark"; } })());
+setTheme((()=>{ try{ return localStorage.getItem("tc_theme_v1")==="dark" ? "dark" : "light"; }catch(e){ return "dark"; } })());
 renderTicketTick();
 renderAccount();
 renderLiveNow();
@@ -3544,8 +4000,27 @@ function updateDataBadges(){
   const b = $("indBtn"); if(b) b.addEventListener("click", ()=>{ buildIndSheet(); $("indSheetWrap").hidden = false; updateDataBadges(); });
   const bg = $("indSheetBg"); if(bg) bg.addEventListener("click", ()=>{ $("indSheetWrap").hidden = true; });
   const x = $("indSheetX"); if(x) x.addEventListener("click", ()=>{ $("indSheetWrap").hidden = true; });
+  const ex = $("indExpand"); if(ex) ex.addEventListener("click", ()=>{ buildIndSheet(); $("indSheetWrap").hidden = false; });
   bindIndSync();
   updateDataBadges(); /* paint market-open/closed + real-time/simulated state on first load */
+  /* quick indicator chips under the chart */
+  const CHIP_MAP = { ma:["sma50"], ema:["emaFast","emaSlow"], rsi:["rsi"], macd:["macd"], bb:["bb"] };
+  function syncIndChips(){
+    document.querySelectorAll("#indRow .ind-chip").forEach(c=>{
+      const ids = CHIP_MAP[c.dataset.ind] || [];
+      const on = ids.length && ids.every(id=>indCfg[id] && indCfg[id].on);
+      c.classList.toggle("active", !!on);
+    });
+  }
+  document.querySelectorAll("#indRow .ind-chip").forEach(c=>c.addEventListener("click", ()=>{
+    const ids = CHIP_MAP[c.dataset.ind] || [];
+    const turnOn = !(ids.length && ids.every(id=>indCfg[id] && indCfg[id].on));
+    ids.forEach(id=>{ if(indCfg[id]) indCfg[id].on = turnOn; });
+    saveIndCfg(); syncIndChips();
+    try{ buildMainChart(); }catch(e){}
+  }));
+  syncIndChips();
+  window.__syncIndChips = syncIndChips;
 })();
 
 })(); /* close main IIFE */
