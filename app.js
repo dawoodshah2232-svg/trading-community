@@ -48,6 +48,9 @@ const ICONS = {
   shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
   bank:'<path d="M4 10l8-6 8 6"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8"/><path d="M4 20h16"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/>',
+  heart:'<path d="M12 20.5s-7.6-4.8-9.4-9.3C1.3 7.9 3.5 5 6.7 5c2 0 3.8 1.2 5.3 3.1C13.5 6.2 15.3 5 17.3 5c3.2 0 5.4 2.9 4.1 6.2-1.8 4.5-9.4 9.3-9.4 9.3z"/>',
+  comment:'<path d="M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v8a2.5 2.5 0 01-2.5 2.5H9l-5 4.5z"/>',
+  share:'<path d="M12 3.5V14"/><path d="M8 7.5l4-4 4 4"/><path d="M5 12.5V19a1.5 1.5 0 001.5 1.5h11A1.5 1.5 0 0019 19v-6.5"/>',
 };
 function injectIcons(){
   document.querySelectorAll("[data-icon]").forEach(el=>{
@@ -1406,7 +1409,7 @@ function renderYouLiveCard(){
     '<div class="yl-top"><span class="live-pill"><i></i>LIVE</span>'+
     '<span class="pair-badge">'+liveSetup.sym+'</span>'+
     '<span class="yl-viewers num">'+youLive.viewers.toLocaleString("en-US")+' watching</span></div>'+
-    '<div class="yl-main"><div class="avatar">DR</div>'+
+    '<div class="yl-main">'+avImg(TRADERS.find(t=>t.you)||{ini:"YOU",g:["#2F80FF","#1B5FD6"]})+
     '<div><b>'+esc(liveSetup.title || (liveSetup.sym+" · Live scalps"))+'</b><span class="tstat">Today <b class="'+plCls+'">'+plTxt+'</b> · '+liveSetup.sym+' scalps</span></div>'+
     '<button class="primary-btn sm" id="youLiveWatch">Watch</button></div>'+
     '<p class="fine">Demo broadcast — viewers and profit are simulated.</p>';
@@ -1415,28 +1418,35 @@ function renderYouLiveCard(){
 
 /* ---------------- COMMUNITY (social) ---------------- */
 const TRADERS = [
-  { id:"daud", name:"Marcus Cole", handle:"@daudtradefx", ini:"DR", g:["#2F80FF","#1B5FD6"],
+  { id:"daud", name:"Marcus Cole", handle:"@daudtradefx", ini:"DR", pic:"https://randomuser.me/api/portraits/men/32.jpg", g:["#2F80FF","#1B5FD6"],
     bio:"XAUUSD scalper · London session · 8 yrs trading", following:false, followers:48200, followingN:312,
     win:67, pl:4210, live:true,
     monthly:[820, -140, 1150, 640, 980, -220, 1310, 760, 540, 890, 410, 690],
     trades:[ {s:"XAUUSD",d:"BUY",pl:184.20},{s:"EURUSD",d:"SELL",pl:96.40},{s:"BTCUSD",d:"BUY",pl:-58.10} ] },
-  { id:"sara", name:"Sara Malik", handle:"@saramalik", ini:"SM", g:["#B678F0","#5E2B8A"],
+  { id:"sara", name:"Sara Malik", handle:"@saramalik", ini:"SM", pic:"https://randomuser.me/api/portraits/women/44.jpg", g:["#B678F0","#5E2B8A"],
     bio:"FX swing trader · fundamentals + technicals", following:false, followers:21700, followingN:428,
     win:61, pl:2980, live:false,
     monthly:[410, 320, -90, 520, 610, 280, -140, 490, 350, 420, 260, 380],
     trades:[ {s:"EURUSD",d:"BUY",pl:142.80},{s:"GBPUSD",d:"BUY",pl:88.20},{s:"USDJPY",d:"SELL",pl:-34.50} ] },
-  { id:"arjun", name:"Arjun Rao", handle:"@arjunfx", ini:"AR", g:["#5B8DEF","#2B4A8A"],
+  { id:"arjun", name:"Arjun Rao", handle:"@arjunfx", ini:"AR", pic:"https://randomuser.me/api/portraits/men/45.jpg", g:["#5B8DEF","#2B4A8A"],
     bio:"Crypto + indices · risk-first, always", following:false, followers:15300, followingN:196,
     win:58, pl:2140, live:false,
     monthly:[260, 180, 340, -120, 290, 410, 220, -60, 310, 190, 240, 200],
     trades:[ {s:"BTCUSD",d:"BUY",pl:212.60},{s:"NAS100",d:"SELL",pl:74.30},{s:"ETHUSD",d:"BUY",pl:-41.20} ] },
-  { id:"lena", name:"Lena Fischer", handle:"@lenafx", ini:"LF", g:["#22C55E","#166534"],
+  { id:"lena", name:"Lena Fischer", handle:"@lenafx", ini:"LF", pic:"https://randomuser.me/api/portraits/women/68.jpg", g:["#22C55E","#166534"],
     bio:"Gold & silver specialist · patient entries", following:false, followers:9800, followingN:154,
     win:64, pl:1875, live:false,
     monthly:[180, 240, 120, 300, -80, 260, 190, 220, 140, 260, 110, 170],
     trades:[ {s:"XAUUSD",d:"SELL",pl:118.90},{s:"XAGUSD",d:"BUY",pl:62.40},{s:"XAUUSD",d:"BUY",pl:-28.70} ] },
 ];
 const fmtK = n => n>=1000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
+/* avatar with photo (falls back to initials if the photo fails) */
+function avImg(t, cls, extra){
+  const c = "avatar" + (cls ? " " + cls : "");
+  const g = ' style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')"';
+  const img = t.pic ? '<img src="'+t.pic+'" alt="" loading="lazy" onerror="this.remove()">' : "";
+  return '<div class="'+c+'"'+g+'>'+img+t.ini+(extra||"")+'</div>';
+}
 /* --- you (the owner) on the social layer --- */
 const YOU = { rank:null, followers:1204, todayPL:0 };
 
@@ -1466,8 +1476,7 @@ function renderTraders(){
     c.dataset.tprof = t.id; /* whole row opens the profile; live traders get a Watch-live button inside */
     c.innerHTML =
       rankBadge(i)+
-      '<div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
-      (t.live ? '<span class="trader-live">LIVE</span>' : '') + '</div>'+
+      avImg(t, "", (t.live ? '<span class="trader-live">LIVE</span>' : ''))+
       '<div class="lb-info" data-tprof="'+t.id+'"><b>'+esc(t.name)+' <span class="handle">'+esc(t.handle)+'</span></b>'+
       '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></div>'+
       '<div class="lb-stat">'+lbStat(t)+'</div>'+
@@ -1562,7 +1571,7 @@ function renderYouCard(){
   YOU.todayPL = tpl; YOU.rank = rank;
   const el = $("youCard"); if(!el) return;
   el.innerHTML =
-    '<div class="avatar">YOU</div>'+
+    avImg(TRADERS.find(t=>t.you)||{ini:"YOU",g:["#2F80FF","#1B5FD6"]})+
     '<div class="you-info"><b>Your trading</b>'+
     '<span class="you-stats"><span class="num '+plClass(tpl)+'">'+fmt$(tpl)+'</span> today · '+
     '<span class="num">#'+rank+'</span> rank · <span class="num">'+fmtK(YOU.followers)+'</span> followers</span></div>'+
@@ -1588,7 +1597,7 @@ function postCard(p){
   const c = document.createElement("div");
   c.className = "card post";
   c.innerHTML =
-    '<div class="post-head"><div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+'</div>'+
+    '<div class="post-head">'+avImg(t)+
     '<div data-tprof="'+t.id+'"><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+p.time+'</span></div>'+
     '<button class="follow-btn xs'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button></div>'+
     '<div class="post-body"></div>'+
@@ -1796,7 +1805,7 @@ $("brokerConnectGo").addEventListener("click", ()=>{
     t.postCount = t.posts.length;
   });
   /* you, as a trader on the social layer */
-  TRADERS.push({ id:"you", name:"Alex Trader", handle:"@alextrader", ini:"AT", g:["#2F80FF","#1B5FD6"],
+  TRADERS.push({ id:"you", name:"Alex Trader", handle:"@alextrader", ini:"AT", pic:"https://randomuser.me/api/portraits/men/22.jpg", g:["#2F80FF","#1B5FD6"],
     bio:"Learning in public · XAUUSD & majors", following:false, followers:1204, followingN:86,
     win:52, pl:0, live:false, you:true,
     monthly:[120,-40,200,90,-60,150,80,210,-30,140,60,110],
@@ -1847,8 +1856,7 @@ function igProfileHTML(t){
   const copyingThis = copyState.on && copyState.host === t.id;
   return ''+
   '<div class="ig-head">'+
-    '<div class="avatar xl" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
-    (t.live?'<span class="trader-live">LIVE</span>':'')+'</div>'+
+    avImg(t, "xl", (t.live?'<span class="trader-live">LIVE</span>':''))+
     '<div class="ig-id"><b>'+esc(t.name)+(t.kycVerified?' ✓':'')+'</b><span class="handle">'+esc(t.handle)+'</span>'+
     '<p class="ig-bio">'+esc(t.bio)+'</p></div>'+
   '</div>'+
@@ -1996,9 +2004,9 @@ function buildReelSlide(t, r, i){
       ? '<video playsinline loop preload="metadata" src="'+esc(r.videoUrl)+'"></video>'
       : '<canvas width="540" height="960"></canvas>')+
     '<div class="reel-side">'+
-      '<button class="reel-act rl-like'+(r.liked?" liked":"")+'" aria-label="Like">♥<b class="num">'+fmtK(r.likes||0)+'</b></button>'+
-      '<button class="reel-act rl-com" aria-label="Comments">✉<b class="num">'+fmtK(comN)+'</b></button>'+
-      '<button class="reel-act rl-share" aria-label="Share">↗<b>Share</b></button>'+
+      '<button class="reel-act rl-like'+(r.liked?" liked":"")+'" aria-label="Like"><span class="ic" data-icon="heart"></span><b class="num">'+fmtK(r.likes||0)+'</b></button>'+
+      '<button class="reel-act rl-com" aria-label="Comments"><span class="ic" data-icon="comment"></span><b class="num">'+fmtK(comN)+'</b></button>'+
+      '<button class="reel-act rl-share" aria-label="Share"><span class="ic" data-icon="share"></span><b>Share</b></button>'+
     "</div>"+
     '<div class="reel-cap"><b>'+esc(t.handle)+(t.live?" · LIVE":"")+"</b><p>"+esc(r.title)+
       (r.desc ? '<span class="reel-desc">'+esc(r.desc)+"</span>" : "")+
@@ -2448,7 +2456,7 @@ function openCourse(id){
     '<div class="course-thumb" style="--g1:'+c.g[0]+';--g2:'+c.g[1]+';width:96px;height:96px;font-size:40px;margin-bottom:12px">'+c.emoji+'</div>'+
     '<h3 style="margin:0 0 6px">'+esc(c.title)+'</h3>'+
     '<p class="modal-sub" style="text-align:left;margin:0 0 10px">'+esc(c.desc)+'</p>'+
-    (edu?'<button class="trader-mini" data-tprof="'+edu.id+'"><span class="avatar sm" style="background:linear-gradient(135deg,'+edu.g[0]+','+edu.g[1]+')">'+edu.ini+'</span><span><b>'+esc(edu.name)+'</b><span class="handle">'+esc(edu.handle)+' · '+fmtK(edu.followers)+' followers</span></span></button>':"")+
+    (edu?'<button class="trader-mini" data-tprof="'+edu.id+'">'+avImg(edu, "sm")+'<span><b>'+esc(edu.name)+'</b><span class="handle">'+esc(edu.handle)+' · '+fmtK(edu.followers)+' followers</span></span></button>':"")+
     '<div class="sec-head"><h3>Lessons</h3><span class="fine">'+courseDoneCount(c)+'/'+c.lessons.length+' done</span></div>'+
     '<div id="lessonList"></div>'+
     '<div class="sec-head"><h3>Materials</h3><span class="fine">'+(locked?"🔒 join to unlock":"demo files")+'</span></div>'+
@@ -2906,7 +2914,7 @@ function renderHomeIdeas(){
     const c = document.createElement("article");
     c.className = "idea-card";
     c.innerHTML =
-      '<div class="idea-top"><span class="avatar sm" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+'</span>'+
+      '<div class="idea-top">'+avImg(t, "sm")+
       '<div class="idea-who"><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+esc(p.time)+'</span></div>'+
       '<span class="idea-dir '+(d.dir==="BUY"?"buy":"sell")+'">'+esc(d.dir)+'</span></div>'+
       '<p class="idea-body">'+esc(p.body)+'</p>'+
@@ -2921,8 +2929,7 @@ function renderHomeTraders(){
   const top = TRADERS.filter(t=>!t.you).slice().sort((a,b)=>b.followers-a.followers).slice(0,6);
   el.innerHTML = top.map(t=>
     '<button class="ht-card" data-tprof="'+t.id+'">'+
-    '<span class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
-    (t.live?'<span class="trader-live">LIVE</span>':'')+'</span>'+
+    avImg(t, "", (t.live?'<span class="trader-live">LIVE</span>':''))+
     '<b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span>'+
     '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></button>').join("");
 }
@@ -2951,8 +2958,7 @@ renderTraders = function(){
     c.dataset.tprof = t.id;
     c.innerHTML =
       rankBadge(i)+
-      '<div class="avatar" style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')">'+t.ini+
-      (t.live ? '<span class="trader-live">LIVE</span>' : '') + '</div>'+
+      avImg(t, "", (t.live ? '<span class="trader-live">LIVE</span>' : ''))+
       '<div class="lb-info" data-tprof="'+t.id+'"><b>'+esc(t.name)+' <span class="handle">'+esc(t.handle)+'</span></b>'+
       '<span class="tstat">'+fmtK(t.followers)+' followers · '+t.win+'% win</span></div>'+
       '<div class="lb-stat">'+lbStat(t)+'</div>'+
@@ -3017,6 +3023,13 @@ $("epPhotoInput").addEventListener("change", e=>{
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
 function bootApp(){
 injectIcons();
+/* your photo in the header / sidebar / profile (falls back to initials) */
+(function(){
+  const you = TRADERS.find(t=>t.you);
+  if(!you || !you.pic) return;
+  const img = '<img src="'+you.pic+'" alt="" loading="lazy" onerror="this.remove()">';
+  ["profAvatar","avatarBtn","sideAvatar"].forEach(id=>{ const el=$(id); if(el && !el.querySelector("img")) el.innerHTML = img + el.innerHTML; });
+})();
 renderWatchlist();
 renderAlerts();
 renderPoll();

@@ -175,11 +175,12 @@ p{ margin:0; }
   .sym-picker{ font-size:16px; padding:6px 8px; }
 }
 .icon-btn{
-  width:44px; height:44px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center;
-  color:var(--muted); position:relative; flex-shrink:0;
+  width:44px; height:44px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center;
+  color:var(--muted); position:relative; flex-shrink:0; background:transparent; border:0;
+  transition:background .15s ease, color .15s ease, transform .12s ease;
 }
-.icon-btn:active{ background:var(--surface-2); color:var(--text); }
-.icon-btn.primary{ background:var(--blue); color:#fff; }
+.icon-btn:active{ background:var(--surface-2); color:var(--text); transform:scale(.92); }
+.icon-btn.primary{ background:linear-gradient(135deg,var(--blue) 0%,var(--blue-deep) 100%); color:#fff; box-shadow:0 4px 12px rgba(47,128,255,.35); }
 .icon-btn .dot{
   position:absolute; top:10px; right:11px; width:8px; height:8px; border-radius:50%;
   background:var(--red); border:2px solid var(--bg-soft);
@@ -238,17 +239,22 @@ p{ margin:0; }
 select.field{ appearance:none; }
 .primary-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  background:var(--blue); color:#fff; font-weight:700; font-size:15px;
-  border-radius:var(--r-md); padding:0 20px; min-height:48px;
+  background:linear-gradient(135deg,var(--blue) 0%,var(--blue-deep) 100%); color:#fff; font-weight:700; font-size:15px;
+  border:0; border-radius:var(--r-md); padding:0 20px; min-height:48px; cursor:pointer;
+  box-shadow:0 6px 16px rgba(47,128,255,.32), inset 0 1px 0 rgba(255,255,255,.18);
+  transition:transform .12s ease, box-shadow .15s ease, filter .15s ease;
 }
-.primary-btn:active{ background:var(--blue-deep); }
+.primary-btn:active{ filter:brightness(.94); transform:scale(.97); box-shadow:0 2px 8px rgba(47,128,255,.28); }
 .primary-btn.sm{ min-height:44px; font-size:14px; }
-.primary-btn:disabled{ opacity:.6; }
+.primary-btn:disabled{ opacity:.55; box-shadow:none; }
 .ghost-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  background:var(--surface-2); color:var(--text); font-weight:600; font-size:14px;
-  border-radius:var(--r-md); padding:0 18px; min-height:44px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text); font-weight:600; font-size:14px;
+  border-radius:var(--r-md); padding:0 18px; min-height:44px; border:1px solid var(--border); cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
+  transition:background .15s ease, transform .12s ease, border-color .15s ease;
 }
+.ghost-btn:active{ background:var(--surface-2); transform:scale(.97); border-color:var(--faint); }
 .ghost-btn.wide{ width:100%; margin-top:10px; }
 .link-btn{
   display:inline-flex; align-items:center; gap:6px; color:var(--blue);
@@ -468,16 +474,17 @@ select.field{ appearance:none; }
 .risk-line .sep{ color:var(--faint); }
 .exec-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:2px; }
 .exec{
-  border-radius:14px; min-height:66px; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:3px; color:#fff;
-  transition:transform .08s ease;
+  border:0; border-radius:16px; min-height:68px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:3px; color:#fff; cursor:pointer;
+  box-shadow:0 6px 16px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.22);
+  transition:transform .1s ease, filter .15s ease, box-shadow .15s ease;
 }
-.exec span{ font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; opacity:.92; }
+.exec span{ font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; opacity:.95; }
 .exec b{ font-size:17px; font-weight:700; }
-.exec.buy{ background:var(--green); }
-.exec.buy:active{ background:var(--green-deep); transform:scale(.98); }
-.exec.sell{ background:var(--red); }
-.exec.sell:active{ background:var(--red-deep); transform:scale(.98); }
+.exec.buy{ background:linear-gradient(135deg,#2BD97A 0%,#16A34A 100%); }
+.exec.buy:active{ filter:brightness(.93); transform:scale(.97); box-shadow:0 2px 8px rgba(0,0,0,.15); }
+.exec.sell{ background:linear-gradient(135deg,#F0564F 0%,#DC2626 100%); }
+.exec.sell:active{ filter:brightness(.93); transform:scale(.97); box-shadow:0 2px 8px rgba(0,0,0,.15); }
 .ticket .fine{ margin-top:12px; text-align:center; }
 
 /* ---------- alerts ---------- */
@@ -1116,10 +1123,25 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .reel-prog{ flex:1; height:3px; background:rgba(255,255,255,.25); border-radius:2px; overflow:hidden; }
 .reel-prog i{ display:block; height:100%; width:0; background:#fff; }
 .reel-top .icon-btn{ background:rgba(0,0,0,.45); color:#fff; }
-.reel-side{ position:absolute; right:10px; bottom:120px; display:flex; flex-direction:column; gap:14px; }
-.reel-act{ background:rgba(0,0,0,.45); border:0; color:#fff; width:52px; height:52px; border-radius:50%; font-size:20px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
-.reel-act b{ font-size:10px; font-weight:700; }
-.reel-act.liked{ color:#F04452; }
+.reel-side{ position:absolute; right:10px; bottom:128px; display:flex; flex-direction:column; align-items:center; gap:18px; z-index:3; }
+.reel-act{
+  background:none; border:0; color:#fff; cursor:pointer; padding:0;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  font-weight:600; font-size:12px; text-shadow:0 1px 6px rgba(0,0,0,.55);
+}
+.reel-act .ic{
+  width:50px; height:50px; border-radius:50%;
+  background:rgba(20,22,28,.42); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.22);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);
+  transition:transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.reel-act:active .ic{ transform:scale(.88); }
+.reel-act .ic svg{ width:25px; height:25px; }
+.reel-act b.num{ letter-spacing:.2px; font-size:12px; }
+.reel-act.liked .ic{ background:rgba(240,68,82,.92); border-color:rgba(240,68,82,.92); }
+.reel-act.liked .ic svg{ fill:#fff; stroke:#fff; }
 .reel-cap{ position:absolute; left:14px; right:90px; bottom:calc(20px + env(safe-area-inset-bottom)); color:#fff; }
 .reel-cap b{ font-size:14px; } .reel-cap p{ font-size:13px; margin:4px 0 0; line-height:1.4; }
 
