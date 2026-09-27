@@ -1159,6 +1159,8 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .post-tile .pt-meta span.up{ color:#4ADE80; } .post-tile .pt-meta span.dn{ color:#F87171; }
 .reel-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:3px; }
 .reel-tile{ position:relative; flex:0 0 112px; aspect-ratio:9/15; border-radius:12px; overflow:hidden; border:0; padding:0; cursor:pointer; background:linear-gradient(160deg,var(--g1),var(--g2)); scroll-snap-align:start; }
+.reel-tile .rt-video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#0B1220; }
+.reel-tile .rt-play{ z-index:1; }
 .reel-tile .rt-dur{ position:absolute; top:8px; left:8px; z-index:1; background:rgba(0,0,0,.55); color:#fff; font-size:10.5px; font-weight:700; border-radius:7px; padding:3px 7px; font-family:var(--mono); }
 .reel-tile .rt-play{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
 .reel-tile .rt-play i{ width:40px; height:40px; border-radius:50%; background:rgba(0,0,0,.45); color:#fff; display:flex; align-items:center; justify-content:center; font-style:normal; font-size:16px; }

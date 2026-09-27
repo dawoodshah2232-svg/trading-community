@@ -4452,6 +4452,7 @@ function renderReelsHub(){
   const c = $("reelsHubCount"); if(c) c.textContent = items.length + " reels";
   const html = items.map(({t,r})=>
     '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+    (r.videoUrl ? '<video class="rt-video" muted playsinline preload="metadata" src="'+r.videoUrl+'#t=0.1"></video>' : "")+
     '<span class="rt-play"><i>▶</i></span>'+
     '<span class="rt-handle">'+esc(t.handle)+'</span>'+
     '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views||"0")+'</span></span></button>').join("");
@@ -4863,6 +4864,7 @@ function renderHomeReels(){
     let h = 0; for(const c of r.id) h = (h*31 + c.charCodeAt(0)) % 997;
     const dur = "0:" + String(18 + (h % 42)).padStart(2, "0");
     return '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+    (r.videoUrl ? '<video class="rt-video" muted playsinline preload="metadata" src="'+r.videoUrl+'#t=0.1"></video>' : "")+
     '<span class="rt-dur">'+dur+'</span>'+
     '<span class="rt-play"><i>▶</i></span>'+
     '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>'+esc(r.views||"0")+' views</span></span></button>';
