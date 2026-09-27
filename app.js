@@ -49,6 +49,8 @@ const ICONS = {
   search:'<circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16 16"/>',
   reel:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9.5h18M7.5 5v4.5M16.5 5v4.5"/><path d="M10.5 12.5l4.5 2.5-4.5 2.5z"/>',
   edit:'<path d="M4 20l4-1L19 8l-3-3L5 16l-1 4z"/><path d="M13.5 6.5l3 3"/>',
+  chart:'<path d="M3 17l5-6 4 4 6-8"/><path d="M18 7h-4M21 7v4"/>',
+  fib:'<path d="M4 5h16M4 10h16M4 15h16M4 20h16"/><path d="M12 5v15" stroke-dasharray="2 2"/>',
   shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
   bank:'<path d="M4 10l8-6 8 6"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8"/><path d="M4 20h16"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/>',
@@ -107,7 +109,8 @@ const START_BALANCE = 10000;
 /* ---------------- STATE (all mock) ---------------- */
 const state = {
   sym:"XAUUSD", tf:"1m",
-  ttype:"market", dir:"buy", lots:0.10, tpslOn:false,
+  ttype:"market", dir:"buy", lots:0.10, tpslOn:true,
+  lev:500,
   prices:{}, hist:{}, depth:{},
   open:[], pending:[], history:[],
   alerts:[], alertSeq:1, orderSeq:1,
@@ -493,6 +496,12 @@ function setSymbol(s){
   renderHeaderTick(); renderTicketTick();
   updateDataBadges(); /* market open/closed + real-time/simulated state */
   $("tPrice").value = "";
+  /* suggest TP/SL like the reference ticket when the fields are empty */
+  try{
+    const tp = $("tpPrice"), sl = $("slPrice"), pr = px(s);
+    if(tp && !tp.value) tp.value = fmtP(s, pr.ask * 1.004);
+    if(sl && !sl.value) sl.value = fmtP(s, pr.bid * 0.996);
+  }catch(e){}
 }
 function renderHeaderTick(){
   const s = state.sym, pr = px(s);
@@ -965,11 +974,15 @@ function estRisk(){
 }
 function renderTicketTick(){
   const s = state.sym, pr = px(s);
+  const tkS = $("tkSym"); if(tkS) tkS.textContent = s;
+  const tkSS = $("tkSymSub"); if(tkSS) tkSS.textContent = meta(s).name;
+  const tkP = $("tkPx"); if(tkP) tkP.textContent = fmtP(s, pr.bid);
+  const tkC = $("tkChg"); if(tkC){ const chg = SYMBOLS[s].chg||0, up = chg>=0;
+    tkC.textContent = (up?"+":"")+chg.toFixed(2)+"%"; tkC.className = "num "+(up?"pl-pos":"pl-neg"); }
   $("buyPx").textContent = fmtP(s, pr.ask);
   $("sellPx").textContent = fmtP(s, pr.bid);
   $("estMargin").textContent = fmt$(estMarginSafe());
-  const r = estRisk();
-  $("estRisk").textContent = r===null ? "—" : fmt$(r);
+  const rEl = $("estRisk"); if(rEl){ const r = estRisk(); rEl.textContent = r===null ? "—" : fmt$(r); }
 }
 function estMarginSafe(){ try{ return estMargin(); }catch(e){ return 0; } }
 
@@ -4011,6 +4024,13 @@ function updateDataBadges(){
   const bg = $("indSheetBg"); if(bg) bg.addEventListener("click", ()=>{ $("indSheetWrap").hidden = true; });
   const x = $("indSheetX"); if(x) x.addEventListener("click", ()=>{ $("indSheetWrap").hidden = true; });
   const ex = $("indExpand"); if(ex) ex.addEventListener("click", ()=>{ buildIndSheet(); $("indSheetWrap").hidden = false; });
+  const csb = $("chartSaveBtn"); if(csb) csb.addEventListener("click", ()=>toast("Chart layout saved — demo"));
+  const snb = $("chartSnapBtn"); if(snb) snb.addEventListener("click", ()=>toast("Snapshot copied — demo"));
+  document.querySelectorAll("#drawBar .db-btn").forEach(b=>b.addEventListener("click", ()=>{
+    document.querySelectorAll("#drawBar .db-btn").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    if(b.dataset.draw!=="cross") toast(b.title+" tool — demo");
+  }));
   bindIndSync();
   updateDataBadges(); /* paint market-open/closed + real-time/simulated state on first load */
   /* quick indicator chips under the chart */
