@@ -2821,6 +2821,14 @@ const COURSES = [
     materials:[
       { name:"PA cheatsheet.pdf", kind:"PDF", size:"1.2 MB", body:"PRICE ACTION CHEATSHEET (demo)\n\n1. Trend = HH/HL or LH/LL — nothing else.\n2. Liquidity sits above equal highs, below equal lows.\n3. Enter on the sweep, not the breakout.\n4. Stop beyond the sweep wick, never beyond hope.\n5. Two targets: first at 1.5R, runner with trailing stop.\n6. Max 2% risk per trade. Max 3 trades per session." },
       { name:"Backtest template.csv", kind:"CSV", size:"4 KB", body:"date,symbol,setup,entry,stop,tp1,tp2,result,r_multiple,notes (demo file — 200 rows in the full version)" }
+    ],
+    strategies:[
+      { name:"Sweep & reverse", sym:"XAUUSD", entry:"Sweep of equal highs/lows + M5 displacement back inside", stop:"Beyond the sweep wick", tp:"TP1 1.5R \u00b7 runner with trailing stop", win:"61% (200 backtested)" },
+      { name:"Break-and-retest", sym:"EURUSD", entry:"M15 structure break, limit order at retested level", stop:"Beyond break candle", tp:"TP1 2R \u00b7 TP2 3R", win:"54% (140 backtested)" }
+    ],
+    trades:[
+      { sym:"XAUUSD", side:"BUY", entry:"2,648.10", exit:"2,671.30", r:"+1.9R", when:"NFP Friday", note:"Sweep of Asia low, textbook entry" },
+      { sym:"XAUUSD", side:"SELL", entry:"2,699.80", exit:"2,684.20", r:"+1.6R", when:"Wed", note:"Equal highs swept at London open" }
     ] },
   { id:"c2", title:"Gold Scalping — Private Room", sub:"6 lessons · private", price:5, emoji:"🥇", g:["#F5A623","#B26A00"], edu:"daud", enrolled:false,
     desc:"My private scalping room: exact gold entries, live session recordings, and every strategy PDF I trade from. One-time $5 entry — recordings stay yours forever.",
@@ -2836,6 +2844,15 @@ const COURSES = [
       { name:"Gold playbook.pdf", kind:"PDF", size:"2.4 MB", body:"GOLD SCALPING PLAYBOOK (demo)\n\nSetup: London sweep of Asia range.\nEntry: M5 displacement + retest of swept level.\nStop: 8–12 points beyond sweep wick.\nTargets: TP1 +18 points, TP2 runner.\nRisk: 1% per scalp. Max 3 per session.\nSessions: London open + New York open only." },
       { name:"Session filter guide.pdf", kind:"PDF", size:"800 KB", body:"SESSION FILTER (demo)\n\nTrade: 07:00–11:00 GMT, 13:30–16:30 GMT.\nAvoid: rollover 21:00–22:00 GMT, first 5 min after red news.\nSpread rule: skip if spread > 35 points on gold." },
       { name:"Journal template.xlsx", kind:"XLSX", size:"96 KB", body:"Journal columns: date, session, setup, entry, stop, tp1, tp2, R, emotion (1–5), screenshot link, notes. (demo preview)" }
+    ],
+    strategies:[
+      { name:"London sweep scalp", sym:"XAUUSD", entry:"Asia range marked \u00b7 London sweeps one side \u00b7 M5 displacement back inside \u00b7 enter on retest", stop:"8\u201312 pts beyond sweep wick", tp:"TP1 +18 pts \u00b7 TP2 runner", win:"68% (112 live)" },
+      { name:"NFP spike fade", sym:"XAUUSD", entry:"First 5-min spike into pre-news level, fade the extension", stop:"15 pts", tp:"TP1 +25 pts \u00b7 TP2 +45 pts", win:"61% (47 live)" }
+    ],
+    trades:[
+      { sym:"XAUUSD", side:"BUY", entry:"2,652.40", exit:"2,670.10", r:"+1.8R", when:"NFP Friday", note:"Uncut recording in the lessons \u2014 the +$184 scalp" },
+      { sym:"XAUUSD", side:"SELL", entry:"2,701.20", exit:"2,689.55", r:"+1.5R", when:"Tue", note:"Asia high sweep, M5 displacement entry" },
+      { sym:"EURUSD", side:"BUY", entry:"1.0842", exit:"1.0798", r:"\u22121.0R", when:"Mon", note:"Stopped \u2014 spread widened at rollover. Logged as my mistake." }
     ] },
   { id:"c3", title:"Risk Management Bootcamp", sub:"5 lessons · English", price:0, emoji:"🛡", g:["#22C55E","#166534"], edu:"sara",
     desc:"The unsexy skill that keeps you in the game: position sizing, drawdown rules and the math of survival.",
@@ -2848,6 +2865,14 @@ const COURSES = [
     ],
     materials:[
       { name:"Risk plan template.pdf", kind:"PDF", size:"640 KB", body:"RISK PLAN (demo)\n\nRisk per trade: 1–2%.\nMax daily loss: 3% → screens off.\nMax open risk: 6%.\nSessions: London + New York.\nSetups allowed: max 2." }
+    ],
+    strategies:[
+      { name:"Fixed-fractional sizing", sym:"Any", entry:"Risk $ = balance \u00d7 risk% \u00b7 lots = risk $ \u00f7 (stop pts \u00d7 $ per pt)", stop:"Set by setup, never by feeling", tp:"Minimum 1.5R on every idea", win:"Survival first \u2014 math over hunches" },
+      { name:"Daily stop rule", sym:"Any", entry:"Trade the plan until \u22123% day", stop:"\u22123% \u2192 screens off, no exceptions", tp:"Protect the week, not the trade", win:"Drawdown control beats win rate" }
+    ],
+    trades:[
+      { sym:"XAUUSD", side:"BUY", entry:"2,610.00", exit:"2,628.40", r:"+1.5R", when:"Thu", note:"Risked 1% \u2014 textbook, no drama" },
+      { sym:"BTCUSD", side:"SELL", entry:"97,400", exit:"96,100", r:"+2.1R", when:"Wed", note:"Correlated risk checked first (no USD longs open)" }
     ] }
 ];
 let courseProg = {};
@@ -2874,9 +2899,15 @@ function renderCourses(){
     });
   });
 }
-function courseLocked(c){ return c.price>0 && !c.enrolled; }
-function openCourse(id){
+let enroll = {};
+try{ enroll = JSON.parse(localStorage.getItem("tc_enroll_v1")||"{}"); }catch(e){ enroll = {}; }
+function saveEnroll(){ try{ localStorage.setItem("tc_enroll_v1", JSON.stringify(enroll)); }catch(e){} }
+function courseLocked(c){ return c.price>0 && !enroll[c.id]; }
+let courseTab = "lessons";
+const COURSE_TABS = [["lessons","Lessons"],["recordings","Recordings"],["strategies","Strategies"],["trades","Trades"],["materials","Materials"]];
+function openCourse(id, tab){
   const c = COURSES.find(x=>x.id===id); if(!c) return;
+  courseTab = tab || "lessons";
   const edu = TRADERS.find(t=>t.id===c.edu);
   const locked = courseLocked(c);
   $("courseViewTitle").textContent = c.title;
@@ -2885,41 +2916,98 @@ function openCourse(id){
     '<div class="course-thumb" style="--g1:'+c.g[0]+';--g2:'+c.g[1]+';width:96px;height:96px;font-size:40px;margin-bottom:12px">'+c.emoji+'</div>'+
     '<h3 style="margin:0 0 6px">'+esc(c.title)+'</h3>'+
     '<p class="modal-sub" style="text-align:left;margin:0 0 10px">'+esc(c.desc)+'</p>'+
-    (edu?'<button class="trader-mini" data-tprof="'+edu.id+'">'+avImg(edu, "sm")+'<span><b>'+esc(edu.name)+'</b><span class="handle">'+esc(edu.handle)+' · '+fmtK(edu.followers)+' followers</span></span></button>':"")+
-    '<div class="sec-head"><h3>Lessons</h3><span class="fine">'+courseDoneCount(c)+'/'+c.lessons.length+' done</span></div>'+
-    '<div id="lessonList"></div>'+
-    '<div class="sec-head"><h3>Materials</h3><span class="fine">'+(locked?"🔒 join to unlock":"demo files")+'</span></div>'+
-    '<div id="matList"></div>'+
-    (locked?'<button class="primary-btn" id="joinClassBtn" style="margin-top:12px">Join private class — $'+c.price+'</button>'+
-      '<p class="fine" style="text-align:center">One-time entry · recordings + PDFs stay yours · <span class="demo-tag">Demo checkout</span></p>':"");
-  const ll = $("lessonList");
-  c.lessons.forEach((l,i)=>{
-    const done = !!courseProg[c.id+":"+i];
-    const row = document.createElement("button");
-    row.className = "lesson-row"+(done?" done":"");
-    row.innerHTML = '<span class="lesson-n">'+(done?"✓":(locked?"🔒":(i+1)))+'</span>'+
-      '<span class="l-info"><b>'+esc(l.t)+'</b><span>'+l.type+' · '+l.dur+'</span></span>';
-    row.addEventListener("click", ()=>{
-      if(locked){ toast("Join the private class to unlock lessons"); return; }
-      openLesson(c, i);
-    });
-    ll.appendChild(row);
+    (edu?'<button class="trader-mini" data-tprof="'+edu.id+'">'+avImg(edu, "sm")+'<span><b>'+esc(edu.name)+'</b><span class="handle">'+esc(edu.handle)+' \u00b7 '+fmtK(edu.followers)+' followers</span></span></button>':"")+
+    '<div class="ctabs" id="courseTabs"></div>'+
+    '<div id="courseTabBody"></div>'+
+    (locked?'<button class="primary-btn" id="joinClassBtn" style="margin-top:12px">Join private class \u2014 $'+c.price+'</button>'+
+      '<p class="fine" style="text-align:center">One-time entry \u00b7 recordings + strategies + PDFs stay yours \u00b7 <span class="demo-tag">Demo checkout</span></p>':"");
+  const tb = $("courseTabs");
+  COURSE_TABS.forEach(function(pair){
+    const b = document.createElement("button");
+    b.className = "ctab"+(courseTab===pair[0]?" active":"");
+    b.textContent = pair[1];
+    b.addEventListener("click", function(){ openCourse(c.id, pair[0]); });
+    tb.appendChild(b);
   });
-  const ml = $("matList");
-  if(locked){
-    ml.innerHTML = '<div class="empty">🔒 '+c.materials.length+' files unlock after joining.</div>';
-  }else{
-    c.materials.forEach(m=>{
+  renderCourseTab(c, locked);
+  const jb = $("joinClassBtn");
+  if(jb) jb.addEventListener("click", function(){ openPaySheet(c); });
+  $("courseView").hidden = false;
+}
+function renderCourseTab(c, locked){
+  const el = $("courseTabBody");
+  if(courseTab==="lessons"){
+    const done = courseDoneCount(c);
+    el.innerHTML = '<div class="sec-head"><h3>Lessons</h3><span class="fine">'+done+'/'+c.lessons.length+' done</span></div><div id="lessonList"></div>';
+    const ll = $("lessonList");
+    c.lessons.forEach(function(l,i){
+      const d = !!courseProg[c.id+":"+i];
+      const row = document.createElement("button");
+      row.className = "lesson-row"+(d?" done":"");
+      row.innerHTML = '<span class="lesson-n">'+(d?"\u2713":(locked?"\ud83d\udd12":(i+1)))+'</span>'+
+        '<span class="l-info"><b>'+esc(l.t)+'</b><span>'+l.type+' \u00b7 '+l.dur+'</span></span>';
+      row.addEventListener("click", function(){
+        if(locked){ toast("Join the private class to unlock lessons"); return; }
+        openLesson(c, i);
+      });
+      ll.appendChild(row);
+    });
+  } else if(courseTab==="recordings"){
+    const recs = c.lessons.map(function(l,i){ return {l:l,i:i}; }).filter(function(x){ return x.l.type==="video"; });
+    el.innerHTML = '<div class="sec-head"><h3>Recordings</h3><span class="fine">'+(locked?"\ud83d\udd12 join to unlock":recs.length+" session videos")+'</span></div><div id="recList"></div>';
+    const rl = $("recList");
+    if(locked){ rl.innerHTML = '<div class="empty">\ud83d\udd12 Session recordings unlock after joining.</div>'; }
+    else recs.forEach(function(x){
+      const d = !!courseProg[c.id+":"+x.i];
+      const row = document.createElement("button");
+      row.className = "lesson-row"+(d?" done":"");
+      row.innerHTML = '<span class="lesson-n">\u25b6</span><span class="l-info"><b>'+esc(x.l.t)+'</b><span>recording \u00b7 '+x.l.dur+(d?" \u00b7 \u2713 watched":"")+'</span></span>';
+      row.addEventListener("click", function(){ openLesson(c, x.i); });
+      rl.appendChild(row);
+    });
+  } else if(courseTab==="strategies"){
+    const ss = c.strategies||[];
+    el.innerHTML = '<div class="sec-head"><h3>Strategies</h3><span class="fine">'+(locked?"\ud83d\udd12 join to unlock":ss.length+" playbooks")+'</span></div><div id="stratList"></div>';
+    const sl = $("stratList");
+    if(locked){ sl.innerHTML = '<div class="empty">\ud83d\udd12 The educator\u2019s strategies unlock after joining.</div>'; }
+    else ss.forEach(function(s){
+      const d = document.createElement("div");
+      d.className = "strat-card";
+      d.innerHTML = '<b>'+esc(s.name)+'</b><span class="strat-sym">'+esc(s.sym)+'</span>'+
+        '<div class="strat-meta">'+
+        '<span>Entry<b>'+esc(s.entry)+'</b></span>'+
+        '<span>Stop<b>'+esc(s.stop)+'</b></span>'+
+        '<span>Targets<b>'+esc(s.tp)+'</b></span>'+
+        '<span>Track record<b>'+esc(s.win)+'</b></span></div>';
+      sl.appendChild(d);
+    });
+  } else if(courseTab==="trades"){
+    const ts = c.trades||[];
+    el.innerHTML = '<div class="sec-head"><h3>Class trades</h3><span class="fine">'+(locked?"\ud83d\udd12 join to unlock":ts.length+" logged")+'</span></div><div id="ctList"></div>';
+    const tl = $("ctList");
+    if(locked){ tl.innerHTML = '<div class="empty">\ud83d\udd12 Every trade the educator posts in this class unlocks after joining.</div>'; }
+    else ts.forEach(function(t){
+      const up = t.r.charAt(0)==="+";
+      const row = document.createElement("div");
+      row.className = "lesson-row";
+      row.innerHTML = '<span class="side-pill '+(t.side==="BUY"?"long":"short")+'">'+t.side+'</span>'+
+        '<span class="l-info"><b>'+esc(t.sym)+' <span class="num">'+esc(t.entry)+' \u2192 '+esc(t.exit)+'</span></b>'+
+        '<span>'+esc(t.when)+' \u00b7 '+esc(t.note)+'</span></span>'+
+        '<b class="num" style="color:'+(up?"var(--green)":"var(--red)")+'">'+esc(t.r)+'</b>';
+      tl.appendChild(row);
+    });
+  } else {
+    el.innerHTML = '<div class="sec-head"><h3>Materials</h3><span class="fine">'+(locked?"\ud83d\udd12 join to unlock":"demo files")+'</span></div><div id="matList"></div>';
+    const ml = $("matList");
+    if(locked){ ml.innerHTML = '<div class="empty">\ud83d\udd12 '+c.materials.length+' files unlock after joining.</div>'; }
+    else c.materials.forEach(function(m){
       const row = document.createElement("button");
       row.className = "lesson-row";
-      row.innerHTML = '<span class="lesson-n">📄</span><span class="l-info"><b>'+esc(m.name)+'</b><span>'+m.kind+' · '+m.size+'</span></span>';
-      row.addEventListener("click", ()=>openMaterial(m));
+      row.innerHTML = '<span class="lesson-n">\ud83d\udcc4</span><span class="l-info"><b>'+esc(m.name)+'</b><span>'+m.kind+' \u00b7 '+m.size+'</span></span>';
+      row.addEventListener("click", function(){ openMaterial(m, c); });
       ml.appendChild(row);
     });
   }
-  const jb = $("joinClassBtn");
-  if(jb) jb.addEventListener("click", ()=>openPaySheet(c));
-  $("courseView").hidden = false;
 }
 function openLesson(c, i){
   const l = c.lessons[i];
@@ -2939,13 +3027,13 @@ function openLesson(c, i){
     saveProg(); renderCourses(); openLesson(c, i);
   });
 }
-function openMaterial(m){
+function openMaterial(m, c){
   $("courseViewTitle").textContent = m.name;
   $("courseBody").innerHTML =
     '<button class="ghost-btn sm back-btn" id="matBack">‹ Back</button>'+
     '<div class="card"><div class="sec-head"><h3>'+esc(m.name)+'</h3><span class="fine">'+m.kind+' · '+m.size+' · demo</span></div>'+
     '<pre style="white-space:pre-wrap;font:inherit;font-size:13.5px;line-height:1.6;margin:0">'+esc(m.body)+'</pre></div>';
-  $("matBack").addEventListener("click", ()=>{ $("courseView").hidden = true; });
+  $("matBack").addEventListener("click", ()=>{ if(c) openCourse(c.id, "materials"); else $("courseView").hidden = true; });
 }
 /* demo checkout for paid classes — real payments need the backend phase */
 function openPaySheet(c){
@@ -2964,7 +3052,7 @@ function openPaySheet(c){
   $("payGo").addEventListener("click", ()=>{
     $("payGo").disabled = true; $("payGo").textContent = "Processing…";
     setTimeout(()=>{
-      c.enrolled = true; renderCourses(); openCourse(c.id);
+      enroll[c.id] = 1; saveEnroll(); renderCourses(); openCourse(c.id);
       toast("Welcome to "+c.title+" — recordings unlocked");
     }, 1500);
   });
@@ -3253,6 +3341,7 @@ function bootV15(){
   renderKyc();
   /* courses */
   $("courseBack").addEventListener("click", ()=>{ $("courseView").hidden = true; });
+  const csAll = $("classesSeeAll"); if(csAll) csAll.addEventListener("click", ()=>goTab("classes"));
   renderCourses();
   /* reels */
   const rc = $("reelClose"); if(rc) rc.addEventListener("click", closeReel);
