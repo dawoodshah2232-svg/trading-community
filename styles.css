@@ -376,14 +376,19 @@ select.field{ appearance:none; }
 }
 .tf.active{ color:#fff; background:var(--brand); font-weight:700; box-shadow:0 3px 10px rgba(34,197,94,.35); }
 .chart-wrap{
-  position:relative; height:340px; background:var(--bg-soft);
+  position:relative; background:var(--bg-soft);
   border:1px solid var(--border-soft); border-radius:var(--r-lg); overflow:hidden;
+  /* stacked flex column at every viewport — legend, proxy note, chart, panes,
+     buttons can never overlap (was: absolute tv-host + in-flow panes colliding) */
+  display:flex; flex-direction:column; height:auto; min-height:420px;
 }
-@media (min-width:1024px){ .chart-wrap{ height:440px; } }
-.tv-host{ position:absolute; inset:0; }
+@media (min-width:1024px){ .chart-wrap{ min-height:520px; } }
+.tv-host{ position:relative; inset:auto; flex:1 1 auto; height:340px; min-height:280px; }
+@media (min-width:1024px){ .tv-host{ height:420px; } }
 .lw-legend{
-  position:absolute; top:10px; left:12px; z-index:5; display:flex; gap:6px 10px; align-items:center;
-  font-size:11px; color:var(--muted); pointer-events:none; flex-wrap:wrap; max-width:calc(100% - 84px); row-gap:5px;
+  position:static; max-width:none; z-index:5; display:flex; gap:6px 10px; align-items:center;
+  font-size:11px; color:var(--muted); pointer-events:none; flex-wrap:wrap; row-gap:5px;
+  padding:10px 12px 2px;
 }
 .lw-legend b{ color:var(--text); font-size:12px; }
 .lw-legend .lg-tf{ color:var(--blue); font-weight:700; }
@@ -1289,7 +1294,8 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
   background:rgba(10,15,28,.82); border:1px solid var(--border); color:var(--text);
   font:inherit; font-size:12px; font-weight:600; padding:8px 12px; border-radius:20px; cursor:pointer; backdrop-filter:blur(6px); }
 .idea-fab:active{ transform:scale(.96); }
-.quick-trade{ position:absolute; right:10px; bottom:12px; z-index:6; display:flex; gap:8px; }
+.quick-trade{ position:static; margin:10px 12px 12px; z-index:6; display:flex; gap:8px; }
+.quick-trade .qt{ flex:1; min-height:52px; }
 .qt{ border:0; border-radius:12px; padding:12px 18px; font:inherit; font-size:13px; font-weight:800; letter-spacing:.5px; color:#fff; cursor:pointer; box-shadow:var(--shadow); }
 .qt:active{ transform:scale(.94); }
 .qt.buy{ background:linear-gradient(135deg,#22C55E,#159A47); }
@@ -1482,11 +1488,11 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .ind-btn:active{transform:scale(.97);}
 .mkt-note{font-size:12.5px; color:#F59E0B; background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.3);
   border-radius:10px; padding:8px 12px; margin-bottom:12px;}
-.proxy-note{ font-size:11px; color:var(--muted); padding:2px 2px 6px; line-height:1.4; }
+.proxy-note{ font-size:11px; color:var(--muted); padding:2px 12px 6px; line-height:1.4; }
 /* indicator panes under the main chart */
-#indPanes{display:flex; flex-direction:column; gap:8px; margin-top:8px;}
+#indPanes{display:flex; flex-direction:column; gap:8px; margin:8px 12px 0;}
 /* neutral indicator readings card */
-.ind-readout{ background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-top:8px; padding:4px 14px 10px; }
+.ind-readout{ background:var(--surface); border:1px solid var(--border); border-radius:14px; margin:8px 12px 0; padding:4px 14px 10px; }
 .ir-head{ display:flex; align-items:center; gap:8px; padding:10px 0 4px; font-size:13px; color:var(--text); }
 .ir-head .ic{ color:var(--blue); }
 .ir-row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid var(--border); font-size:12.5px; }
@@ -1533,20 +1539,10 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 
 /* ---------- overlap-audit fixes (mobile) ---------- */
 @media (max-width:480px){
-  /* chart: stacked flex column — legend, proxy note, chart, buttons can never overlap */
-  .chart-wrap{ display:flex; flex-direction:column; height:auto; min-height:420px; }
-  .lw-legend{ position:static; max-width:none; padding:10px 12px 2px; }
-  .lw-legend .lg-ohlc{ display:none; } /* symbol + pills only, no O/H/L/C over the candles */
-  .proxy-note{ padding:2px 12px 6px; }
-  .tv-host{ position:relative; inset:auto; flex:1 1 auto; min-height:280px; }
-  #indPanes{ margin:8px 12px 0; }
-  .ind-readout{ margin:8px 12px 0; }
-  /* quick-trade: below the chart instead of floating over candles/panes */
-  .quick-trade{ position:static; margin:10px 12px 12px; }
-  .quick-trade .qt{ flex:1; min-height:52px; }
   /* chart toolbar: icon-only Post idea keeps timeframe pills tappable */
   #shareIdeaBtn .if-tx{ display:none; }
   #shareIdeaBtn{ padding:0 12px; }
+  .lw-legend .lg-ohlc{ display:none; } /* symbol + pills only on small screens */
 }
 
 /* ============ v35: reference rebuild — page shells, mobile Home ============ */
@@ -1730,7 +1726,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .tp-stats > div{ display:flex; flex-direction:column; align-items:center; gap:2px; }
 .tp-stats b{ font-size:16px; } .tp-stats span{ font-size:11px; color:var(--faint); }
 .tp-actions{ display:flex; gap:10px; padding:12px 18px; }
-.tp-actions .primary-btn{ flex:1; }
+.tp-actions .primary-btn, .tp-actions .follow-btn{ flex:1; }
 .tp-tabs{ display:flex; gap:4px; padding:0 18px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:2; }
 .tp-tab{ flex:1; padding:12px 4px; font-size:14px; font-weight:700; color:var(--muted); min-height:48px; position:relative; }
 .tp-tab.active{ color:var(--text); }

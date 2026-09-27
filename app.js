@@ -2232,7 +2232,7 @@ function igProfileHTML(t){
   '<div class="tp-actions">'+
     (t.you
       ? '<button class="ghost-btn" id="tprofEdit">Edit profile</button>'
-      : '<button class="'+(t.following?"ghost-btn":"primary-btn")+'" id="tprofFollow">'+(t.following?"Following":"Follow")+'</button>')+
+      : '<button class="follow-btn sm'+(t.following?" following":"")+'" id="tprofFollow">'+(t.following?"Following":"Follow")+'</button>')+
     (t.live?'<button class="watch-live-btn" id="tprofWatch"><span class="live-pill"><i></i>LIVE</span> Watch now</button>':'')+
     (t.you?'':'<button class="ghost-btn" id="tprofCopy">Copy Trades</button>')+
     (t.you?'':'<button class="icon-btn" id="tprofMsg" aria-label="More"><span class="ic sm" data-icon="dots"></span></button>')+
