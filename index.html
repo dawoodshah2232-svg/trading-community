@@ -947,15 +947,14 @@
   <div class="quiz-body" id="quizBody"></div>
 </section>
 
-<!-- ============ TEMPORARY DEMO PASSWORD GATE (223219) ============ -->
+<!-- ============ NAME-ONLY SIGNUP (testing — no password for now) ============ -->
 <div class="tc-lock" id="tcLock" hidden>
   <div class="tc-lock-card">
     <div class="brand-logo lg"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="blg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F80FF"/><stop offset="1" stop-color="#22C55E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="10" fill="url(#blg3)"/><path d="M11 27v-7M11 15v-5M8.5 22.5h5M8.5 17h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M20 29V19M20 13V9M17.5 23.5h5M17.5 15h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M26.5 27.5l8-8M26.5 21h8v8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <h2>Trading Community</h2>
-    <p class="tc-lock-sub">Demo preview — enter the password to continue.</p>
-    <input type="password" id="tcPass" class="field tc-lock-input" placeholder="Password" autocomplete="off" inputmode="numeric">
-    <button class="primary-btn tc-lock-go" id="tcPassGo">Enter</button>
-    <p class="tc-lock-err" id="tcPassErr" hidden>Wrong password — try again.</p>
+    <p class="tc-lock-sub">Create your account — just your name, no password needed.</p>
+    <input type="text" id="tcName" class="field tc-lock-input" placeholder="Your name" autocomplete="name" maxlength="40">
+    <button class="primary-btn tc-lock-go" id="tcNameGo">Continue</button>
   </div>
 </div>
 
@@ -1273,6 +1272,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=52"></script>
+<script src="app.js?v=53"></script>
 </body>
 </html>

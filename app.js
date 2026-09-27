@@ -4974,6 +4974,7 @@ function saveEditProfile(){
   const bio = $("epBio").value.trim();
   you.name = name; you.handle = handle; you.bio = bio;
   you.ini = epInitials(name); you.photo = epPhotoURL;
+  tcSaveProfile({ name:name, handle:handle, ini:you.ini });
   $("profName").textContent = name;
   $("profHandle").textContent = handle;
   $("profBio").textContent = bio || "—";
@@ -5048,33 +5049,40 @@ setInterval(tick, 700); /* engine starts BEFORE the chart: a chart failure must 
 try{ buildMainChart(); }catch(err){ console.error("[chart] buildMainChart threw:", err); }
 }
 
-/* ---- TEMPORARY demo password gate (Dawood 2026-09-26): 223219 ----
-   Client-side only — keeps casual visitors out of the demo. Not real security. */
+/* ---- NAME-ONLY SIGNUP (Dawood 2026-09-27, testing): no password for now ----
+   First launch asks for the name only; it becomes the account identity on this
+   device (localStorage tc_profile_v1) and is applied to the "you" trader.
+   Later: full signup with account types + password. */
+function tcProfile(){ try{ return JSON.parse(localStorage.getItem("tc_profile_v1")||"null"); }catch(e){ return null; } }
+function tcSaveProfile(p){ try{ localStorage.setItem("tc_profile_v1", JSON.stringify(p)); }catch(e){} }
+function tcApplyProfile(p){
+  if(!p || !p.name) return;
+  var t = TRADERS.find(function(x){ return x.you; });
+  if(t){ t.name = p.name; if(p.handle) t.handle = p.handle; if(p.ini) t.ini = p.ini; }
+}
 (function(){
-  var PASS = "223219", KEY = "tc_demo_pass_v1", booted = false;
+  var booted = false;
   function start(){ if(booted) return; booted = true; bootApp(); }
-  function unlocked(){ try{ return sessionStorage.getItem(KEY) === PASS; }catch(e){ return false; } }
   var lock = document.getElementById("tcLock");
-  if(unlocked()){ if(lock) lock.hidden = true; start(); return; }
+  var p = tcProfile();
+  if(p && p.name){ if(lock) lock.hidden = true; tcApplyProfile(p); start(); return; }
   if(lock) lock.hidden = false;
   function go(){
-    var v = (document.getElementById("tcPass").value || "").trim();
-    if(v === PASS){
-      try{ sessionStorage.setItem(KEY, PASS); }catch(e){}
-      if(lock) lock.hidden = true;
-      start();
-    }else{
-      var er = document.getElementById("tcPassErr");
-      if(er) er.hidden = false;
-      var inp = document.getElementById("tcPass");
-      if(inp){ inp.value = ""; inp.focus(); }
-    }
+    var v = (document.getElementById("tcName").value || "").trim().replace(/\s+/g, " ").slice(0, 40);
+    if(!v){ var inp0 = document.getElementById("tcName"); if(inp0) inp0.focus(); return; }
+    var parts = v.split(" ");
+    var ini = (parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length-1].charAt(0) : "")).toUpperCase();
+    var handle = "@" + v.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 20);
+    var prof = { name:v, handle:handle, ini:ini };
+    tcSaveProfile(prof); tcApplyProfile(prof);
+    if(lock) lock.hidden = true;
+    start();
   }
-  document.getElementById("tcPassGo").addEventListener("click", go);
-  document.getElementById("tcPass").addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
-  setTimeout(function(){ var inp = document.getElementById("tcPass"); if(inp) inp.focus(); }, 300);
+  document.getElementById("tcNameGo").addEventListener("click", go);
+  document.getElementById("tcName").addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+  setTimeout(function(){ var inp = document.getElementById("tcName"); if(inp) inp.focus(); }, 300);
 })();
-
+      if(er) er.hidden = false;
 /* ================= INDICATORS (real-time, computed on chart candles) =================
    The mostly-used set with industry-standard defaults. Overlay indicators draw on
    the price chart; oscillators get their own synced panes below it. Values are real
