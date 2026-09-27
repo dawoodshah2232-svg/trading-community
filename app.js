@@ -1728,7 +1728,7 @@ $("copySwitch").addEventListener("click", function(){
         cam.style.right = "auto"; cam.style.bottom = "auto";
         cam.style.width = saved.w+"px"; cam.style.height = saved.h+"px";
       }else{
-        cam.style.right = "10px"; cam.style.bottom = "10px";
+        cam.style.right = "10px"; cam.style.top = "52px"; cam.style.bottom = "auto";
       }
       if(saved && saved.layout){ liveLayoutCur = saved.layout; liveSetup.layout = saved.layout; }
     }catch(e){}
