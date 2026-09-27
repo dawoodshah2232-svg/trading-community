@@ -195,7 +195,7 @@ p{ margin:0; }
   background:var(--red); border:2px solid var(--bg-soft);
 }
 .avatar-btn{
-  width:44px; height:44px; border-radius:50%; background:var(--blue);
+  position:relative; width:44px; height:44px; border-radius:50%; background:var(--blue);
   color:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
   border:2px solid var(--border); overflow:hidden; padding:0;
 }
