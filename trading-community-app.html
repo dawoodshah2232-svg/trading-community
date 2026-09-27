@@ -1455,19 +1455,6 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
   .chart-card{ padding:20px; }
 }
 
-/* --- center Reels button (mobile tab bar): the big whole button for endless scrolling --- */
-.tab-reels{ overflow:visible; }
-.reels-fab{
-  width:56px; height:56px; border-radius:50%; margin-top:-22px;
-  background:linear-gradient(135deg,var(--brand) 0%,var(--brand-deep) 100%); color:#fff;
-  display:flex; align-items:center; justify-content:center;
-  border:3px solid var(--bg-soft); box-shadow:0 8px 22px rgba(34,197,94,.45);
-}
-.reels-fab .ic{ width:26px; height:26px; color:#fff; }
-.tab-reels .ic{ color:#fff; }
-.tab-reels.active{ color:var(--brand); }
-.tab-reels.active .reels-fab{ box-shadow:0 8px 26px rgba(34,197,94,.65); }
-
 /* --- traders discover --- */
 .trader-search{ margin:12px 0 2px; }
 #screen-traders .sec-head{ margin:20px 0 10px; }
@@ -2693,7 +2680,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
         <button class="tab active" data-tab="home"><span class="ic" data-icon="home"></span><span>Home</span></button>
         <button class="tab" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span><i class="tab-badge" id="posBadge" hidden></i></button>
         <button class="tab" data-tab="live"><span class="ic" data-icon="live"></span><span>Live</span><i class="live-dot"></i></button>
-        <button class="tab tab-reels" data-tab="reels"><span class="reels-fab"><span class="ic" data-icon="reel"></span></span><span>Reels</span></button>
+        <button class="tab" data-tab="reels"><span class="ic" data-icon="reel"></span><span>Reels</span></button>
         <button class="tab" data-tab="community"><span class="ic" data-icon="community"></span><span>Community</span></button>
         <button class="tab" data-tab="portfolio"><span class="ic" data-icon="wallet"></span><span>Portfolio</span></button>
       </nav>
