@@ -10,6 +10,10 @@
 (function(){
 "use strict";
 
+/* DOM helpers — declared first: top-level code below calls them during load */
+const $ = id => document.getElementById(id);
+const $$ = (sel, root) => Array.from((root||document).querySelectorAll(sel));
+
 /* ============================================================
    AUTH DISABLED for demo — re-enable later.
    The app opens straight into the terminal. The old auth flow
@@ -279,7 +283,6 @@ function watchOrder(){
 }
 
 /* ---------------- HELPERS ---------------- */
-const $ = id => document.getElementById(id);
 const meta = s => SYMBOLS[s];
 const px = s => state.prices[s];
 const fmtP = (s,v) => v.toFixed(meta(s).digits);
@@ -3222,7 +3225,7 @@ function bootV15(){
   $("courseBack").addEventListener("click", ()=>{ $("courseView").hidden = true; });
   renderCourses();
   /* reels */
-  $("reelClose").addEventListener("click", closeReel);
+  const rc = $("reelClose"); if(rc) rc.addEventListener("click", closeReel);
   /* hearts */
   $("heartBtn").addEventListener("click", ()=>{ floatHeart(); setTimeout(floatHeart, 120); });
   /* live screen: watch-mode wiring */
@@ -3361,8 +3364,15 @@ function renderHomeDesk(){
   if(cv && typeof drawSpark === "function") drawSpark(cv, 4242, true);
   injectIcons();
 }
-const _renderHomeOrig = renderHome;
-renderHome = function(){ _renderHomeOrig(); renderHomeDesk(); };
+/* ---------------- HOME (reference layout: mobile sections + desktop dashboard) ---------------- */
+function renderHome(){
+  renderHomeMktChips();
+  renderHomeLive(); renderHomeReels(); renderHomeIdeas(); renderHomeTraders();
+  renderHomeDesk();
+  const hb = $("liveHeroBtn");
+  if(hb && !hb.dataset.w){ hb.dataset.w = "1"; hb.addEventListener("click", ()=>goTab("live")); }
+  injectIcons();
+}
 function renderHomeLive(){
   const el = $("homeLiveStrip"); if(!el) return;
   let html = "";
