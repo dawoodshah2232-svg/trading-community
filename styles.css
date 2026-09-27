@@ -1918,7 +1918,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .sec-head{ display:flex; align-items:center; justify-content:space-between; padding:6px 16px 10px; }
 .sec-head h3{ font-size:16px; }
 @media (min-width:1024px){
-  .mh-search, .live-hero, .mkt-chips, #screen-home .sec-head, .tt-scroll, .reels-scroll{ display:none; }
+  .mh-search, .live-hero, .mkt-chips, #screen-home .sec-head, #homeCourseList, .tt-scroll, .reels-scroll{ display:none; }
   .live-hero{ display:none; }
 }
 
