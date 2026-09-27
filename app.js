@@ -71,6 +71,9 @@ const ICONS = {
   share:'<path d="M12 3l7 7h-4v6h-6v-6H5z"/><path d="M5 13v7h14v-7"/>',
   bookmark:'<path d="M7 4h10a1 1 0 011 1v15l-6-4-6 4V5a1 1 0 011-1z"/>',
   smile:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8"/><circle cx="9" cy="9.5" r="1"/><circle cx="15" cy="9.5" r="1"/>',
+  /* v25.13: growth */
+  cal:'<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10.5h16M8 3.5V8M16 3.5V8"/>',
+  download:'<path d="M12 3.5V14"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 20.5h16"/>',
 };
 function injectIcons(){
   document.querySelectorAll("[data-icon]").forEach(el=>{
@@ -123,6 +126,125 @@ SYM_ORDER.forEach(s=>{
   state.prices[s] = { bid:m.base, ask:m.base+m.spread, chg:m.chg };
   state.hist[s] = [m.base];
 });
+
+/* ---- v25.13: achievements (demo) ---- */
+const ACH_KEY = "tc_achieve_v1";
+const ACH_DEFS = [
+  { id:"first_trade", ic:"🚀", name:"First trade", desc:"Placed your first demo trade" },
+  { id:"first_win", ic:"💰", name:"First win", desc:"Closed a winning demo trade" },
+  { id:"streak3", ic:"🔥", name:"Win streak ×3", desc:"3 winning trades in a row" },
+  { id:"wins5", ic:"⭐", name:"5 wins", desc:"5 winning demo trades total" },
+  { id:"first_copy", ic:"🪞", name:"First copy", desc:"Started copying a trader" },
+  { id:"depositor", ic:"💳", name:"Funded", desc:"Made a demo deposit" },
+  { id:"early", ic:"🌅", name:"Early adopter", desc:"Joined the demo early" }
+];
+let achState = { unlocked:{}, wins:0, streak:0 };
+try{ const s = JSON.parse(localStorage.getItem(ACH_KEY)||"null"); if(s) achState = Object.assign(achState, s); }catch(e){}
+function saveAch(){ try{ localStorage.setItem(ACH_KEY, JSON.stringify(achState)); }catch(e){} }
+function unlockAch(id){
+  if(achState.unlocked[id]) return;
+  const d = ACH_DEFS.find(x=>x.id===id); if(!d) return;
+  achState.unlocked[id] = Date.now(); saveAch();
+  toast(d.ic+" Achievement: "+d.name+" — demo");
+  pushNotif("trophy", "Achievement unlocked", d.ic+" "+d.name+" — "+d.desc);
+  renderAchievements();
+}
+function renderAchievements(){
+  const el = $("achieveRow"); if(!el) return;
+  el.innerHTML = ACH_DEFS.map(d=>{
+    const un = achState.unlocked[d.id];
+    return '<div class="ach'+(un?" un":"")+'" title="'+esc(d.desc)+'"><span>'+d.ic+'</span><b>'+esc(d.name)+'</b></div>';
+  }).join("");
+}
+/* ---- v25.13: daily login streak (demo) ---- */
+const STREAK_KEY = "tc_streak_v1";
+function bumpStreak(){
+  let s = {}; try{ s = JSON.parse(localStorage.getItem(STREAK_KEY)||"{}"); }catch(e){}
+  const today = new Date().toISOString().slice(0,10);
+  if(s.last === today){ paintStreak(s.days||1); return s.days||1; }
+  const y = new Date(Date.now()-864e5).toISOString().slice(0,10);
+  s.days = (s.last === y) ? (s.days||0)+1 : 1;
+  s.last = today;
+  try{ localStorage.setItem(STREAK_KEY, JSON.stringify(s)); }catch(e){}
+  const bonus = { 3:25, 7:75, 30:250 }[s.days];
+  if(bonus){
+    state.balance += bonus; saveTrades();
+    toast("🔥 "+s.days+"-day streak! +"+fmt$(bonus)+" demo bonus");
+    pushNotif("flame", s.days+"-day streak", "Demo bonus "+fmt$(bonus)+" added — keep it up");
+  }
+  paintStreak(s.days);
+  return s.days;
+}
+function paintStreak(days){
+  const el = $("streakPill"); if(!el) return;
+  el.hidden = false; el.textContent = "🔥 "+days;
+}
+function trackTradeClosed(pl){
+  if(pl > 0){
+    achState.wins++; achState.streak++;
+    unlockAch("first_win");
+    if(achState.streak >= 3) unlockAch("streak3");
+    if(achState.wins >= 5) unlockAch("wins5");
+  }else{
+    achState.streak = 0;
+  }
+  saveAch();
+}
+/* ---------------- PERSISTENCE (v25.13) ---------------- */
+/* Trades, price alerts and broker links survive reloads.
+   Everything remains demo/simulated. */
+const TRADES_KEY = "tc_trades_v1", ALERTS_KEY = "tc_alerts_v1", BROKERS_KEY = "tc_brokers_v1";
+const APP_VERSION = "25.13";
+function paintVersion(){
+  const s = $("setVerLine"); if(s) s.textContent = "Trading Community · demo build · v"+APP_VERSION;
+  const p = $("profVerLine"); if(p) p.textContent = "v"+APP_VERSION+" · demo build";
+}
+function saveTrades(){
+  try{
+    localStorage.setItem(TRADES_KEY, JSON.stringify({
+      open: state.open, pending: state.pending,
+      history: state.history.slice(-200),
+      balance: state.balance, orderSeq: state.orderSeq
+    }));
+  }catch(e){}
+}
+function loadTrades(){
+  try{
+    const d = JSON.parse(localStorage.getItem(TRADES_KEY) || "null");
+    if(!d) return;
+    if(Array.isArray(d.open)) state.open = d.open;
+    if(Array.isArray(d.pending)) state.pending = d.pending;
+    if(Array.isArray(d.history)) state.history = d.history;
+    if(typeof d.balance === "number" && isFinite(d.balance)) state.balance = d.balance;
+    if(typeof d.orderSeq === "number" && d.orderSeq > 0) state.orderSeq = d.orderSeq;
+  }catch(e){}
+}
+function saveAlerts(){
+  try{ localStorage.setItem(ALERTS_KEY, JSON.stringify({ alerts: state.alerts, seq: state.alertSeq })); }catch(e){}
+}
+function loadAlerts(){
+  try{
+    const d = JSON.parse(localStorage.getItem(ALERTS_KEY) || "null");
+    if(!d) return;
+    if(Array.isArray(d.alerts)) state.alerts = d.alerts;
+    if(typeof d.seq === "number" && d.seq > 0) state.alertSeq = d.seq;
+  }catch(e){}
+}
+function saveBrokers(){
+  try{ localStorage.setItem(BROKERS_KEY, JSON.stringify(BROKERS.filter(b=>b.connected).map(b=>b.name))); }catch(e){}
+}
+function loadBrokers(){
+  try{
+    /* v25.13: custom brokers added via the Add Broker form */
+    const custom = JSON.parse(localStorage.getItem("tc_brokers_custom_v1") || "[]");
+    custom.forEach(b=>{
+      if(!BROKERS.some(x=>x.name===b.name))
+        BROKERS.push({ name:b.name, sub:b.sub||"MT4 / MT5", g:["#64748b","#334155"], ini:b.name.slice(0,2).toUpperCase(), connected:false, custom:true });
+    });
+    const names = JSON.parse(localStorage.getItem(BROKERS_KEY) || "[]");
+    BROKERS.forEach(b=>{ if(names.indexOf(b.name) >= 0) b.connected = true; });
+  }catch(e){}
+}
 
 /* ---------------- MARKET HOURS ----------------
    Spot forex/metals/indices/energy trade Sun 22:00 UTC -> Fri 21:00 UTC.
@@ -326,7 +448,7 @@ const srd = $("setResetDemo");
 if(srd) srd.addEventListener("click", ()=>{ if(confirm("Reset all demo data and reload?")){ try{ localStorage.clear(); }catch(e){} location.reload(); } });
 const rpu = $("reelsPageUpload"); if(rpu) rpu.addEventListener("click", ()=>triggerReelUpload());
 const ipp = $("ideasPagePost"); if(ipp) ipp.addEventListener("click", ()=>{ if(typeof openIdeaSheet==="function") openIdeaSheet(); else toast("Posting — demo"); });
-const bpa = $("brokersPageAdd"); if(bpa) bpa.addEventListener("click", ()=>toast("Add your broker — demo"));
+const bpa = $("brokersPageAdd"); if(bpa) bpa.addEventListener("click", openBrokerSheet);
 document.querySelectorAll("#lbPeriodPills [data-lbperiod]").forEach(b=>b.addEventListener("click", ()=>{
   document.querySelectorAll("#lbPeriodPills .ppill").forEach(x=>x.classList.toggle("active", x===b));
   lbPeriod = b.dataset.lbperiod; renderCommunityTraders();
@@ -415,6 +537,7 @@ function tick(){
   checkAlerts();
   fillPending();
   checkTpSl();
+  checkCopyGuard();
   renderWatchlistTick();
   renderSheetTick(); /* live prices inside the open asset picker */
   renderHeaderTick();
@@ -427,6 +550,10 @@ function tick(){
   updateChartTick(); /* roll the self-hosted candle chart forward */
   if(++tickCount % 7 === 0){ renderYouCard(); updateDataBadges(); } /* your presence card, ~5s */
   if(lw.bars.length !== lastIndBars || tickCount % 9 === 0) renderIndicators(); /* keep indicators live */
+  if(replay.active && (state.sym!==replay.sym || state.tf!==replay.tf)) stopReplay(); /* symbol/tf switch exits replay */
+  checkReminders(); /* scheduled-live reminder check */
+  renderLivePosStrip(); /* host demo positions under the live stage */
+  if(tickCount % 42 === 0) renderUpcoming(); /* refresh upcoming countdowns ~30s */
 }
 let tickCount = 0;
 
@@ -497,7 +624,7 @@ function setSymbol(s){
   });
   refreshMainData(); /* regenerate candles for the new symbol */
   renderDepth(true); renderTape(true);
-  renderHeaderTick(); renderTicketTick();
+  renderHeaderTick(); renderTicketTick(); calcSize();
   updateDataBadges(); /* market open/closed + real-time/simulated state */
   $("tPrice").value = "";
   /* suggest TP/SL like the reference ticket when the fields are empty */
@@ -522,7 +649,6 @@ function renderHeaderTick(){
     sc.textContent = (pr.chg>=0?"+":"−") + abs.toFixed(2) + " (" + (pr.chg>=0?"+":"") + pr.chg.toFixed(2) + "%)";
     sc.className = "sym-chg num " + (pr.chg>=0 ? "pl-pos" : "pl-neg");
   }
-  const hs = $("hdrSpread"); if(hs) hs.textContent = fmtP(s, meta(s).spread);
 }
 $("symPicker").addEventListener("click", ()=>{
   sheetQuery = ""; $("sheetSearch").value = ""; /* fresh search each open */
@@ -530,7 +656,7 @@ $("symPicker").addEventListener("click", ()=>{
 });
 function openSheet(){ $("backdrop").hidden = false; $("symbolSheet").hidden = false; }
 function closeSheet(){ $("backdrop").hidden = true; $("symbolSheet").hidden = true; }
-$("backdrop").addEventListener("click", ()=>{ closeSheet(); closeNotifSheet(); });
+$("backdrop").addEventListener("click", ()=>{ closeSheet(); closeNotifSheet(); closeMoneySheet(); closeGiftSheet(); closeSchedSheet(); closePollSheet(); closeInviteSheet(); });
 $("sheetX").addEventListener("click", closeSheet);
 
 /* ---------------- ASSET PICKER: search + category tabs + favorites ---------------- */
@@ -768,6 +894,7 @@ function applyChartTheme(){
 }
 function onMainCrosshair(param){
   if(!lw.candles || !lw.bars.length) return;
+  if(replayActive()){ updateLegend(replay.bars[replay.idx]); return; }
   let bar = null;
   if(param && param.time && param.seriesData){
     const sd = param.seriesData.get(lw.candles);
@@ -804,7 +931,7 @@ function buildLiveChart(){
 
 /* Called from the 700ms price engine tick: rolls the live candle forward */
 function updateChartTick(){
-  if(lw.candles && lw.bars.length){
+  if(!replayActive() && lw.candles && lw.bars.length){ /* replay mode freezes the live candle feed */
     const p = px(state.sym).bid, bucket = (TF_MIN[state.tf]||1)*60;
     const bt = Math.floor(Date.now()/1000/bucket)*bucket;
     let last = lw.bars[lw.bars.length-1];
@@ -836,6 +963,91 @@ function updateChartTick(){
     }
   }
 }
+
+/* ---------------- REPLAY MODE (demo — steps through historical candles, nothing live) ---------------- */
+const replay = { active:false, sym:null, tf:null, bars:[], vols:[], idx:0, playing:false, speed:1, timer:null };
+const REPLAY_N = 120, REPLAY_SPEEDS = [1,2,4];
+function replayActive(){ return replay.active && replay.sym===state.sym; }
+function replayCursorPrice(){ const b = replay.bars[replay.idx]; return b ? b.close : null; }
+function replayPx(s){
+  const c = replayCursorPrice(); if(c==null || !isFinite(c)) return px(s);
+  const sp = (meta(s).spread||0)/2;
+  return { bid:c-sp, ask:c+sp };
+}
+function replaySlice(){ return replay.bars.slice(0, replay.idx+1); }
+function startReplay(){
+  if(replay.active) return;
+  if(!lw.candles || lw.bars.length < 10){ toast("Chart not ready — open the Trade tab first"); return; }
+  replay.sym = state.sym; replay.tf = state.tf;
+  replay.bars = lw.bars.slice(-REPLAY_N);
+  replay.vols = (lw.vols||[]).slice(-REPLAY_N);
+  replay.idx = Math.min(30, replay.bars.length-2);
+  replay.active = true; replay.playing = false; replay.speed = 1;
+  lw.candles.setData(replaySlice());
+  try{ lw.volume.setData(replay.vols.slice(0, replay.idx+1)); }catch(e){}
+  try{ lw.chart.timeScale().scrollToPosition(replay.idx, false); }catch(e){}
+  $("replayBar").hidden = false;
+  $("replayBtn").classList.add("on");
+  $("rpPlay").textContent = "▶";
+  renderReplayBar();
+  toast("Replay mode — demo, "+replay.bars.length+" historical candles");
+}
+function stopReplay(){
+  if(!replay.active) return;
+  replay.active = false; replay.playing = false;
+  if(replay.timer){ clearInterval(replay.timer); replay.timer = null; }
+  $("replayBar").hidden = true;
+  $("replayBtn").classList.remove("on");
+  if(lw.candles && lw.bars.length){
+    lw.candles.setData(lw.bars);
+    try{ lw.volume.setData(lw.vols||[]); }catch(e){}
+    try{ lw.chart.timeScale().scrollToRealTime(); }catch(e){}
+    updateLegend(lw.bars[lw.bars.length-1]);
+  }
+  renderTicketTick();
+  toast("Replay off — back to live prices");
+}
+function renderReplayBar(){
+  const c = $("rpCount"); if(c) c.textContent = (replay.idx+1)+" / "+replay.bars.length;
+  const s = $("rpSpeed"); if(s) s.textContent = replay.speed+"x";
+  const b = replay.bars[replay.idx];
+  if(b){ updateLegend(b); renderTicketTick(); }
+}
+function stepReplay(d){
+  if(!replay.active) return;
+  replay.idx = Math.max(0, Math.min(replay.bars.length-1, replay.idx+d));
+  const b = replay.bars[replay.idx];
+  if(lw.candles && b){
+    if(d>0) lw.candles.update(b); else lw.candles.setData(replaySlice());
+    const v = replay.vols[replay.idx];
+    try{ if(v){ if(d>0) lw.volume.update(v); else lw.volume.setData(replay.vols.slice(0, replay.idx+1)); } }catch(e){}
+  }
+  renderReplayBar();
+  if(replay.idx >= replay.bars.length-1 && replay.playing){ setReplayPlay(false); toast("Replay finished — demo"); }
+}
+function setReplayPlay(on){
+  if(!replay.active) return;
+  replay.playing = on;
+  if(replay.timer){ clearInterval(replay.timer); replay.timer = null; }
+  if(on){
+    if(replay.idx >= replay.bars.length-1) replay.idx = 0;
+    replay.timer = setInterval(()=>stepReplay(1), Math.round(900/replay.speed));
+  }
+  $("rpPlay").textContent = on ? "⏸" : "▶";
+}
+function cycleReplaySpeed(){
+  if(!replay.active) return;
+  const i = (REPLAY_SPEEDS.indexOf(replay.speed)+1)%REPLAY_SPEEDS.length;
+  replay.speed = REPLAY_SPEEDS[i];
+  if(replay.playing) setReplayPlay(true);
+  renderReplayBar();
+}
+$("replayBtn").addEventListener("click", ()=> replay.active ? stopReplay() : startReplay());
+$("rpBack").addEventListener("click", ()=>{ setReplayPlay(false); stepReplay(-1); });
+$("rpPlay").addEventListener("click", ()=>setReplayPlay(!replay.playing));
+$("rpFwd").addEventListener("click", ()=>{ setReplayPlay(false); stepReplay(1); });
+$("rpSpeed").addEventListener("click", cycleReplaySpeed);
+$("rpExit").addEventListener("click", stopReplay);
 
 /* timeframe chips */
 $("tfBar").addEventListener("click", e=>{
@@ -949,6 +1161,11 @@ function setLots(v){
 }
 $("lotMinus").addEventListener("click", ()=>setLots(state.lots-0.01));
 $("lotPlus").addEventListener("click", ()=>setLots(state.lots+0.01));
+$("lotPresets").addEventListener("click", e=>{
+  const b = e.target.closest("[data-lot]"); if(!b) return;
+  setLots(parseFloat(b.dataset.lot));
+  document.querySelectorAll("#lotPresets button").forEach(x=>x.classList.toggle("on", x===b));
+});
 $("tpslToggle").addEventListener("click", ()=>{
   state.tpslOn = !state.tpslOn;
   $("tpslToggle").setAttribute("aria-pressed", state.tpslOn ? "true" : "false");
@@ -957,6 +1174,19 @@ $("tpslToggle").addEventListener("click", ()=>{
   renderTicketTick();
 });
 ["tPrice","tpPrice","slPrice"].forEach(id=>$(id).addEventListener("input", renderTicketTick));
+/* ---- v25.13: position size calculator (demo, educational) ---- */
+function calcSize(){
+  const out = $("calcLots"); if(!out) return;
+  const riskPct = parseFloat($("calcRisk").value), slDist = parseFloat($("calcSL").value);
+  const s = state.sym, m = meta(s);
+  if(isNaN(riskPct) || isNaN(slDist) || riskPct<=0 || slDist<=0 || !m || !m.perPoint){
+    out.textContent = "—"; return;
+  }
+  const riskAmt = equity() * riskPct/100;
+  const lots = riskAmt / (slDist * m.perPoint);
+  out.textContent = lots > 0 ? Math.max(0.01, Math.floor(lots*100)/100).toFixed(2)+" lots" : "—";
+}
+["calcRisk","calcSL"].forEach(id=>{ const el = $(id); if(el) el.addEventListener("input", calcSize); });
 
 function ticketPx(){
   const s = state.sym, pr = px(s);
@@ -978,7 +1208,7 @@ function estRisk(){
   return diff * meta(s).perPoint * state.lots;
 }
 function renderTicketTick(){
-  const s = state.sym, pr = px(s);
+  const s = state.sym, pr = replayActive() ? replayPx(s) : px(s); /* ticket follows the replay cursor */
   const tkS = $("tkSym"); if(tkS) tkS.textContent = s;
   const tkSS = $("tkSymSub"); if(tkSS) tkSS.textContent = meta(s).name;
   const tkP = $("tkPx"); if(tkP) tkP.textContent = fmtP(s, pr.bid);
@@ -987,7 +1217,6 @@ function renderTicketTick(){
   $("buyPx").textContent = fmtP(s, pr.ask);
   $("sellPx").textContent = fmtP(s, pr.bid);
   $("estMargin").textContent = fmt$(estMarginSafe());
-  const rEl = $("estRisk"); if(rEl){ const r = estRisk(); rEl.textContent = r===null ? "—" : fmt$(r); }
 }
 function estMarginSafe(){ try{ return estMargin(); }catch(e){ return 0; } }
 
@@ -1004,7 +1233,8 @@ function execute(){
     if(!isNaN(slV)) sl = slV;
   }
   if(state.ttype==="market"){
-    const pr = px(s);
+    const rp = replayActive();
+    const pr = rp ? replayPx(s) : px(s); /* demo orders during replay fill at the cursor price */
     const entry = dir==="BUY" ? pr.ask : pr.bid;
     const lb = linkedBroker();
     state.open.push({
@@ -1013,16 +1243,21 @@ function execute(){
       mirror: lb ? { broker: lb.name, ms: 40 + Math.round(Math.random()*100) } : null
     });
     renderPositions();
+    saveTrades();
+    const ot = document.querySelector('#posTabs [data-ptab="open"]'); if(ot) ot.click();
     toast(lb ? "Market "+dir+" filled · Mirrored to "+lb.name+" — demo"
-             : "Market "+dir+" "+lots.toFixed(2)+" "+s+" filled — demo");
+             : "Market "+dir+" "+lots.toFixed(2)+" "+s+" filled"+(rp?" at replay price":"")+" — demo");
   }else{
     const price = parseFloat($("tPrice").value);
     if(isNaN(price) || price<=0){ toast("Enter a valid "+state.ttype+" price — demo"); $("tPrice").focus(); return; }
     const type = (dir==="BUY" ? "Buy " : "Sell ") + (state.ttype==="limit" ? "Limit" : "Stop");
     state.pending.push({ id:"p"+(state.orderSeq++), sym:s, dir, type, lots, price, tp, sl });
     renderPositions();
+    saveTrades();
+    const ot = document.querySelector('#posTabs [data-ptab="open"]'); if(ot) ot.click();
     toast(type+" placed @ "+fmtP(s,price)+" — fills when price reaches it");
   }
+  unlockAch("first_trade");
 }
 $("buyBtn").addEventListener("click", ()=>{ state.dir="buy"; syncDir(); execute(); });
 $("sellBtn").addEventListener("click", ()=>{ state.dir="sell"; syncDir(); execute(); });
@@ -1053,7 +1288,7 @@ function fillPending(){
     });
     toast(o.type+" "+o.sym+" filled @ "+fmtP(o.sym,o.price)+" — demo");
   });
-  if(filled.length) renderPositions();
+  if(filled.length){ renderPositions(); saveTrades(); }
 }
 
 /* TP/SL auto-close on open positions (simulated) */
@@ -1114,8 +1349,11 @@ function renderAlerts(){
   state.alerts.forEach(a=>{
     const r = document.createElement("div");
     r.className = "alert-row" + (a.triggered ? " triggered" : "");
+    const IND_LABEL = { rsi_over:"RSI crosses above 70", rsi_under:"RSI crosses below 30", ema_cross_up:"Price crosses above EMA 21", ema_cross_down:"Price crosses below EMA 21" };
+    const desc = IND_LABEL[a.cond] ? a.sym+" · "+IND_LABEL[a.cond]
+      : a.sym+" "+(a.cond==="above"?"≥":"≤")+" "+fmtP(a.sym,a.price);
     r.innerHTML = '<span class="ic" data-icon="'+(a.triggered?"check":"bell")+'"></span>'+
-      '<div><b class="num">'+a.sym+' '+(a.cond==="above"?"≥":"≤")+' '+fmtP(a.sym,a.price)+'</b>'+
+      '<div><b class="num">'+esc(desc)+'</b>'+
       '<span>'+(a.triggered?"Triggered":"Active")+'</span></div>'+
       '<button class="del" data-adel="'+a.id+'" aria-label="Delete alert"><span class="ic sm" data-icon="trash"></span></button>';
     list.appendChild(r);
@@ -1134,23 +1372,51 @@ $("alertAddBtn").addEventListener("click", ()=>{
 });
 $("afCancel").addEventListener("click", ()=>{ $("alertForm").hidden = true; });
 $("afSave").addEventListener("click", ()=>{
+  const cond = $("afCond").value;
+  const isInd = cond.indexOf("rsi_")===0 || cond.indexOf("ema_")===0;
   const price = parseFloat($("afPrice").value);
-  if(isNaN(price) || price<=0){ toast("Enter a valid alert price — demo"); return; }
-  state.alerts.push({ id:"a"+(state.alertSeq++), sym:$("afSym").value, cond:$("afCond").value, price, triggered:false });
+  if(!isInd && (isNaN(price) || price<=0)){ toast("Enter a valid alert price — demo"); return; }
+  state.alerts.push({ id:"a"+(state.alertSeq++), sym:$("afSym").value, cond, price:isInd?null:price, triggered:false });
   $("alertForm").hidden = true; $("afPrice").value = "";
-  renderAlerts();
+  renderAlerts(); saveAlerts();
   toast("Alert created — demo");
 });
 document.addEventListener("click", e=>{
   const d = e.target.closest("[data-adel]"); if(!d) return;
   state.alerts = state.alerts.filter(a=>a.id!==d.dataset.adel);
-  renderAlerts();
+  renderAlerts(); saveAlerts();
   toast("Alert deleted — demo");
 });
+/* v25.13: RSI(14)/EMA(21) snapshot for indicator alerts, from cached tick history */
+function alertIndVals(sym){
+  const h = state.hist[sym] || [];
+  if(h.length < 25) return null;
+  return { rsi: lastVal(indRSI(h, 14)), ema: lastVal(indEMA(h, 21)), price: h[h.length-1] };
+}
 function checkAlerts(){
   let hit = false;
+  const IND_LABEL = { rsi_over:"RSI > 70", rsi_under:"RSI < 30", ema_cross_up:"Price ×↑ EMA21", ema_cross_down:"Price ×↓ EMA21" };
   state.alerts.forEach(a=>{
     if(a.triggered) return;
+    /* v25.13: indicator alerts (RSI / EMA cross), evaluated on the live tick */
+    if(IND_LABEL[a.cond]){
+      const iv = alertIndVals(a.sym);
+      if(iv){
+        const prev = a.indPrev || {};
+        let sig = false;
+        if(a.cond==="rsi_over") sig = iv.rsi!==null && iv.rsi>70 && !(prev.rsi>70);
+        if(a.cond==="rsi_under") sig = iv.rsi!==null && iv.rsi<30 && !(prev.rsi<30);
+        if(a.cond==="ema_cross_up") sig = iv.ema!==null && iv.price>iv.ema && prev.aboveEma===false;
+        if(a.cond==="ema_cross_down") sig = iv.ema!==null && iv.price<iv.ema && prev.aboveEma===true;
+        a.indPrev = { rsi:iv.rsi, aboveEma: iv.ema!==null ? iv.price>iv.ema : null };
+        if(sig){
+          a.triggered = true; hit = true;
+          toast("Alert: "+a.sym+" "+IND_LABEL[a.cond]);
+          pushNotif("bell", "Indicator alert", a.sym+" "+IND_LABEL[a.cond]+" — tap to view", ()=>{ goTab("trade"); });
+        }
+      }
+      return;
+    }
     const bid = px(a.sym).bid;
     if((a.cond==="above" && bid>=a.price) || (a.cond==="below" && bid<=a.price)){
       a.triggered = true; hit = true;
@@ -1158,7 +1424,7 @@ function checkAlerts(){
       pushNotif("bell", "Price alert triggered", a.sym+" "+(a.cond==="above"?"≥":"≤")+" "+fmtP(a.sym,a.price)+" — tap to view", ()=>{ goTab("trade"); setTimeout(()=>{ $("alertsCard").scrollIntoView({behavior:"smooth", block:"center"}); }, 60); });
     }
   });
-  if(hit) renderAlerts();
+  if(hit){ renderAlerts(); saveAlerts(); }
 }
 
 /* ---------------- POSITIONS ---------------- */
@@ -1174,8 +1440,11 @@ $("posTabs").addEventListener("click", e=>{
 function closePosition(p, exit, reason){
   const pl = (p.dir==="BUY" ? (exit-p.entry) : (p.entry-exit)) * meta(p.sym).perPoint * p.lots;
   state.balance += pl;
-  state.history.push({ sym:p.sym, dir:p.dir, lots:p.lots, entry:p.entry, exit, pl, copy:p.copy||null });
+  state.history.push({ id:"h"+(state.orderSeq++), sym:p.sym, dir:p.dir, lots:p.lots,
+    entry:p.entry, exit, pl, time:new Date().toISOString(), reason:reason||null, copy:p.copy||null });
   state.open = state.open.filter(x=>x.id!==p.id);
+  saveTrades();
+  trackTradeClosed(pl);
   toast((reason ? reason+": " : "Closed ")+p.sym+" "+fmt$(pl)+" — demo");
 }
 function renderPositions(){
@@ -1231,14 +1500,17 @@ function renderPositions(){
 function renderHistory(el){
   if(!el) return;
   el.innerHTML = "";
-  if(!state.history.length){ el.innerHTML = '<div class="empty">No closed trades yet.</div>'; return; }
-  state.history.slice().reverse().forEach(h=>{
+  const trades = state.history.filter(h=>!h.cash);
+  if(!trades.length){ el.innerHTML = '<div class="empty">No closed trades yet.</div>'; return; }
+  if(journalView){ renderJournalView(el, trades); return; }
+  trades.slice().reverse().forEach(h=>{
     const d = document.createElement("div");
     d.className = "pos-card";
     d.innerHTML =
       '<div class="pos-top"><span class="pos-sym">'+h.sym+'</span>'+
       '<span class="dir '+(h.dir==="BUY"?"buy":"sell")+'">'+h.dir+'</span>'+
-      '<span class="pos-lots">'+h.lots.toFixed(2)+' lots</span></div>'+
+      '<span class="pos-lots">'+h.lots.toFixed(2)+' lots</span>'+
+      '<button class="hist-note" data-jnote="'+h.id+'" aria-label="Journal note">✎</button></div>'+
       (h.copy?'<div class="copy-badge">📋 copied</div>':"")+
       '<div class="pos-grid">'+
       '<div class="pos-col"><span>Entry</span><b>'+fmtP(h.sym,h.entry)+'</b></div>'+
@@ -1248,6 +1520,106 @@ function renderHistory(el){
     el.appendChild(d);
   });
 }
+/* v25.13: trade journal — notes + star ratings per closed trade, persisted in tc_journal_v1 */
+const JOURNAL_KEY = "tc_journal_v1";
+let journal = {};
+try{ journal = JSON.parse(localStorage.getItem(JOURNAL_KEY) || "{}") || {}; }catch(e){ journal = {}; }
+function saveJournal(){ try{ localStorage.setItem(JOURNAL_KEY, JSON.stringify(journal)); }catch(e){} }
+let journalView = false, jnoteId = null, jnoteStars = 0;
+function journalEntry(hid){ return journal[hid] || { note:"", stars:0 }; }
+function starRow(sel){
+  let s = "";
+  for(let i=1;i<=5;i++) s += '<button class="jstar'+(i<=sel?" on":"")+'" data-star="'+i+'" aria-label="Rate '+i+' of 5 stars">★</button>';
+  return s;
+}
+function renderJournalView(el, trades){
+  trades.slice().reverse().forEach(h=>{
+    const e = journalEntry(h.id);
+    const d = document.createElement("div");
+    d.className = "card jcard";
+    d.innerHTML =
+      '<div class="jcard-top"><b>'+h.sym+'</b>'+
+      '<span class="dir '+(h.dir==="BUY"?"buy":"sell")+'">'+h.dir+'</span>'+
+      '<b class="num '+plClass(h.pl)+'">'+fmt$(h.pl)+'</b>'+
+      '<button class="ghost-btn sm jnote-edit" data-jnote="'+h.id+'">✎ Note</button></div>'+
+      '<div class="jstars ro">'+starRow(e.stars||0).replace(/data-star/g,"data-rstar")+'</div>'+
+      (e.note?'<p class="jnote-txt"></p>':'<p class="fine">No note yet — tap ✎ to add one.</p>');
+    if(e.note) d.querySelector(".jnote-txt").textContent = e.note;
+    el.appendChild(d);
+  });
+}
+function openJournalSheet(hid){
+  jnoteId = hid; const e = journalEntry(hid); jnoteStars = e.stars || 0;
+  const h = state.history.find(x=>x.id===hid);
+  $("jnoteMeta").textContent = h ? (h.sym+" "+h.dir+" · "+fmt$(h.pl)) : "";
+  $("jnoteStars").innerHTML = starRow(jnoteStars);
+  $("jnoteText").value = e.note || "";
+  $("jnoteSheet").hidden = false; $("jnoteBackdrop").hidden = false;
+}
+function closeJournalSheet(){ $("jnoteSheet").hidden = true; $("jnoteBackdrop").hidden = true; jnoteId = null; }
+function toggleJournalView(){
+  journalView = !journalView;
+  document.querySelectorAll(".journal-toggle").forEach(b=>b.classList.toggle("on", journalView));
+  renderPositions(); renderPortfolio();
+}
+document.addEventListener("click", e=>{
+  const jn = e.target.closest("[data-jnote]");
+  if(jn){ openJournalSheet(jn.dataset.jnote); return; }
+  const st = e.target.closest("[data-star]");
+  if(st && jnoteId){ jnoteStars = +st.dataset.star; $("jnoteStars").innerHTML = starRow(jnoteStars); return; }
+  const jt = e.target.closest(".journal-toggle");
+  if(jt){ toggleJournalView(); return; }
+  const bs = e.target.closest("[data-slot]");
+  if(bs){
+    const s = mentorSlots()[+bs.dataset.slot];
+    if(s && bookTrader){
+      bookings.push({ traderId:bookTrader.id, traderName:bookTrader.name, slot:s.label, credits:s.credits, bookedAt:Date.now() });
+      saveBookings(); const bt = bookTrader; closeBookSheet();
+      renderTraderProfile(bt.id);
+      toast("Booked "+s.label+" — demo");
+    }
+    return;
+  }
+});
+$("jnoteX").addEventListener("click", closeJournalSheet);
+$("jnoteBackdrop").addEventListener("click", closeJournalSheet);
+$("jnoteSave").addEventListener("click", ()=>{
+  if(!jnoteId) return;
+  journal[jnoteId] = { note:$("jnoteText").value.trim(), stars:jnoteStars };
+  saveJournal(); closeJournalSheet();
+  renderPositions(); renderPortfolio();
+  toast("Note saved — demo");
+});
+$("bookX").addEventListener("click", closeBookSheet);
+$("bookBackdrop").addEventListener("click", closeBookSheet);
+/* v25.13: 1-on-1 mentorship booking — demo credits, persisted in tc_bookings_v1 */
+const BOOK_KEY = "tc_bookings_v1";
+let bookings = [];
+try{ bookings = JSON.parse(localStorage.getItem(BOOK_KEY) || "[]") || []; }catch(e){ bookings = []; }
+if(!Array.isArray(bookings)) bookings = [];
+function saveBookings(){ try{ localStorage.setItem(BOOK_KEY, JSON.stringify(bookings)); }catch(e){} }
+function isBooked(tid){ return bookings.some(b=>b.traderId===tid); }
+let bookTrader = null;
+function mentorSlots(){
+  const out = [], times = ["10:00","14:00","18:00"], now = new Date();
+  for(let d=1; d<=2 && out.length<6; d++){
+    const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate()+d);
+    const label = d===1 ? "Tomorrow" : dt.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+    times.forEach(tm=>{ if(out.length<6) out.push({ label:label+" "+tm, credits:50 }); });
+  }
+  return out;
+}
+function openBookSheet(t){
+  bookTrader = t;
+  $("bookTitle").textContent = "Book 1-on-1 with " + t.name;
+  $("bookSub").textContent = isBooked(t.id)
+    ? "You already have a demo booking with this trader — pick another slot."
+    : "Pick a demo time slot. Paid in demo credits — no real payment.";
+  $("bookSlots").innerHTML = mentorSlots().map((s,i)=>
+    '<button class="book-slot" data-slot="'+i+'"><b>'+esc(s.label)+'</b><span class="num">50 credits · demo</span></button>').join("");
+  $("bookSheet").hidden = false; $("bookBackdrop").hidden = false;
+}
+function closeBookSheet(){ $("bookSheet").hidden = true; $("bookBackdrop").hidden = true; bookTrader = null; }
 function renderPositionsTick(){
   state.open.forEach(p=>{
     const pr = px(p.sym);
@@ -1344,9 +1716,10 @@ $("copySwitch").addEventListener("click", function(){
 
 /* draggable + resizable face-cam, position persisted */
 (function(){
-  const cam = $("faceCam"), wrap = $("liveChartWrap"), grip = $("fcResize");
+  const cam = $("faceCam"), grip = $("fcResize");
+  const stage = ()=>cam.parentElement; /* the live stage (.lv-video) — cam is dragged inside it */
   const KEY = "tc_facecam_v1";
-  let drag = null, resizing = false;
+  let drag = null, resizing = false, lastTap = 0, tapMoved = false;
   window.restoreFaceCam = function(){
     try{
       const saved = JSON.parse(localStorage.getItem(KEY)||"null");
@@ -1354,26 +1727,42 @@ $("copySwitch").addEventListener("click", function(){
         cam.style.left = saved.x+"px"; cam.style.top = saved.y+"px";
         cam.style.right = "auto"; cam.style.bottom = "auto";
         cam.style.width = saved.w+"px"; cam.style.height = saved.h+"px";
-        return;
+      }else{
+        cam.style.right = "10px"; cam.style.bottom = "10px";
       }
+      if(saved && saved.layout){ liveLayoutCur = saved.layout; liveSetup.layout = saved.layout; }
     }catch(e){}
-    cam.style.right = "10px"; cam.style.bottom = "10px";
+    applyLiveLayout(liveLayoutCur);
   };
   function save(){
     try{
-      localStorage.setItem(KEY, JSON.stringify({ x:cam.offsetLeft, y:cam.offsetTop, w:cam.offsetWidth, h:cam.offsetHeight }));
+      localStorage.setItem(KEY, JSON.stringify({ x:cam.offsetLeft, y:cam.offsetTop, w:cam.offsetWidth, h:cam.offsetHeight, layout:liveLayoutCur }));
     }catch(e){}
   }
+  window.__saveFaceCam = save;
+  const SNAP = 24; /* snap-to-corners/edges threshold, px */
   function clamp(){
-    const wr = wrap.getBoundingClientRect();
-    const x = Math.min(Math.max(0, cam.offsetLeft), Math.max(0, wr.width - cam.offsetWidth));
-    const y = Math.min(Math.max(0, cam.offsetTop), Math.max(0, wr.height - cam.offsetHeight));
+    const st = stage(); if(!st) return;
+    const wr = st.getBoundingClientRect();
+    let x = Math.min(Math.max(0, cam.offsetLeft), Math.max(0, wr.width - cam.offsetWidth));
+    let y = Math.min(Math.max(0, cam.offsetTop), Math.max(0, wr.height - cam.offsetHeight));
+    if(x < SNAP) x = 0; else if(wr.width - cam.offsetWidth - x < SNAP) x = Math.max(0, wr.width - cam.offsetWidth);
+    if(y < SNAP) y = 0; else if(wr.height - cam.offsetHeight - y < SNAP) y = Math.max(0, wr.height - cam.offsetHeight);
     cam.style.left = x+"px"; cam.style.top = y+"px";
     cam.style.right = "auto"; cam.style.bottom = "auto";
+  }
+  const CAM_SIZES = [ {w:76,h:96}, {w:124,h:156}, {w:180,h:226} ]; /* small → medium → large */
+  function cycleCamSize(){
+    let i = CAM_SIZES.findIndex(s=>Math.abs(s.w - cam.offsetWidth) < 14);
+    i = (i+1) % CAM_SIZES.length;
+    cam.style.width = CAM_SIZES[i].w+"px"; cam.style.height = CAM_SIZES[i].h+"px";
+    clamp(); save();
+    toast("Camera size: "+["small","medium","large"][i]+" — demo");
   }
   cam.addEventListener("pointerdown", e=>{
     if(e.target===grip || (e.target.closest && e.target.closest("button"))) return; /* let buttons tap */
     drag = { dx: e.clientX - cam.offsetLeft, dy: e.clientY - cam.offsetTop };
+    tapMoved = false;
     try{ cam.setPointerCapture(e.pointerId); }catch(err){}
   });
   grip.addEventListener("pointerdown", e=>{
@@ -1389,15 +1778,48 @@ $("copySwitch").addEventListener("click", function(){
       cam.style.height = Math.min(300, Math.max(80, drag.h + (e.clientY - drag.sy)))+"px";
       clamp();
     }else{
-      const wr = wrap.getBoundingClientRect();
+      const wr = stage().getBoundingClientRect();
       cam.style.left = (e.clientX - wr.left - drag.dx)+"px";
       cam.style.top = (e.clientY - wr.top - drag.dy)+"px";
       cam.style.right = "auto"; cam.style.bottom = "auto";
+      tapMoved = true;
       clamp();
     }
   });
-  ["pointerup","pointercancel"].forEach(ev=>cam.addEventListener(ev, ()=>{ if(drag) save(); drag = null; resizing = false; }));
+  ["pointerup","pointercancel"].forEach(ev=>cam.addEventListener(ev, ()=>{
+    if(drag && !resizing && !tapMoved){ /* double-tap cycles camera size */
+      const now = Date.now();
+      if(now - lastTap < 350){ cycleCamSize(); lastTap = 0; }
+      else lastTap = now;
+    }
+    if(drag) save();
+    drag = null; resizing = false; tapMoved = false;
+  }));
 })();
+
+/* ---------------- GO-LIVE STUDIO: layout presets (demo) ---------------- */
+const LAYOUTS = [
+  { id:"pip", label:"Picture-in-picture" },
+  { id:"full", label:"Full camera" },
+  { id:"split", label:"Split" },
+  { id:"chartfocus", label:"Chart focus" }
+];
+let liveLayoutCur = "pip";
+const HOST_LAYOUTS = { daud:"split", sara:"pip", arjun:"chartfocus" }; /* simulated host studio choices */
+function applyLiveLayout(name){
+  if(LAYOUTS.every(l=>l.id!==name)) name = "pip";
+  liveLayoutCur = name;
+  const sc = $("screen-live");
+  if(sc){ LAYOUTS.forEach(l=>sc.classList.remove("layout-"+l.id)); sc.classList.add("layout-"+name); }
+  if(window.__saveFaceCam) window.__saveFaceCam(); /* persist inside tc_facecam_v1 */
+}
+function renderLsLayoutChips(){
+  const el = $("lsLayoutChips"); if(!el) return;
+  el.innerHTML = LAYOUTS.map(l=>'<button class="ls-chip'+(liveSetup.layout===l.id?" on":"")+'" data-ly="'+l.id+'">'+l.label+'</button>').join("");
+  el.querySelectorAll("[data-ly]").forEach(b=>b.addEventListener("click", ()=>{
+    liveSetup.layout = b.dataset.ly; renderLsLayoutChips();
+  }));
+}
 
 /* ---------------- REAL FACE CAMERA (getUserMedia; needs HTTPS — GitHub Pages is HTTPS) ---------------- */
 let camStream = null;
@@ -1442,14 +1864,15 @@ async function enableCamera(){
 $("camToggleBtn").addEventListener("click", e=>{ e.stopPropagation(); camOn() ? stopCamera() : enableCamera(); });
 
 /* ---------------- GO-LIVE SETUP (camera check + title + symbol before broadcast) ---------------- */
-const liveSetup = { sym:"XAUUSD", title:"", bg:"none" };
+const liveSetup = { sym:"XAUUSD", title:"", bg:"none", layout:"pip" };
 const BG_OPTIONS = [
   { id:"none",   label:"None" },
   { id:"blur",   label:"Blur" },
   { id:"remove", label:"Remove" },
   { id:"desk",   label:"Desk" },
   { id:"city",   label:"City night" },
-  { id:"studio", label:"Studio" }
+  { id:"studio", label:"Studio" },
+  { id:"charts", label:"Charts" }
 ];
 function renderBgChips(){
   const el = $("lsBgChips"); if(!el) return;
@@ -1460,6 +1883,13 @@ function renderBgChips(){
 }
 function applyLsBg(){
   const bg = $("lsCamBg"); if(bg) bg.className = "cam-bg bg-"+liveSetup.bg;
+  const ls = bg ? bg.closest(".ls-cam") : null;
+  if(ls) ls.classList.toggle("vid-blur", liveSetup.bg==="blur"); /* REAL blur on the preview video element */
+}
+/* live face-cam background: "Blur" blurs the video element itself (not just an overlay) */
+function applyFaceCamBg(bg){
+  const fbg = $("faceCamBg"); if(fbg) fbg.className = "cam-bg bg-"+bg;
+  const fc = $("faceCam"); if(fc) fc.classList.toggle("vid-blur", bg==="blur");
 }
 const LS_SYMS = ["XAUUSD","BTCUSD","EURUSD","GBPUSD","ETHUSD","US30"];
 function renderLsChips(){
@@ -1482,6 +1912,7 @@ function openLiveSetup(){
   liveSetup.sym = state.sym;
   renderLsChips();
   renderBgChips(); applyLsBg();
+  renderLsLayoutChips();
   $("lsTitle").value = state.sym + " · Live scalps";
   $("liveSetupBackdrop").hidden = false;
   $("liveSetupSheet").hidden = false;
@@ -1500,6 +1931,342 @@ function showLiveHint(){
   liveHintTimer = setTimeout(()=>{ h.hidden = true; }, 12000);
 }
 
+/* ================= LIVE WORKSTREAM: gifting · scheduled lives · guest · polls · Q&A (all demo) ================= */
+
+/* ---------------- LIVE GIFTING (demo coins — no real value, nothing is purchased) ---------------- */
+const GIFTS = [
+  { emoji:"🌹", name:"Rose", coins:1 },
+  { emoji:"☕", name:"Coffee", coins:5 },
+  { emoji:"🚀", name:"Rocket", coins:10 },
+  { emoji:"💎", name:"Diamond", coins:25 },
+  { emoji:"👑", name:"Crown", coins:50 },
+  { emoji:"🏆", name:"Trophy", coins:100 }
+];
+const GIFT_QTY = [1, 5, 10];
+const gifters = {}; /* hostId -> { name: coins } — in-memory per stream */
+let giftSel = 0, giftQty = 1;
+function curHostId(){ return watchingHost ? watchingHost.id : (youLive.active ? "you" : "daud"); }
+function openGiftSheet(){
+  giftSel = 0; giftQty = 1; renderGiftGrid();
+  $("backdrop").hidden = false; $("giftSheet").hidden = false;
+}
+function closeGiftSheet(){
+  $("giftSheet").hidden = true;
+  if($("symbolSheet").hidden && $("notifSheet").hidden) $("backdrop").hidden = true;
+}
+function renderGiftGrid(){
+  const g = $("giftGrid"); if(!g) return;
+  g.innerHTML = GIFTS.map((gf,i)=>'<button class="gift-card'+(i===giftSel?" sel":"")+'" data-gift="'+i+'">'+
+    '<span class="gift-emoji">'+gf.emoji+'</span><b>'+gf.name+'</b><span class="num">'+gf.coins+' coins</span></button>').join("");
+  g.querySelectorAll("[data-gift]").forEach(b=>b.addEventListener("click", ()=>{ giftSel = +b.dataset.gift; renderGiftGrid(); }));
+  const q = $("giftQtyRow"); if(q){
+    q.innerHTML = GIFT_QTY.map(n=>'<button class="ls-chip'+(n===giftQty?" on":"")+'" data-qty="'+n+'">x'+n+'</button>').join("");
+    q.querySelectorAll("[data-qty]").forEach(b=>b.addEventListener("click", ()=>{ giftQty = +b.dataset.qty; renderGiftGrid(); }));
+  }
+}
+function floatGift(emoji, coins){
+  const layer = $("liveHearts"); if(!layer) return;
+  const s = document.createElement("span");
+  s.className = "f-gift";
+  s.style.left = (12+Math.random()*70)+"%";
+  s.style.setProperty("--dx", (Math.random()*80-40)+"px");
+  s.innerHTML = '<b>'+emoji+'</b><i class="num">+'+coins+'</i>';
+  layer.appendChild(s);
+  setTimeout(()=>s.remove(), 2400);
+}
+function sendGift(){
+  const gf = GIFTS[giftSel], total = gf.coins*giftQty;
+  const hid = curHostId();
+  gifters[hid] = gifters[hid] || {};
+  gifters[hid]["You"] = (gifters[hid]["You"]||0) + total;
+  for(let i=0;i<Math.min(giftQty,5);i++) setTimeout(()=>floatGift(gf.emoji, total), i*140);
+  closeGiftSheet();
+  renderGiftTop();
+  toast("Sent "+gf.emoji+" x"+giftQty+" — "+total+" demo coins · no real value");
+}
+function renderGiftTop(){
+  const el = $("giftTop"); if(!el) return;
+  const map = gifters[curHostId()] || {};
+  const top = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  if(!top.length){ el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false;
+  el.innerHTML = '<span class="gt-label">Top gifters <i>demo coins · no real value</i></span>' +
+    top.map(([name, coins], i)=>'<span class="gt-chip'+(i===0?" first":"")+'">'+(i===0?"👑 ":"")+esc(name)+
+      ' <b class="num">'+coins+'</b></span>').join("");
+}
+
+/* ---------------- SCHEDULED LIVES + REMINDERS (demo — local to this device) ---------------- */
+const SCHED_KEY = "tc_scheduled_v1", REM_KEY = "tc_reminders_v1";
+function loadSched(){
+  try{ const a = JSON.parse(localStorage.getItem(SCHED_KEY)||"null"); if(Array.isArray(a)) return a; }catch(e){}
+  return null;
+}
+function saveSched(a){ try{ localStorage.setItem(SCHED_KEY, JSON.stringify(a)); }catch(e){} }
+function loadRem(){ try{ return JSON.parse(localStorage.getItem(REM_KEY)||"{}")||{}; }catch(e){ return {}; } }
+function saveRem(o){ try{ localStorage.setItem(REM_KEY, JSON.stringify(o)); }catch(e){} }
+function seedSched(){
+  if(loadSched()) return;
+  const now = Date.now();
+  saveSched([
+    { id:"seed-ak", title:"London open scalps", at:new Date(now+2*3600e3+14*60e3).toISOString(), host:"Ali Khan", ini:"AK", g:["#2F80FF","#1B5FD6"] },
+    { id:"seed-sm", title:"CPI reaction — live breakdown", at:new Date(now+26*3600e3).toISOString(), host:"Sara Malik", ini:"SM", g:["#B678F0","#5E2B8A"] }
+  ]);
+}
+function fmtCountdown(ms){
+  if(ms < 0) return "starting";
+  const m = Math.floor(ms/60000), h = Math.floor(m/60), d = Math.floor(h/24);
+  if(d>0) return "in "+d+"d "+(h%24)+"h";
+  if(h>0) return "in "+h+"h "+(m%60)+"m";
+  return "in "+Math.max(m,1)+"m";
+}
+function upcomingEvents(){
+  const now = Date.now();
+  return (loadSched()||[]).filter(e=>e && e.at && (new Date(e.at).getTime() > now-15*60e3))
+    .sort((a,b)=>new Date(a.at).getTime()-new Date(b.at).getTime());
+}
+function renderUpcoming(){
+  const el = $("upcomingLives"); if(!el) return;
+  const rem = loadRem();
+  const evs = upcomingEvents();
+  if(!evs.length){ el.innerHTML = '<p class="fine">No upcoming lives scheduled.</p>'; return; }
+  el.innerHTML = evs.map(e=>{
+    const at = new Date(e.at).getTime(), on = !!rem[e.id];
+    const dt = new Date(e.at).toLocaleString("en-GB",{ weekday:"short", hour:"2-digit", minute:"2-digit", day:"numeric", month:"short" });
+    return '<div class="up-card">'+
+      '<span class="up-av" style="--g1:'+(e.g?e.g[0]:"#2F80FF")+';--g2:'+(e.g?e.g[1]:"#1B5FD6")+'">'+esc(e.ini||"•")+'</span>'+
+      '<span class="up-tx"><b>'+esc(e.title)+'</b><span class="fine">'+esc(e.host||"")+' · '+esc(dt)+'</span></span>'+
+      '<span class="up-when num">'+fmtCountdown(at-Date.now())+'</span>'+
+      '<button class="remind-btn'+(on?" on":"")+'" data-rem="'+e.id+'">'+(on?"✓ Remind me":"Remind me")+'</button>'+
+      (e.host==="You" ? '<button class="up-x" data-updel="'+e.id+'" aria-label="Cancel scheduled live">✕</button>' : "")+
+    '</div>';
+  }).join("");
+  el.querySelectorAll("[data-rem]").forEach(b=>b.addEventListener("click", ()=>{
+    const r = loadRem(), id = b.dataset.rem;
+    if(r[id]) delete r[id]; else r[id] = true;
+    saveRem(r); renderUpcoming();
+    toast(r[id] ? "Reminder set — demo" : "Reminder off — demo");
+  }));
+  el.querySelectorAll("[data-updel]").forEach(b=>b.addEventListener("click", ()=>{
+    saveSched((loadSched()||[]).filter(e=>e.id!==b.dataset.updel));
+    renderUpcoming(); toast("Scheduled live cancelled — demo");
+  }));
+}
+function openSchedSheet(){
+  const d = new Date(Date.now()+2*3600e3), pad = n=>String(n).padStart(2,"0");
+  $("schedAt").value = d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
+  $("schedTitle").value = "";
+  $("backdrop").hidden = false; $("schedSheet").hidden = false;
+}
+function closeSchedSheet(){
+  $("schedSheet").hidden = true;
+  if($("symbolSheet").hidden && $("notifSheet").hidden) $("backdrop").hidden = true;
+}
+function saveSchedForm(){
+  const title = ($("schedTitle").value||"").trim().slice(0,60) || "My live stream";
+  const v = $("schedAt").value, at = v ? new Date(v) : null;
+  if(!at || isNaN(at.getTime()) || at.getTime() < Date.now()-60e3){ toast("Pick a future date & time — demo"); return; }
+  const list = loadSched()||[];
+  list.push({ id:"u"+Date.now(), title, at:at.toISOString(), host:"You", ini:"YOU", g:["#2F80FF","#1B5FD6"] });
+  saveSched(list); closeSchedSheet(); renderUpcoming();
+  toast("Live scheduled — demo");
+}
+const remFired = new Set();
+function checkReminders(){
+  const rem = loadRem();
+  if(!Object.keys(rem).length) return;
+  const now = Date.now();
+  (loadSched()||[]).forEach(e=>{
+    if(!e || !rem[e.id] || remFired.has(e.id)) return;
+    const at = new Date(e.at).getTime();
+    if(at-now <= 2*60e3 && at-now > -5*60e3){
+      remFired.add(e.id);
+      toast("📅 "+e.title+" is starting soon — demo");
+      pushNotif("bell", "Live starting soon", e.title+" · "+(e.host||"")+" — demo", ()=>goTab("live"));
+    }
+  });
+}
+
+/* ---------------- MULTI-GUEST LIVE (demo — simulated co-host tile, in-memory) ---------------- */
+let liveGuest = null;
+const GUEST_POOL = [
+  { name:"Sara Malik", ini:"SM", g:["#B678F0","#5E2B8A"] },
+  { name:"CryptoNadeem", ini:"CN", g:["#5B8DEF","#2B4A8A"] },
+  { name:"Ayesha", ini:"AY", g:["#22C55E","#15803D"] },
+  { name:"Omar", ini:"OM", g:["#F5A623","#B45309"] },
+  { name:"Priya", ini:"PR", g:["#F04452","#B91C1C"] },
+  { name:"Khalid", ini:"KH", g:["#2F80FF","#1B5FD6"] }
+];
+function openInviteSheet(){
+  const el = $("inviteList"); if(!el) return;
+  const pool = GUEST_POOL.filter(g=>!liveGuest || g.name!==liveGuest.name);
+  el.innerHTML = pool.map((g,i)=>
+    '<div class="invite-row"><span class="avatar inv-av" style="--g1:'+g.g[0]+';--g2:'+g.g[1]+'">'+g.ini+'</span>'+
+    '<span class="invite-tx"><b>'+esc(g.name)+'</b><span class="fine">Viewer · wants to join</span></span>'+
+    '<button class="primary-btn sm" data-invite="'+i+'">Invite</button></div>').join("");
+  el.querySelectorAll("[data-invite]").forEach(b=>b.addEventListener("click", ()=>inviteGuest(pool[+b.dataset.invite])));
+  $("backdrop").hidden = false; $("inviteSheet").hidden = false;
+}
+function closeInviteSheet(){
+  $("inviteSheet").hidden = true;
+  if($("symbolSheet").hidden && $("notifSheet").hidden) $("backdrop").hidden = true;
+}
+function inviteGuest(g){
+  if(!g) return;
+  liveGuest = g; closeInviteSheet(); renderGuestTile();
+  toast(g.name+" joined as co-host — demo");
+}
+function removeGuest(){
+  liveGuest = null; renderGuestTile();
+  toast("Co-host removed — demo");
+}
+function renderGuestTile(){
+  const tile = $("guestCam"); if(!tile) return;
+  const sc = $("screen-live");
+  if(!liveGuest){ tile.hidden = true; if(sc) sc.classList.remove("has-guest"); return; }
+  tile.hidden = false;
+  if(sc) sc.classList.add("has-guest");
+  tile.innerHTML =
+    '<div class="gc-grad"></div>'+
+    '<span class="gc-av" style="--g1:'+liveGuest.g[0]+';--g2:'+liveGuest.g[1]+'">'+liveGuest.ini+'</span>'+
+    '<span class="gc-name">'+esc(liveGuest.name)+'</span>'+
+    '<span class="gc-tag">Guest · demo</span>'+
+    '<button class="gc-x" id="guestX" aria-label="Remove guest">✕</button>';
+  $("guestX").addEventListener("click", e=>{ e.stopPropagation(); removeGuest(); });
+}
+
+/* ---------------- LIVE POLLS (demo — in-memory, auto-closes after 60s) ---------------- */
+let livePoll = null;
+function openPollSheet(){
+  $("backdrop").hidden = false; $("pollSheet").hidden = false;
+}
+function closePollSheet(){
+  $("pollSheet").hidden = true;
+  if($("symbolSheet").hidden && $("notifSheet").hidden) $("backdrop").hidden = true;
+}
+function launchPoll(){
+  const q = ($("pollQ").value||"").trim().slice(0,80) || "XAUUSD up or down next?";
+  const a = ($("pollOptA").value||"").trim().slice(0,24) || "Up";
+  const b = ($("pollOptB").value||"").trim().slice(0,24) || "Down";
+  if(livePoll) endPollSilent();
+  livePoll = { q, opts:[{label:a, votes:3},{label:b, votes:2}], voted:-1, endsAt:Date.now()+60000, closed:false, timer:null, sim:null };
+  livePoll.timer = setInterval(()=>{
+    if(!livePoll) return;
+    if(Date.now() >= livePoll.endsAt) endPoll(); else renderPollCard();
+  }, 1000);
+  livePoll.sim = setInterval(()=>{ /* simulated viewer votes — demo */
+    if(!livePoll || livePoll.closed) return;
+    livePoll.opts[Math.floor(Math.random()*2)].votes++;
+    renderPollCard();
+  }, 2200);
+  closePollSheet(); renderPollCard();
+  toast("Poll is live — demo");
+}
+function endPollSilent(){
+  if(!livePoll) return;
+  if(livePoll.timer) clearInterval(livePoll.timer);
+  if(livePoll.sim) clearInterval(livePoll.sim);
+  livePoll = null; renderPollCard();
+}
+function endPoll(){
+  if(!livePoll || livePoll.closed) return;
+  livePoll.closed = true;
+  if(livePoll.timer) clearInterval(livePoll.timer);
+  if(livePoll.sim) clearInterval(livePoll.sim);
+  renderPollCard();
+  toast("Poll ended — demo");
+  setTimeout(()=>{ if(livePoll && livePoll.closed){ livePoll = null; renderPollCard(); } }, 12000);
+}
+function votePoll(i){
+  if(!livePoll || livePoll.closed || livePoll.voted>=0) return;
+  livePoll.voted = i; livePoll.opts[i].votes++;
+  renderPollCard();
+}
+function renderPollCard(){
+  const w = $("livePollWrap"); if(!w) return;
+  if(!livePoll){ w.innerHTML = ""; return; }
+  const p = livePoll, total = p.opts[0].votes + p.opts[1].votes;
+  const secs = p.closed ? 0 : Math.max(0, Math.ceil((p.endsAt-Date.now())/1000));
+  w.innerHTML = '<div class="poll-card">'+
+    '<div class="poll-head"><b>📊 '+esc(p.q)+'</b><span class="demo-tag">Demo</span></div>'+
+    '<div class="poll-timer num">'+(p.closed ? "Poll ended" : "Ends in "+secs+"s")+'</div>'+
+    p.opts.map((o,i)=>{
+      const pct = total ? Math.round(o.votes/total*100) : 0;
+      const mine = p.voted===i, dis = p.closed || p.voted>=0;
+      return '<button class="poll-opt'+(mine?" mine":"")+'" data-vote="'+i+'"'+(dis?" disabled":"")+'>'+
+        '<span class="poll-bar" style="width:'+pct+'%"></span>'+
+        '<span class="poll-tx"><b>'+esc(o.label)+'</b><span class="num">'+pct+'% · '+o.votes+' votes'+(mine?" · you":"")+'</span></span></button>';
+    }).join("")+
+    (youLive.active && !p.closed ? '<button class="ghost-btn sm" id="pollEnd">End poll</button>' : "")+
+  '</div>';
+  w.querySelectorAll("[data-vote]").forEach(b=>b.addEventListener("click", ()=>votePoll(+b.dataset.vote)));
+  const pe = $("pollEnd"); if(pe) pe.addEventListener("click", endPoll);
+}
+
+/* ---------------- LIVE Q&A QUEUE (demo — in-memory per stream) ---------------- */
+let qaSeeded = false;
+const qaList = [];
+function seedQa(){
+  if(qaSeeded) return; qaSeeded = true;
+  const now = Date.now();
+  const t = m=>{ const d = new Date(now-m*60000); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); };
+  qaList.push(
+    { name:"fxnoob", text:"How do you set your stop loss on gold?", time:t(9), answered:false },
+    { name:"Ayesha", text:"Which session is best for XAUUSD scalps?", time:t(5), answered:false },
+    { name:"pipmaster", text:"Do you use fixed lot size or risk %?", time:t(2), answered:false }
+  );
+}
+function renderQa(){
+  seedQa();
+  const row = q=>'<div class="qa-item'+(q.answered?" done":"")+'"><span class="qa-tx"><b>'+esc(q.name)+'</b><span>'+esc(q.text)+'</span></span>'+
+    '<span class="qa-time num">'+esc(q.time)+'</span>'+
+    (q.answered ? '<span class="qa-done">✓</span>' : '<button class="qa-check" data-qa="'+qaList.indexOf(q)+'" aria-label="Mark answered">✓</button>')+'</div>';
+  const open = qaList.filter(q=>!q.answered), done = qaList.filter(q=>q.answered);
+  $("qaList").innerHTML = open.length ? open.map(row).join("") : '<p class="fine">No open questions — ask one below.</p>';
+  $("qaAnsweredHead").hidden = !done.length;
+  $("qaAnswered").innerHTML = done.map(row).join("");
+  document.querySelectorAll("[data-qa]").forEach(b=>b.addEventListener("click", ()=>{
+    qaList[+b.dataset.qa].answered = true; renderQa(); toast("Marked as answered — demo");
+  }));
+}
+function sendQa(){
+  const inp = $("qaInput"), v = inp.value.trim().slice(0,140);
+  if(!v) return;
+  const d = new Date();
+  qaList.unshift({ name:"You", text:v, time:String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"), answered:false });
+  inp.value = ""; renderQa();
+}
+
+/* ---------------- LIVE POSITIONS STRIP (demo positions under the live stage) ---------------- */
+let hostSimPos = [];
+function startHostSimPositions(t){
+  hostSimPos = (t.trades||[]).slice(0,4).map((tr,i)=>{
+    const s = tr.s, pr = px(s), dir = tr.d;
+    const entry = dir==="BUY" ? pr.ask*(1-0.0004*(i+1)) : pr.bid*(1+0.0004*(i+1));
+    return { id:"hs"+i, sym:s, dir, lots:+(0.05*(i+1)).toFixed(2), entry, tp:null, sl:null };
+  });
+}
+function stopHostSim(){ hostSimPos = []; }
+function renderLivePosStrip(){
+  const el = $("livePosStrip"); if(!el) return;
+  const live = youLive.active || watchingHost;
+  if(!live){ el.hidden = true; return; }
+  const list = youLive.active ? state.open : hostSimPos;
+  if(!list.length){ el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '<span class="lps-label">demo positions</span>' + list.slice(0,6).map(p=>{
+    const v = positionPL(p);
+    return '<span class="lps-chip"><b>'+esc(p.sym)+'</b><i class="dir '+(p.dir==="BUY"?"buy":"sell")+'">'+p.dir+'</i>'+
+      '<span class="num '+plClass(v)+'">'+fmt$(v)+'</span></span>';
+  }).join("");
+}
+
+/* host-only live controls (invite / poll / layout switcher) */
+function syncHostControls(){
+  const host = youLive.active;
+  ["inviteBtn","pollBtn"].forEach(id=>{ const el = $(id); if(el) el.hidden = !host; });
+  const ll = $("liveLayoutBtn"); if(ll) ll.hidden = !host;
+}
+
 /* ---------------- GO LIVE (demo broadcast; ALL numbers simulated) ---------------- */
 const youLive = { active:false, viewers:0, startT:0, pl:0, timerId:null };
 function fmtClock(ms){
@@ -1515,7 +2282,10 @@ function startLive(){
   youLive.pl = 0;
   $("goLiveBtn").hidden = true;
   $("youLiveBar").hidden = false;
-  const fbg = $("faceCamBg"); if(fbg) fbg.className = "cam-bg bg-"+liveSetup.bg;
+  applyFaceCamBg(liveSetup.bg);
+  applyLiveLayout(liveSetup.layout);
+  syncHostControls();
+  renderGiftTop();
   renderLiveNow();
   enableCamera(); /* auto-request camera; fails gracefully to the placeholder */
   youLive.timerId = setInterval(()=>{
@@ -1538,7 +2308,11 @@ function endLive(){
   clearInterval(youLive.timerId); youLive.timerId = null;
   $("goLiveBtn").hidden = false;
   $("youLiveBar").hidden = true;
-  const fbg = $("faceCamBg"); if(fbg) fbg.className = "cam-bg bg-none";
+  applyFaceCamBg("none");
+  applyLiveLayout("pip");
+  syncHostControls();
+  if(liveGuest){ liveGuest = null; renderGuestTile(); }
+  endPollSilent();
   renderLiveNow();
   stopCamera();
   const card = $("youLiveCard"); if(card) card.remove();
@@ -1587,42 +2361,34 @@ const TRADERS = [
   { id:"daud", ret:284.5, name:"Ali Khan", handle:"@alikhantfx", ini:"AK", pic:"https://randomuser.me/api/portraits/men/32.jpg", g:["#2F80FF","#1B5FD6"],
     bio:"XAUUSD scalper · London session · 8 yrs trading", following:false, followers:48200, followingN:312,
     win:67, pl:4210, live:true,
-    monthly:[820, -140, 1150, 640, 980, -220, 1310, 760, 540, 890, 410, 690],
     trades:[ {s:"XAUUSD",d:"BUY",pl:184.20},{s:"EURUSD",d:"SELL",pl:96.40},{s:"BTCUSD",d:"BUY",pl:-58.10} ] },
   { id:"sara", ret:187.2, name:"Sara Malik", handle:"@saramalik", ini:"SM", pic:"https://randomuser.me/api/portraits/women/44.jpg", g:["#B678F0","#5E2B8A"],
     bio:"FX swing trader · fundamentals + technicals", following:false, followers:21700, followingN:428,
     win:61, pl:2980, live:false,
-    monthly:[410, 320, -90, 520, 610, 280, -140, 490, 350, 420, 260, 380],
     trades:[ {s:"EURUSD",d:"BUY",pl:142.80},{s:"GBPUSD",d:"BUY",pl:88.20},{s:"USDJPY",d:"SELL",pl:-34.50} ] },
   { id:"arjun", ret:142.1, name:"CryptoNadeem", handle:"@cryptonadeem", ini:"CN", pic:"https://randomuser.me/api/portraits/men/45.jpg", g:["#5B8DEF","#2B4A8A"],
     bio:"Crypto + indices · risk-first, always", following:false, followers:15300, followingN:196,
     win:58, pl:2140, live:false,
-    monthly:[260, 180, 340, -120, 290, 410, 220, -60, 310, 190, 240, 200],
     trades:[ {s:"BTCUSD",d:"BUY",pl:212.60},{s:"NAS100",d:"SELL",pl:74.30},{s:"ETHUSD",d:"BUY",pl:-41.20} ] },
   { id:"lena", ret:118.6, name:"Nadia Trades", handle:"@nadiatrades", ini:"NT", pic:"https://randomuser.me/api/portraits/women/68.jpg", g:["#22C55E","#166534"],
     bio:"Gold & silver specialist · patient entries", following:false, followers:9800, followingN:154,
     win:64, pl:1875, live:false,
-    monthly:[180, 240, 120, 300, -80, 260, 190, 220, 140, 260, 110, 170],
     trades:[ {s:"XAUUSD",d:"SELL",pl:118.90},{s:"XAGUSD",d:"BUY",pl:62.40},{s:"XAUUSD",d:"BUY",pl:-28.70} ] },
   { id:"hassan", ret:96.4, name:"FX_Hassan", handle:"@fx_hassan", ini:"FH", pic:"https://randomuser.me/api/portraits/men/54.jpg", g:["#F0A05B","#8A4A1B"],
     bio:"Intraday FX · London & New York", following:false, followers:9300, followingN:188,
     win:59, pl:1620, live:false,
-    monthly:[140, 90, 210, -60, 170, 120, 200, 80, 150, 110, 90, 130],
     trades:[ {s:"GBPUSD",d:"BUY",pl:96.20},{s:"EURUSD",d:"SELL",pl:54.80},{s:"USDJPY",d:"BUY",pl:-22.40} ] },
   { id:"zeeshan", ret:84.2, name:"Zeeshan", handle:"@zeeshanfx", ini:"ZK", pic:"https://randomuser.me/api/portraits/men/67.jpg", g:["#5BC8F0","#1B5F8A"],
     bio:"Scalper · gold & indices", following:false, followers:4100, followingN:96,
     win:57, pl:1180, live:false,
-    monthly:[90, 120, 60, 140, -40, 110, 80, 130, 70, 100, 60, 90],
     trades:[ {s:"XAUUSD",d:"BUY",pl:72.40},{s:"NAS100",d:"SELL",pl:48.10},{s:"XAUUSD",d:"SELL",pl:-18.90} ] },
   { id:"baba", ret:72.1, name:"ForexBaba", handle:"@forexbaba", ini:"FB", pic:"https://randomuser.me/api/portraits/men/75.jpg", g:["#B6F05B","#4A8A1B"],
     bio:"Swing trader · majors & crosses", following:false, followers:6900, followingN:142,
     win:55, pl:940, live:false,
-    monthly:[70, 40, 110, 60, 90, -30, 80, 70, 50, 90, 40, 60],
     trades:[ {s:"EURUSD",d:"BUY",pl:64.20},{s:"AUDUSD",d:"SELL",pl:38.60},{s:"GBPUSD",d:"BUY",pl:-15.30} ] },
   { id:"malik", ret:64.3, name:"Malik FX", handle:"@malikfx", ini:"MF", pic:"https://randomuser.me/api/portraits/men/22.jpg", g:["#F05B8A","#8A1B4A"],
     bio:"Crypto scalps · BTC & ETH", following:false, followers:3800, followingN:88,
     win:54, pl:720, live:false,
-    monthly:[50, 80, 30, 90, 60, 40, 70, -20, 60, 50, 40, 50],
     trades:[ {s:"BTCUSD",d:"BUY",pl:88.40},{s:"ETHUSD",d:"SELL",pl:32.10},{s:"BTCUSD",d:"SELL",pl:-24.60} ] },
 ];
 const fmtK = n => n>=1000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
@@ -1874,6 +2640,51 @@ $("composerPost").addEventListener("click", ()=>{
 });
 $("composerInput").addEventListener("keydown", e=>{ if(e.key==="Enter") $("composerPost").click(); });
 
+/* v25.13: weekly demo contest — deterministic seeded P/L per trader + ISO week */
+function isoWeekNum(){
+  const d = new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  const w1 = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d - w1) / 864e5 - 3 + ((w1.getDay() + 6) % 7)) / 7);
+}
+function weeklyPL(t){
+  const r = mulberry32(hashSeed(t.id + ":" + new Date().getFullYear() + "W" + isoWeekNum()));
+  const base = Math.max(60, (t.pl || 800) / 20);
+  return Math.round((r()*2 - 0.9) * base * (1.25 - (t.win || 55) / 200));
+}
+function renderContest(){
+  const el = $("contestRows"); if(!el) return;
+  const youT = TRADERS.find(t=>t.you) || { name:"You", ini:"AT", g:["#2F80FF","#1B5FD6"] };
+  const rows = TRADERS.filter(t=>!t.you).map(t=>({ t, pl:weeklyPL(t), you:false }));
+  rows.push({ t:youT, pl:Math.round(yourTodayPL()), you:true });
+  rows.sort((a,b)=>b.pl-a.pl);
+  el.innerHTML = rows.map((r,i)=>
+    '<div class="rank-row'+(r.you?' you-row':'')+'">'+
+    '<span class="rank-n'+(i<3?' medal-'+(i+1):'')+'">'+(i+1)+'</span>'+
+    '<span class="rank-id">'+avImg(r.t,"sm")+
+    '<span><b>'+(r.you?"You":esc(r.t.name))+'</b><span class="fine">this week · demo</span></span></span>'+
+    '<span class="rank-val num '+(r.pl>=0?"pl-pos":"pl-neg")+'">'+(r.pl>=0?"+":"−")+'$'+Math.abs(r.pl).toLocaleString("en-US")+'</span>'+
+    '</div>').join("");
+}
+
+/* v25.13: owner announcements — pinned at the top of the Community screen */
+const OWNER_POSTS = [
+  { id:"ann1", tag:"Contest", time:"2h",
+    body:"Welcome to the Trading Community demo! Our first Weekly Demo Contest is now live — climb the leaderboard with your demo P/L. Prizes will be announced soon. Everything here is simulated — good luck, traders!" },
+  { id:"ann2", tag:"Analysis", time:"5h",
+    body:"NFP Friday: expecting a hot print on the headline number, but watch wage growth — a soft print there could spark a fast reversal in gold. My plan: wait for the spike, fade the exhaustion. Full breakdown in the live session. Not financial advice — demo community." }
+];
+function renderOwnerPosts(){
+  const el = $("ownerAnnounce"); if(!el) return;
+  el.innerHTML = '<div class="announce-head"><span>📌</span><b>Announcements</b><span class="demo-tag">Demo</span></div>' +
+    OWNER_POSTS.map(p=>
+      '<div class="card announce-card">'+
+      '<div class="announce-top"><span class="owner-tag">Owner</span><span class="verified">✓</span>'+
+      '<span class="fine">'+esc(p.time)+' · '+esc(p.tag)+'</span></div>'+
+      '<p class="announce-body"></p></div>').join("");
+  el.querySelectorAll(".announce-body").forEach((b,i)=>{ b.textContent = OWNER_POSTS[i].body; });
+}
+
 /* ---------------- COMMUNITY SCREEN ---------------- */
 let communityTab = "traders", lbPeriod = "30D";
 function periodJitter(id, period){
@@ -1885,7 +2696,8 @@ function renderCommunityTraders(){
   const lists = [$("communityTraders"), $("leaderboardPageList")].filter(Boolean);
   if(!lists.length) return;
   const rows = TRADERS.filter(t=>!t.you).slice()
-    .sort((a,b)=> (b.ret*periodJitter(b.id,lbPeriod)) - (a.ret*periodJitter(a.id,lbPeriod)));
+    /* v25.13: approved Verified Pro traders get a small leaderboard rank boost (render-only, demo) */
+    .sort((a,b)=> (b.ret*periodJitter(b.id,lbPeriod)+verifyBoost(b.handle)) - (a.ret*periodJitter(a.id,lbPeriod)+verifyBoost(a.handle)));
   lists.forEach(list=>{
     list.innerHTML = "";
     rows.forEach((t,i)=>{
@@ -1894,7 +2706,7 @@ function renderCommunityTraders(){
       r.innerHTML =
         '<span class="rank-n'+(i<3?' medal-'+(i+1):'')+'">'+(i+1)+'</span>'+
         '<button class="rank-id" data-tprof="'+t.id+'">'+avImg(t,"sm")+
-        '<span><b>'+esc(t.name)+'</b><span class="fine">'+fmtK(t.followers)+' followers</span></span></button>'+
+        '<span><b>'+esc(t.name)+(typeof verifiedSet==="function"&&verifiedSet().has(String(t.handle||"").toLowerCase())?' <span class="verified" title="Verified Pro · demo">✓</span>':'')+'</b><span class="fine">'+fmtK(t.followers)+' followers</span></span></button>'+
         '<span class="rank-val num pl-pos">+'+(t.ret*periodJitter(t.id,lbPeriod)).toFixed(1)+'%</span>'+
         '<button class="copy-btn" data-copytrader="'+t.id+'">Copy</button>';
       list.appendChild(r);
@@ -1969,7 +2781,8 @@ function renderPortfolio(){
   const set = (id,v)=>{ const el=$(id); if(el) el.textContent = v; };
   set("pfBalance", fmt$(eq)); set("pfEquity", fmt$(eq));
   const opl = openPL();
-  set("pfBalanceSub", (opl>=0?"+":"") + fmt$(opl) + " today");
+  const pct = eq ? (opl/eq*100) : 0;
+  set("pfBalanceSub", (pct>=0?"+":"")+pct.toFixed(2)+"% · "+(opl>=0?"+":"")+fmt$(opl)+" today");
   set("pfFree", fmt$(eq - m)); set("pfMargin", fmt$(m));
   set("pfOvBalance", fmt$(eq));
   const ovPL = $("pfOvPL"); if(ovPL){ ovPL.textContent = fmt$(opl); ovPL.className = "num "+plClass(opl); }
@@ -2018,16 +2831,18 @@ function renderPortfolio(){
   const pt = $("pfTxns");
   if(pt){
     pt.innerHTML = "";
-    const txns = state.history.slice().reverse().map(h=>({
-      t:"Closed "+h.sym+" "+h.dir, v:h.pl, time:h.time||"", sym:h.sym
-    }));
+    const txns = state.history.slice().reverse().map(h=>(
+      h.cash
+        ? { t:h.reason||"Cash movement", v:h.pl, time:h.time||"", tag:h.pl>=0?"deposit":"withdraw" }
+        : { t:"Closed "+h.sym+" "+h.dir, v:h.pl, time:h.time||"", sym:h.sym }
+    ));
     txns.unshift({ t:"Demo account funded", v:0, time:"", tag:"deposit" });
     if(!txns.length) pt.innerHTML = '<div class="empty">No transactions yet.</div>';
     txns.forEach(x=>{
       const r = document.createElement("div");
       r.className = "pf-pos-row";
       r.innerHTML =
-        '<span class="pf-sym-ic '+(x.tag==="deposit"?"dep":"")+'">'+(x.tag==="deposit"?"+":symIcon(x.sym||""))+'</span>'+
+        '<span class="pf-sym-ic '+(x.tag==="deposit"?"dep":x.tag==="withdraw"?"wd":"")+'">'+(x.tag==="deposit"?"+":x.tag==="withdraw"?"−":symIcon(x.sym||""))+'</span>'+
         '<span class="pf-pos-mid"><b>'+esc(x.t)+'</b>'+(x.time?'<span class="fine">'+esc(x.time)+'</span>':"")+'</span>'+
         '<b class="num '+plClass(x.v)+'">'+fmt$(x.v)+'</b>';
       pt.appendChild(r);
@@ -2052,9 +2867,159 @@ $("pfCloseAll").addEventListener("click", ()=>{
   renderPositions(); renderPortfolio();
   toast("All positions closed — demo");
 });
-$("pfDeposit").addEventListener("click", ()=>toast("Deposits are simulated — demo"));
-$("pfWithdraw").addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
-const pfw = $("pfWithdraw"); if(pfw) pfw.addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
+/* ---- v25.13: deposit / withdraw sheet (simulated demo funds) ---- */
+let moneyMode = "deposit";
+function openMoneySheet(mode){
+  moneyMode = mode;
+  $("moneyTitle").textContent = mode==="deposit" ? "Deposit funds" : "Withdraw funds";
+  $("moneyGo").textContent = mode==="deposit" ? "Deposit" : "Withdraw";
+  $("moneyAmt").value = "";
+  $("backdrop").hidden = false; $("moneySheet").hidden = false;
+  injectIcons();
+  setTimeout(()=>{ const i=$("moneyAmt"); if(i) i.focus(); }, 80);
+}
+function closeMoneySheet(){
+  $("moneySheet").hidden = true;
+  if($("notifSheet").hidden && $("symbolSheet").hidden) $("backdrop").hidden = true;
+}
+$("moneyX").addEventListener("click", closeMoneySheet);
+$("moneyPresets").addEventListener("click", e=>{
+  const b = e.target.closest("[data-amt]"); if(!b) return;
+  $("moneyAmt").value = b.dataset.amt;
+});
+$("moneyGo").addEventListener("click", ()=>{
+  const amt = Math.round(parseFloat($("moneyAmt").value)*100)/100;
+  if(isNaN(amt) || amt <= 0){ toast("Enter a valid amount — demo"); return; }
+  if(moneyMode==="withdraw" && amt > state.balance){ toast("Insufficient demo funds"); return; }
+  state.balance += moneyMode==="deposit" ? amt : -amt;
+  state.history.push({ id:"h"+(state.orderSeq++), sym:"USD", dir:moneyMode==="deposit"?"DEPOSIT":"WITHDRAW",
+    lots:0, entry:0, exit:0, pl:moneyMode==="deposit"?amt:-amt, time:new Date().toISOString(),
+    reason:moneyMode==="deposit"?"Demo deposit":"Demo withdrawal", cash:true });
+  saveTrades(); renderPortfolio(); renderAccount();
+  closeMoneySheet();
+  if(moneyMode==="deposit") unlockAch("depositor");
+  toast((moneyMode==="deposit"?"Deposited ":"Withdrew ")+fmt$(amt)+" — demo");
+});
+/* ---- v25.13: fullscreen landscape chart with ticket slide-over (demo) ---- */
+function setChartFs(on){
+  document.body.classList.toggle("chart-fs", on);
+  document.body.classList.remove("ticket-open");
+  $("chartFsBar").hidden = !on;
+  if(on) toast("Rotate your phone for a landscape chart — demo");
+}
+$("chartFsBtn").addEventListener("click", ()=>setChartFs(true));
+$("chartFsClose").addEventListener("click", ()=>setChartFs(false));
+$("chartFsTicket").addEventListener("click", ()=>document.body.classList.toggle("ticket-open"));
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && document.body.classList.contains("chart-fs")) setChartFs(false); });
+const aiKeyInput = $("aiKeyInput");
+if(aiKeyInput){
+  aiKeyInput.value = localStorage.getItem("tc_ai_key_v1") || "";
+  aiKeyInput.addEventListener("change", ()=>{
+    try{ localStorage.setItem("tc_ai_key_v1", aiKeyInput.value.trim()); }catch(e){}
+    toast("AI key saved on this device — demo");
+  });
+}
+$("aiX").addEventListener("click", ()=>{ $("aiSheet").hidden = true; });
+$("pfAiReview").addEventListener("click", async ()=>{
+  const key = (localStorage.getItem("tc_ai_key_v1")||"").trim();
+  if(!key){ toast("Paste your AI API key in Settings first — demo"); goTab("settings"); return; }
+  const weekAgo = Date.now() - 7*864e5;
+  const week = state.history.filter(h=>!h.cash && h.time && new Date(h.time).getTime() >= weekAgo);
+  if(!week.length){ toast("No closed trades this week — demo"); return; }
+  $("aiBody").innerHTML = '<p class="fine">Asking your AI for a review of '+week.length+' trades…</p>';
+  $("aiSheet").hidden = false;
+  const net = week.reduce((a,h)=>a+h.pl, 0), wins = week.filter(h=>h.pl>0).length;
+  const summary = "You are a trading coach. Review these SIMULATED demo trades from the past week:\n" +
+    week.map(h=>h.sym+" "+h.dir+" "+h.lots+" lots, entry "+h.entry+", exit "+h.exit+", P/L "+(+h.pl).toFixed(2)).join("\n") +
+    "\nTotals: "+week.length+" trades, "+wins+" wins, net "+net.toFixed(2)+
+    ". Reply with exactly 3 short bullet-point improvements, plain text, no disclaimers.";
+  try{
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+key },
+      body: JSON.stringify({ model:"gpt-4o-mini", messages:[{ role:"user", content:summary }], max_tokens:400 })
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const j = await r.json();
+    const txt = j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : "No feedback returned.";
+    $("aiBody").innerHTML = '<p class="fine">Based on '+week.length+' closed trades ('+wins+' wins, '+fmt$(net)+' net) — demo:</p><div class="ai-text">'+esc(txt).replace(/\n/g,"<br>")+'</div>';
+  }catch(e){
+    $("aiBody").innerHTML = '<p class="fine">AI review failed — check your key and connection, then try again.</p>';
+  }
+});
+$("pfExportCsv").addEventListener("click", ()=>{
+  const rows = [["id","symbol","direction","lots","entry","exit","pl","time","reason"]];
+  state.history.filter(h=>!h.cash).forEach(h=>
+    rows.push([h.id, h.sym, h.dir, h.lots, h.entry, h.exit, (+h.pl).toFixed(2), h.time||"", h.reason||""]));
+  const csv = rows.map(r=>r.map(v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const blob = new Blob([csv], { type:"text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "demo-trade-history.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast("History exported — demo CSV");
+});
+/* ---- v25.13: share P/L card (canvas → Web Share / download / text fallback) ---- */
+function plCardCanvas(){
+  const W = 1080, H = 1350, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const c = cv.getContext("2d");
+  const dark = theme()==="dark";
+  const g = c.createLinearGradient(0,0,W,H);
+  if(dark){ g.addColorStop(0,"#0B1526"); g.addColorStop(1,"#060A13"); }
+  else { g.addColorStop(0,"#0E2A52"); g.addColorStop(1,"#0B1526"); }
+  c.fillStyle = g; c.fillRect(0,0,W,H);
+  c.fillStyle = "#22C55E"; c.font = "700 44px -apple-system, Helvetica, Arial, sans-serif";
+  c.fillText("◈ Trade.FlexSpot", 70, 110);
+  c.fillStyle = "rgba(255,255,255,.65)"; c.font = "400 32px -apple-system, Helvetica, Arial, sans-serif";
+  c.fillText("My demo trading", 70, 165);
+  const eq = equity(), opl = openPL(), hist = state.history.filter(h=>!h.cash);
+  const totPL = hist.reduce((a,h)=>a+(h.pl||0),0) + opl;
+  const wins = hist.filter(h=>h.pl>0).length;
+  c.fillStyle = "#fff"; c.font = "400 34px -apple-system, Helvetica, Arial, sans-serif";
+  c.fillText("Total P/L (demo)", 70, 300);
+  c.fillStyle = totPL>=0 ? "#22C55E" : "#F04452";
+  c.font = "800 110px -apple-system, Helvetica, Arial, sans-serif";
+  c.fillText((totPL>=0?"+":"")+fmt$(totPL), 70, 410);
+  c.fillStyle = "rgba(255,255,255,.75)"; c.font = "400 34px -apple-system, Helvetica, Arial, sans-serif";
+  const stats = [["Equity", fmt$(eq)], ["Open trades", String(state.open.length)],
+                 ["Closed trades", String(hist.length)], ["Win rate", hist.length?Math.round(wins/hist.length*100)+"%":"—"]];
+  stats.forEach((s,i)=>{
+    const y = 520 + i*110;
+    c.fillStyle = "rgba(255,255,255,.55)"; c.fillText(s[0], 70, y);
+    c.fillStyle = "#fff"; c.font = "700 40px -apple-system, Helvetica, Arial, sans-serif";
+    c.fillText(s[1], 70, y+48); c.font = "400 34px -apple-system, Helvetica, Arial, sans-serif";
+  });
+  c.fillStyle = "rgba(255,255,255,.45)"; c.font = "400 30px -apple-system, Helvetica, Arial, sans-serif";
+  c.fillText("Simulated demo account — not real trading.", 70, H-120);
+  c.fillText("trade.flexspot.lol", 70, H-70);
+  return cv;
+}
+$("pfDeposit").addEventListener("click", ()=>openMoneySheet("deposit"));
+$("pfWithdraw").addEventListener("click", ()=>openMoneySheet("withdraw"));
+$("pfShare").addEventListener("click", ()=>{
+  const cv = plCardCanvas();
+  const text = "My demo trading P/L: "+fmt$(state.history.filter(h=>!h.cash).reduce((a,h)=>a+(h.pl||0),0)+openPL())+" (simulated — trade.flexspot.lol)";
+  const done = ()=>toast("P/L card shared — demo");
+  if(cv.toBlob){
+    cv.toBlob(blob=>{
+      const file = new File([blob], "demo-pl-card.png", { type:"image/png" });
+      if(navigator.canShare && navigator.canShare({ files:[file] })){
+        navigator.share({ files:[file], title:"My demo P/L" }).then(done).catch(()=>{});
+      }else{
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = "demo-pl-card.png"; a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+        toast("P/L card downloaded — demo");
+      }
+    }, "image/png");
+  }else if(navigator.share){
+    navigator.share({ title:"My demo P/L", text }).then(done).catch(()=>{});
+  }else if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>toast("P/L copied — share it anywhere")).catch(()=>toast("Share — demo"));
+  }else toast("Share — demo");
+});
 
 /* ---------------- PROFILE + BROKERS ---------------- */
 const BROKERS = [
@@ -2094,7 +3059,34 @@ document.addEventListener("click", e=>{
   if(BROKERS[i].connected){ toast(BROKERS[i].name+" already linked — demo"); return; }
   openBrokerModal(i);
 });
-$("addBroker").addEventListener("click", ()=>toast("Add your broker — demo"));
+function saveCustomBrokers(){
+  try{ localStorage.setItem("tc_brokers_custom_v1", JSON.stringify(BROKERS.filter(b=>b.custom).map(b=>({ name:b.name, sub:b.sub, custom:true })))); }catch(e){}
+}
+/* ---- v25.13: Add Broker form (demo) ---- */
+function openBrokerSheet(){ $("brokerSheet").hidden = false; }
+$("brokerX").addEventListener("click", ()=>{ $("brokerSheet").hidden = true; });
+$("brkSel").addEventListener("change", ()=>{ $("brkCustomWrap").hidden = $("brkSel").value !== "custom"; });
+$("brkSave").addEventListener("click", ()=>{
+  let name = $("brkSel").value;
+  if(name === "custom"){
+    name = $("brkCustom").value.trim();
+    if(!name){ toast("Enter the broker name — demo"); return; }
+  }
+  const acct = $("brkAcct").value.trim();
+  if(!acct){ toast("Enter the account number — demo"); return; }
+  const label = $("brkLabel").value.trim() || "Demo account";
+  const sub = "Acct "+acct+" · "+label;
+  let b = BROKERS.find(x=>x.name===name);
+  if(!b){
+    b = { name, sub, g:["#64748b","#334155"], ini:name.slice(0,2).toUpperCase(), connected:false, custom:true };
+    BROKERS.push(b);
+  }else b.sub = sub;
+  saveCustomBrokers(); saveBrokers(); renderBrokers();
+  $("brokerSheet").hidden = true;
+  $("brkAcct").value = ""; $("brkLabel").value = ""; $("brkCustom").value = "";
+  toast(name+" added — demo");
+});
+$("addBroker").addEventListener("click", openBrokerSheet);
 
 /* broker login modal — simulated connection; open AND close reliably */
 let brokerTarget = null;
@@ -2126,6 +3118,7 @@ $("brokerConnectGo").addEventListener("click", ()=>{
   go.innerHTML = '<span class="spinner"></span>Connecting…';
   setTimeout(()=>{
     BROKERS[brokerTarget].connected = true;
+    saveBrokers();
     toast(BROKERS[brokerTarget].name+" connected — demo");
     closeBrokerModal(); renderBrokers();
   }, 1200);
@@ -2187,7 +3180,30 @@ $("brokerConnectGo").addEventListener("click", ()=>{
     monthly:[120,-40,200,90,-60,150,80,210,-30,140,60,110],
     trades:[], posts:[], reels:[], postCount:0 });
 })();
-function traderPosts(tid){ const t = TRADERS.find(x=>x.id===tid); return t ? t.posts||[] : []; }
+/* v25.13: equity curves generated from each trader's stats — seeded PRNG (uses mulberry32 above), deterministic.
+   Monthly drift = ret/12 tilts the series; volatility scales with (100 - win), so the
+   curve visibly reflects each trader's return and win-rate. Totals ≈ declared net profit. */
+function hashSeed(str){
+  let h = 2166136261 >>> 0;
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function genMonthly(t){
+  const rand = mulberry32(hashSeed("mc:"+t.id));
+  const drift = (t.ret || 0) / 12;                        /* monthly drift from return */
+  const vol = Math.max(0.08, (100 - (t.win || 55)) / 100); /* lower win rate -> choppier */
+  const scale = Math.max(80, (t.pl || 800) / 7);          /* trader's typical monthly $ */
+  const out = [];
+  for(let i=0;i<12;i++){
+    const mean = scale * (1 + drift / 50);
+    const shock = (rand()*2 - 1) * scale * vol * 1.4;
+    out.push(Math.round(mean + shock));
+  }
+  const sum = out.reduce((a,b)=>a+b, 0);
+  const k = (sum !== 0 && (t.pl || 0) !== 0) ? (t.pl / sum) : 1;
+  return out.map(v=>Math.round(v * k));
+}
+TRADERS.forEach(t=>{ t.monthly = genMonthly(t); });
 
 /* --- seeded sparkline / equity canvases --- */
 function drawSpark(cv, seed, up){
@@ -2235,7 +3251,7 @@ function igProfileHTML(t){
   '<div class="tp-cover"><img src="https://picsum.photos/seed/tpcover-'+t.id+'/800/300" alt="" loading="lazy"><div class="tp-cover-grad"></div></div>'+
   '<div class="tp-head">'+
     '<div class="tp-av">'+avImg(t, "xl", (t.live?'<span class="trader-live">LIVE</span>':''))+'</div>'+
-    '<b class="tp-name">'+esc(t.name)+(t.kycVerified?' <span class="verified">✓</span>':'')+'</b>'+
+    '<b class="tp-name">'+esc(t.name)+(t.kycVerified?' <span class="verified">✓</span>':'')+(typeof verifiedSet==="function"&&verifiedSet().has(String(t.handle||"").toLowerCase())?' <span class="verified" title="Verified Pro · demo">✓</span>':'')+'</b>'+
     '<span class="handle">'+esc(t.handle)+'</span>'+
     '<span class="tp-role">Pro Trader | Technical Analysis Specialist</span>'+
     '<p class="tp-bio">'+esc(t.bio||'Sharing real trades, analysis and education.')+'</p>'+
@@ -2255,6 +3271,7 @@ function igProfileHTML(t){
       : '<button class="follow-btn sm'+(t.following?" following":"")+'" id="tprofFollow">'+(t.following?"Following":"Follow")+'</button>')+
     (t.live?'<button class="watch-live-btn" id="tprofWatch"><span class="live-pill"><i></i>LIVE</span> Watch now</button>':'')+
     (t.you?'':'<button class="ghost-btn" id="tprofCopy">Copy Trades</button>')+
+    (t.you?'':(isBooked(t.id)?'<button class="ghost-btn" id="tprofBook" disabled>✓ Booked</button>':'<button class="ghost-btn" id="tprofBook">Book 1-on-1</button>'))+
     (t.you?'':'<button class="icon-btn" id="tprofMsg" aria-label="More"><span class="ic sm" data-icon="dots"></span></button>')+
   '</div>'+
   '<div class="tp-tabs" id="tprofTabs" role="tablist">'+
@@ -2337,6 +3354,8 @@ function renderTraderProfile(id){
   if(w) w.addEventListener("click", ()=>{ closeTraderProfile(); watchTraderLive(t.id); });
   const cp = $("tprofCopy");
   if(cp) cp.addEventListener("click", ()=>{ closeTraderProfile(); openCopyModal(t.id); });
+  const bk = $("tprofBook");
+  if(bk) bk.addEventListener("click", ()=>openBookSheet(t));
   const mg = $("tprofMsg");
   if(mg) mg.addEventListener("click", ()=>toast("Messaging is demo — chat coming soon"));
   const ed = $("tprofEdit");
@@ -2362,21 +3381,6 @@ function openPostDetail(t, p){
   $("postDetailWrap").appendChild(postCard(p));
   $("postDetailBack").addEventListener("click", ()=>renderTraderProfile(t.id));
   $("tprofBody").scrollTop = 0;
-}
-function renderTprofReels(t){
-  const el = $("tprofTab-reels"); if(!el) return;
-  if(!t.reels || !t.reels.length){ el.innerHTML = '<div class="empty">No reels yet.</div>'; return; }
-  el.innerHTML = '<div class="reel-grid">'+t.reels.map(r=>
-    '<button class="reel-tile" data-reel="'+r.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
-      '<span class="rt-play"><i>▶</i></span>'+
-      '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views)+'</span></span>'+
-    '</button>').join("")+'</div>';
-  el.querySelectorAll(".reel-tile").forEach(tile=>{
-    tile.addEventListener("click", ()=>{
-      const r = t.reels.find(x=>x.id===tile.dataset.reel);
-      openReel(t, r, t.reels.map(x=>({ t, r:x })));
-    });
-  });
 }
 function renderTprofTrades(t){
   const el = $("tprofTab-trades"); if(!el) return;
@@ -2640,6 +3644,7 @@ function openCopyModal(hostId){
   copyState.pendingHost = t.id;
   setCopyLots(0.10);
   setCopyMode("mirror");
+  $("guardVal").textContent = copyGuard.maxLossPct + "%";
   $("copyWarnHost").textContent = t.name+" ("+t.handle+")";
   const a = activeAcct();
   document.querySelectorAll(".copyWarnAcct").forEach(el=>{ el.textContent = a.broker+" "+a.type+" · "+a.login; });
@@ -2655,6 +3660,7 @@ function startCopy(){
   closeCopyModal();
   if(copyMode==="mirror"){ openCopier(t.id, copyLotSel); return; }
   copyState.on = true; copyState.host = t.id; copyState.lots = copyLotSel;
+  unlockAch("first_copy");
   paintCopyUI(); renderCopyStatus();
   toast("Copying "+t.handle+" at "+copyState.lots.toFixed(2)+" lots — demo, no real orders");
 }
@@ -2675,6 +3681,33 @@ function paintCopyUI(){
   if(chip){ chip.hidden = !copyState.on; if(copyState.on) chip.textContent = "📋 Copying "+copyHostHandle(); }
 }
 function copiedOpen(){ return state.open.filter(p=>p.copy); }
+/* ---- v25.13: copy guard — max-loss % auto-stop (demo) ---- */
+const COPYGUARD_KEY = "tc_copyguard_v1";
+let copyGuard = { maxLossPct: 10, peaks: {} };
+try{ const g = JSON.parse(localStorage.getItem(COPYGUARD_KEY)||"null");
+  if(g && typeof g.maxLossPct === "number") copyGuard = { maxLossPct: g.maxLossPct, peaks: g.peaks||{} };
+}catch(e){}
+function saveCopyGuard(){ try{ localStorage.setItem(COPYGUARD_KEY, JSON.stringify(copyGuard)); }catch(e){} }
+function setGuardPct(v){
+  copyGuard.maxLossPct = Math.min(50, Math.max(5, Math.round(v)));
+  $("guardVal").textContent = copyGuard.maxLossPct + "%";
+  saveCopyGuard();
+}
+$("guardMinus").addEventListener("click", ()=>setGuardPct(copyGuard.maxLossPct-5));
+$("guardPlus").addEventListener("click", ()=>setGuardPct(copyGuard.maxLossPct+5));
+function checkCopyGuard(){
+  if(!copyState.on) return;
+  const pl = copiedPL();
+  const base = Math.max(500, 1000 * copyState.lots);
+  if(pl <= -(copyGuard.maxLossPct/100)*base){
+    const cps = copiedOpen().slice();
+    cps.forEach(p=>{ const pr = px(p.sym); closePosition(p, p.dir==="BUY"?pr.bid:pr.ask, "Copy guard"); });
+    copyState.on = false; copyState.host = null;
+    paintCopyUI(); renderCopyStatus(); renderPositions();
+    toast("Copy guard: max loss "+copyGuard.maxLossPct+"% breached — copying stopped, demo");
+    pushNotif("shield", "Copy guard triggered", "Copying auto-stopped at -"+copyGuard.maxLossPct+"% — demo");
+  }
+}
 function copiedPL(){
   return copiedOpen().reduce((s,p)=>{
     const pr = px(p.sym), cur = p.dir==="BUY"?pr.bid:pr.ask;
@@ -2751,6 +3784,7 @@ function openCopier(traderId, lots){
   copiers.push({ id:"mc"+Date.now(), traderId, lots:Math.min(5,Math.max(0.01,lots||0.10)),
     balance:MIRROR_START, createdAt:Date.now(), open:[], history:[] });
   saveCopiers(); renderCopiers();
+  unlockAch("first_copy");
   toast("Play-money copier opened for "+t.handle+" · $10,000 virtual");
   goTab("leaderboard"); setLbTab("copiers");
 }
@@ -2774,6 +3808,17 @@ function mirrorEngine(){
   let changed = false;
   copiers.forEach(c=>{
     const t = traderById(c.traderId); if(!t) return;
+    /* v25.13 copy guard: stop the copier + settle if drawdown breaches max loss % */
+    const eq = copierEquity(c);
+    const pk = Math.max(copyGuard.peaks[c.id] || MIRROR_START, eq);
+    copyGuard.peaks[c.id] = pk;
+    if(pk > 0 && (pk - eq)/pk*100 >= copyGuard.maxLossPct){
+      delete copyGuard.peaks[c.id]; saveCopyGuard();
+      stopCopier(c.id);
+      toast("Copy guard stopped "+t.handle+" at -"+((pk-eq)/pk*100).toFixed(1)+"% — demo");
+      pushNotif("shield", "Copy guard triggered", t.handle+" copier auto-stopped at max loss — demo");
+      return;
+    }
     /* trader exit: close the oldest mirrored position */
     if(c.open.length && Math.random() < 0.38){
       const p = c.open.shift(), pr = px(p.sym);
@@ -3262,6 +4307,7 @@ function watchTraderLive(tid){
   goTab("live");
   if(window.restoreFaceCam) restoreFaceCam(); /* same layout the host customized */
   paintWatchMode();
+  renderGiftTop();
   toast("Watching "+t.handle+" live — demo");
 }
 function paintWatchMode(){
@@ -3271,6 +4317,8 @@ function paintWatchMode(){
     if(bar) bar.hidden = true;
     if(cam){ cam.classList.remove("viewer"); }
     const tag = $("faceCamTag"); if(tag) tag.hidden = true;
+    applyLiveLayout(liveSetup.layout);
+    stopHostSim(); syncHostControls(); renderGiftTop();
     renderLiveNow();
     return;
   }
@@ -3280,9 +4328,12 @@ function paintWatchMode(){
   }
   if(cam){ cam.classList.add("viewer"); }
   const tag = $("faceCamTag"); if(tag){ tag.hidden = false; tag.textContent = t.handle; }
+  applyLiveLayout(HOST_LAYOUTS[t.id] || "pip"); /* viewer mirrors the host's studio layout — demo */
+  startHostSimPositions(t);
+  syncHostControls();
   renderLiveNow();
 }
-function stopWatching(){ watchingHost = null; paintWatchMode(); }
+function stopWatching(){ watchingHost = null; paintWatchMode(); renderGiftTop(); }
 
 /* --- v16: live-now strip (who's live) + all-reels hub in the Live section --- */
 function renderLiveNow(){
@@ -3295,8 +4346,22 @@ function renderLiveNow(){
     const watching = watchingHost && watchingHost.id===t.id;
     html += '<button class="ln-item'+(watching?' watching':'')+'" data-ln="'+t.id+'"><span class="ln-av" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+t.ini+'</span><span class="ln-live">LIVE</span><span class="ln-name">'+esc(t.name.split(" ")[0])+'</span></button>';
   });
-  if(!html) html = '<span class="ln-empty">No one is live right now — be the first.</span>';
+  /* v25.13: scheduled-slot fallback when nobody is live */
+  if(!html){
+    const top = TRADERS.filter(t=>!t.you).slice().sort((a,b)=>(b.ret||0)-(a.ret||0))[0];
+    if(top){
+      html = '<button class="ln-slot" id="lnSlot"><span class="ln-av slot" style="--g1:'+top.g[0]+';--g2:'+top.g[1]+'">'+top.ini+'</span>'+
+        '<span class="ln-slot-meta"><b>'+esc(top.name)+' · live in ~2h</b><span>XAUUSD London scalps</span></span>'+
+        '<span class="ln-remind" id="lnRemind">Remind me</span></button>';
+    }else{
+      html = '<span class="ln-empty">No one is live right now — be the first.</span>';
+    }
+  }
   el.innerHTML = html;
+  const rm = $("lnRemind");
+  if(rm) rm.addEventListener("click", e=>{ e.stopPropagation(); toast("Reminder set — demo"); });
+  const sl = $("lnSlot");
+  if(sl) sl.addEventListener("click", ()=>{ toast("Reminder set — demo"); });
   el.querySelectorAll(".ln-item").forEach(b=>b.addEventListener("click", ()=>{
     const id = b.dataset.ln;
     if(id==="you"){ goTab("live"); return; }
@@ -3528,19 +4593,46 @@ function bootV15(){
   const rc = $("reelClose"); if(rc) rc.addEventListener("click", closeReel);
   /* hearts */
   $("heartBtn").addEventListener("click", ()=>{ floatHeart(); setTimeout(floatHeart, 120); });
+  /* --- live workstream: gifting / schedule / invite / poll / qa / layout --- */
+  $("giftBtn").addEventListener("click", openGiftSheet);
+  $("giftX").addEventListener("click", closeGiftSheet);
+  $("giftCancel").addEventListener("click", closeGiftSheet);
+  $("giftSend").addEventListener("click", sendGift);
+  $("schedLiveBtn").addEventListener("click", openSchedSheet);
+  $("schedX").addEventListener("click", closeSchedSheet);
+  $("schedCancel").addEventListener("click", closeSchedSheet);
+  $("schedSave").addEventListener("click", saveSchedForm);
+  seedSched(); renderUpcoming();
+  $("inviteBtn").addEventListener("click", openInviteSheet);
+  $("inviteX").addEventListener("click", closeInviteSheet);
+  $("pollBtn").addEventListener("click", openPollSheet);
+  $("pollX").addEventListener("click", closePollSheet);
+  $("pollCancel").addEventListener("click", closePollSheet);
+  $("pollLaunch").addEventListener("click", launchPoll);
+  $("qaSend").addEventListener("click", sendQa);
+  $("qaInput").addEventListener("keydown", e=>{ if(e.key==="Enter") sendQa(); });
+  const llb2 = $("liveLayoutBtn");
+  if(llb2) llb2.addEventListener("click", ()=>{
+    const i = (LAYOUTS.findIndex(l=>l.id===liveLayoutCur)+1)%LAYOUTS.length;
+    liveSetup.layout = LAYOUTS[i].id;
+    applyLiveLayout(liveSetup.layout);
+    renderLsLayoutChips();
+    toast("Layout: "+LAYOUTS[i].label+" — demo");
+  });
   /* live screen: watch-mode wiring */
   const lb = $("liveBack"); if(lb) lb.addEventListener("click", ()=>goTab("home"));
   $("liveTabs").addEventListener("click", e=>{
     const b = e.target.closest("[data-lv]"); if(!b) return;
     document.querySelectorAll("#liveTabs .lv-tab").forEach(x=>x.classList.toggle("active", x===b));
     const desk = window.matchMedia && window.matchMedia("(min-width:1024px)").matches;
-    ["chat","ideas","about"].forEach(t=>{
+    ["chat","ideas","about","qa"].forEach(t=>{
       const p = $("lvPage"+t[0].toUpperCase()+t.slice(1)); if(!p) return;
       const show = desk ? (t==="chat" ? true : t===b.dataset.lv) : t===b.dataset.lv;
       p.hidden = !show;
       p.classList.toggle("active", show);
     });
     if(b.dataset.lv === "about"){ try{ buildLiveChart(); }catch(e){} }
+    if(b.dataset.lv === "qa") renderQa();
   });
   const lfb = $("liveFollowBtn");
   if(lfb) lfb.addEventListener("click", ()=>{
@@ -3839,7 +4931,9 @@ $("epPhotoInput").addEventListener("change", e=>{
 
 /* ---------------- INIT — straight into the terminal, no login ---------------- */
 function bootApp(){
-injectIcons();
+loadTrades(); loadAlerts(); loadBrokers();
+injectIcons(); paintVersion();
+unlockAch("early"); bumpStreak(); renderAchievements();
 document.body.dataset.tab = "home";
 /* your photo in the header / sidebar / profile (falls back to initials) */
 (function(){
@@ -3859,6 +4953,8 @@ renderPoll();
 renderPosts();
 renderTraders();
 renderCommunityTraders();
+renderContest();
+renderOwnerPosts();
 attachSearch("globalSearch", "gsearchDrop");
 attachSearch("homeSearch", "homeSearchDrop");
 renderYouCard();
@@ -4345,5 +5441,559 @@ function updateDataBadges(){
   syncIndChips();
   window.__syncIndChips = syncIndChips;
 })();
+
+/* ============================================================
+   v25.13: PROP-FIRM CHALLENGE MODE (demo) + DM INBOX (demo)
+   Everything simulated — never real money, never real trading.
+   ============================================================ */
+
+/* ---------- Prop challenge: track live demo-account equity ---------- */
+const PROP_CFG = { target:0.10, ddMax:0.05, start:10000 };
+const PROP_KEY = "tc_prop_v1";
+function propLoad(){ try{ return JSON.parse(localStorage.getItem(PROP_KEY)) || null; }catch(e){ return null; } }
+function propSave(s){ try{ localStorage.setItem(PROP_KEY, JSON.stringify(s)); }catch(e){} }
+function propStart(){
+  let eq = PROP_CFG.start;
+  try{ eq = equity(); }catch(e){}
+  propSave({ startEquity:eq, peakEquity:eq, funded:false, failed:false, startedAt:Date.now() });
+  renderProp();
+  goTab("prop");
+}
+/* evaluate against the live demo account on each render */
+function propEval(){
+  const s = propLoad();
+  if(!s) return null;
+  let eq = s.startEquity;
+  try{ eq = equity(); }catch(e){}
+  s.peakEquity = Math.max(s.peakEquity || eq, eq);
+  const dd = s.peakEquity > 0 ? (s.peakEquity - eq) / s.peakEquity : 0;
+  const pnl = s.startEquity > 0 ? (eq - s.startEquity) / s.startEquity : 0;
+  if(!s.funded && !s.failed){
+    if(dd >= PROP_CFG.ddMax) s.failed = true;
+    else if(pnl >= PROP_CFG.target) s.funded = true;
+  }
+  propSave(s);
+  return { s:s, eq:eq, dd:dd, pnl:pnl };
+}
+function propGaugeSVG(pnlFrac){
+  const f = Math.max(0, Math.min(1, pnlFrac));
+  const C = 169.65; /* half-circumference of r=54 arc */
+  const col = f >= 1 ? "var(--green)" : "var(--blue)";
+  return '<svg class="prop-gauge" width="140" height="78" viewBox="0 0 140 78" aria-hidden="true">'
+    + '<path d="M16 64 A54 54 0 0 1 124 64" fill="none" stroke="var(--bg-soft)" stroke-width="12" stroke-linecap="round"/>'
+    + '<path d="M16 64 A54 54 0 0 1 124 64" fill="none" stroke="'+col+'" stroke-width="12" stroke-linecap="round" stroke-dasharray="'+(C*f).toFixed(1)+' 999"/>'
+    + '<text x="70" y="52" text-anchor="middle" font-size="17" font-weight="800" fill="var(--text)">'+(f*10).toFixed(1)+'%</text>'
+    + '<text x="70" y="70" text-anchor="middle" font-size="10" fill="var(--faint)">of +10% target</text></svg>';
+}
+function propRulesHTML(){
+  return '<div class="prop-rules">'
+    + '<div class="prop-rule"><span class="ic" data-icon="bank"></span><span>Account: <b>$10,000 demo</b> starting equity</span></div>'
+    + '<div class="prop-rule"><span class="ic" data-icon="chart"></span><span>Profit target: <b>+10%</b></span></div>'
+    + '<div class="prop-rule"><span class="ic" data-icon="shield"></span><span>Max drawdown: <b>\u22125%</b> from peak equity</span></div>'
+    + '<div class="prop-rule"><span class="ic" data-icon="info"></span><span>Time limit: <b>none</b></span></div></div>';
+}
+function syncFundedBadge(){
+  const b = $("fundedBadge");
+  if(!b) return;
+  const s = propLoad();
+  b.hidden = !(s && s.funded);
+}
+function renderProp(){
+  const body = $("propBody");
+  if(!body) return;
+  const r = propEval();
+  if(!r){
+    body.innerHTML = '<div class="prop-card"><div class="prop-promo-top"><span class="ic" data-icon="trophy"></span><b>Challenge rules</b><span class="demo-tag">Demo</span></div>'
+      + propRulesHTML()
+      + '<p class="fine prop-note">Tracked against your live demo account equity from the moment you start. Simulated \u2014 no real money, no real funding.</p>'
+      + '<button class="primary-btn wide" id="propStartBtn"><span class="ic xs" data-icon="trophy"></span> Start demo challenge</button></div>';
+    injectIcons();
+    const sb = $("propStartBtn");
+    if(sb) sb.addEventListener("click", propStart);
+    return;
+  }
+  const s = r.s, pct = r.pnl*100, ddPct = r.dd*100;
+  const cls = s.funded ? "ok" : (s.failed ? "bad" : "run");
+  const ic = s.funded ? "check" : (s.failed ? "x" : "live");
+  const label = s.funded ? "PASSED \u2014 Funded (demo)" : (s.failed ? "Challenge failed \u2014 demo" : "In progress \u2014 demo");
+  const ddFrac = Math.min(1, r.dd / PROP_CFG.ddMax);
+  body.innerHTML = '<div class="prop-card"><div class="prop-promo-top"><span class="ic" data-icon="trophy"></span><b>Your challenge</b><span class="demo-tag">Demo</span></div>'
+    + '<div class="prop-gauge-wrap">' + propGaugeSVG(r.pnl / PROP_CFG.target)
+    + '<div class="prop-gauge-vals"><span class="fine">Equity</span><span class="num">$'+r.eq.toFixed(2)+'</span>'
+    + '<span class="'+(pct>=0?"pos":"neg")+'">'+(pct>=0?"+":"")+pct.toFixed(2)+'% P/L</span></div></div>'
+    + '<div class="prop-dd"><div class="prop-dd-top"><span>Drawdown <b class="'+(ddPct>0?"neg":"")+'">'+ddPct.toFixed(2)+'%</b></span><span>limit \u22125%</span></div>'
+    + '<div class="dd-track"><div class="dd-fill'+(ddFrac>=0.7?" warn":"")+'" style="width:'+(ddFrac*100).toFixed(1)+'%"></div></div></div>'
+    + '<div class="prop-status '+cls+'"><span class="ic" data-icon="'+ic+'"></span>'+label+'</div>'
+    + (s.failed ? '<button class="primary-btn wide" id="propRetryBtn"><span class="ic xs" data-icon="plus"></span> Retry challenge</button>' : '')
+    + '<p class="fine prop-note">Progress and drawdown are measured on your live demo account equity. Breach of \u22125% drawdown fails the challenge; +10% profit passes it. Demo simulation only.</p></div>';
+  injectIcons();
+  const rb = $("propRetryBtn");
+  if(rb) rb.addEventListener("click", propStart);
+  syncFundedBadge();
+}
+
+/* ---------- DM inbox (demo): simulated replies ---------- */
+const DM_KEY = "tc_dm_v1";
+let dmOpenTid = null;
+const DM_REPLIES = [
+  "Good question! I keep my risk per trade under 1% \u2014 boring but it works. (demo reply)",
+  "I'm watching XAUUSD into the London session. What's on your radar? (demo reply)",
+  "Thanks! Just sharing what I'm learning \u2014 none of this is financial advice. (demo reply)",
+  "Patience is the whole game. I wait for my setup and skip everything else. (demo reply)",
+  "Check the Classes tab \u2014 there's a lesson that covers exactly this. (demo reply)",
+  "Markets are choppy today, so I'm mostly flat and waiting. (demo reply)"
+];
+function dmLoad(){ try{ const d = JSON.parse(localStorage.getItem(DM_KEY)); if(d && d.threads) return d; }catch(e){} return null; }
+function dmSave(d){ try{ localStorage.setItem(DM_KEY, JSON.stringify(d)); }catch(e){} }
+function dmNow(){ return Date.now(); }
+function dmTimeStr(ts){ return new Date(ts).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }); }
+function dmTrader(tid){ return TRADERS.find(function(t){ return t.id === tid; }); }
+function dmEnsure(){
+  let d = dmLoad();
+  if(d) return d;
+  const t = dmNow();
+  d = { threads:{
+    "daud":[
+      { from:"daud", text:"Hey! Saw you checking out my profile \u2014 welcome to the community. (demo message)", time:t-7200000 },
+      { from:"you", text:"Thanks! How do you usually trade gold around news events?", time:t-7000000 },
+      { from:"daud", text:"I mostly sit out the first 5 minutes after big news, then trade the trend. Risk small! (demo reply)", time:t-6900000 }
+    ],
+    "sara":[
+      { from:"sara", text:"Hi! Loved your question in the community chat. (demo message)", time:t-86400000 },
+      { from:"sara", text:"I share my swing setups every Sunday \u2014 feel free to ask anything. (demo message)", time:t-86300000 }
+    ]},
+    unread:{ "sara":2 } };
+  dmSave(d);
+  return d;
+}
+function dmUnreadTotal(){
+  const d = dmEnsure();
+  return Object.keys(d.unread || {}).reduce(function(a,k){ return a + (d.unread[k] || 0); }, 0);
+}
+function updateDmDot(){
+  const el = $("dmDot");
+  if(el) el.hidden = dmUnreadTotal() === 0;
+}
+function renderDmList(){
+  const list = $("dmList"), thread = $("dmThread");
+  if(!list) return;
+  dmOpenTid = null;
+  thread.hidden = true; list.hidden = false;
+  const d = dmEnsure();
+  const ids = Object.keys(d.threads).sort(function(a,b){
+    const ma = d.threads[a], mb = d.threads[b];
+    return mb[mb.length-1].time - ma[ma.length-1].time;
+  });
+  if(!ids.length){ list.innerHTML = '<div class="dm-empty">No conversations yet.</div>'; return; }
+  list.innerHTML = ids.map(function(tid){
+    const t = dmTrader(tid);
+    if(!t) return "";
+    const msgs = d.threads[tid];
+    const last = msgs[msgs.length-1];
+    const un = d.unread[tid] || 0;
+    return '<button class="dm-row'+(un?" unread":"")+'" data-dmthread="'+tid+'">'
+      + avImg(t,"")
+      + '<span class="dm-meta"><span class="dm-meta-top"><b>'+esc(t.name)+'</b><span class="dm-time">'+dmTimeStr(last.time)+'</span></span>'
+      + '<span class="dm-prev">'+esc((last.from==="you" ? "You: " : "") + last.text)+'</span></span>'
+      + (un ? '<span class="dm-cnt">'+un+'</span>' : '')
+      + '</button>';
+  }).join("");
+  injectIcons();
+  list.querySelectorAll("[data-dmthread]").forEach(function(b){
+    b.addEventListener("click", function(){ openDmThread(b.dataset.dmthread); });
+  });
+}
+function openDmThread(tid){
+  const t = dmTrader(tid);
+  if(!t) return;
+  dmOpenTid = tid;
+  const d = dmEnsure();
+  d.unread[tid] = 0; dmSave(d); updateDmDot();
+  $("dmList").hidden = true;
+  const th = $("dmThread"); th.hidden = false;
+  $("dmHead").innerHTML = avImg(t,"") + '<b>'+esc(t.name)+'</b><span class="demo-tag">Demo</span>';
+  renderDmMsgs();
+  injectIcons();
+}
+function renderDmMsgs(){
+  const d = dmEnsure();
+  const msgs = d.threads[dmOpenTid] || [];
+  const box = $("dmMsgs");
+  if(!box) return;
+  box.innerHTML = msgs.map(function(m){
+    return '<div class="dm-bub '+(m.from==="you"?"me":"them")+'">'+esc(m.text)+'<span class="dm-t">'+dmTimeStr(m.time)+'</span></div>';
+  }).join("");
+  box.scrollTop = box.scrollHeight;
+}
+function sendDm(){
+  const inp = $("dmInput");
+  const txt = inp ? (inp.value || "").trim() : "";
+  if(!txt || !dmOpenTid) return;
+  const tid = dmOpenTid;
+  const d = dmEnsure();
+  d.threads[tid].push({ from:"you", text:txt, time:dmNow() });
+  dmSave(d);
+  inp.value = "";
+  renderDmMsgs();
+  /* simulated reply in 2-5s */
+  const reply = DM_REPLIES[Math.floor(Math.random()*DM_REPLIES.length)];
+  setTimeout(function(){
+    const dd = dmEnsure();
+    if(!dd.threads[tid]) return;
+    dd.threads[tid].push({ from:tid, text:reply, time:dmNow() });
+    if(dmOpenTid === tid && $("dmThread") && !$("dmThread").hidden){
+      dmSave(dd); renderDmMsgs();
+    }else{
+      dd.unread[tid] = (dd.unread[tid] || 0) + 1; dmSave(dd);
+    }
+    updateDmDot();
+  }, 2000 + Math.random()*3000);
+}
+
+/* ---------- v25.13 wiring ---------- */
+(function initGrowth(){
+  const dmB = $("dmBtn");
+  if(dmB) dmB.addEventListener("click", function(){ renderDmList(); goTab("dm"); });
+  const hp = $("homePropStart");
+  if(hp) hp.addEventListener("click", propStart);
+  const sb = $("dmSendBtn");
+  if(sb) sb.addEventListener("click", sendDm);
+  const di = $("dmInput");
+  if(di) di.addEventListener("keydown", function(e){ if(e.key === "Enter") sendDm(); });
+  const bb = $("dmBackBtn");
+  if(bb) bb.addEventListener("click", renderDmList);
+  /* re-render when these screens are reached via delegated data-goto links */
+  document.addEventListener("click", function(e){
+    const g = e.target.closest("[data-goto]");
+    if(!g) return;
+    if(g.dataset.goto === "prop") setTimeout(renderProp, 0);
+    if(g.dataset.goto === "dm") setTimeout(renderDmList, 0);
+  });
+  dmEnsure();
+  updateDmDot();
+  syncFundedBadge();
+  renderProp();
+})();
+
+/* ============ GROWTH WORKSTREAM (v25.13, demo) ============ */
+/* Shared helpers — function declarations so hoisting reaches the leaderboard + trader-profile renders above */
+function gStoreGet(k,d){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
+function gStoreSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function verifyList(){ const a = gStoreGet("tc_verify_v1", []); return Array.isArray(a) ? a : []; }
+function verifiedSet(){ return new Set(verifyList().filter(a=>a.status==="approved").map(a=>String(a.handle||"").toLowerCase())); }
+function verifyBoost(h){ return verifiedSet().has(String(h||"").toLowerCase()) ? 50 : 0; }
+
+(function(){
+"use strict";
+
+/* ---- central affiliate config — edit broker URLs here ---- */
+const AFFILIATES = {
+  exness:  { url:"https://www.exness.com/a/demo-placeholder",  label:"Exness"  },
+  vantage: { url:"https://www.vantage.com/demo-placeholder",   label:"Vantage" }
+};
+
+/* ---------- 1. ECONOMIC CALENDAR (demo schedule) ---------- */
+const ECON_EVENTS = [
+  {id:"e1",  day:"Tue", date:"09/29", time:"01:30 UTC", ccy:"AUD", title:"RBA meeting minutes",        impact:"med"},
+  {id:"e2",  day:"Tue", date:"09/29", time:"14:00 UTC", ccy:"USD", title:"CB Consumer Confidence",     impact:"med"},
+  {id:"e3",  day:"Wed", date:"09/30", time:"12:00 UTC", ccy:"EUR", title:"German CPI (prelim)",        impact:"med"},
+  {id:"e4",  day:"Wed", date:"09/30", time:"12:15 UTC", ccy:"USD", title:"ADP Non-Farm Employment",    impact:"high"},
+  {id:"e5",  day:"Wed", date:"09/30", time:"12:30 UTC", ccy:"USD", title:"GDP — Q2 final",             impact:"med"},
+  {id:"e6",  day:"Thu", date:"10/01", time:"11:00 UTC", ccy:"GBP", title:"BoE Gov. Bailey speaks",     impact:"med"},
+  {id:"e7",  day:"Thu", date:"10/01", time:"14:00 UTC", ccy:"USD", title:"ISM Manufacturing PMI",      impact:"high"},
+  {id:"e8",  day:"Fri", date:"10/02", time:"12:30 UTC", ccy:"USD", title:"Non-Farm Payrolls (NFP)",    impact:"high"},
+  {id:"e9",  day:"Fri", date:"10/02", time:"12:30 UTC", ccy:"USD", title:"Unemployment rate",          impact:"high"},
+  {id:"e10", day:"Tue", date:"10/06", time:"03:30 UTC", ccy:"AUD", title:"RBA rate decision",          impact:"high"},
+  {id:"e11", day:"Wed", date:"10/07", time:"02:00 UTC", ccy:"NZD", title:"RBNZ rate decision",         impact:"high"},
+  {id:"e12", day:"Wed", date:"10/07", time:"18:00 UTC", ccy:"USD", title:"FOMC meeting minutes",       impact:"high"},
+  {id:"e13", day:"Fri", date:"10/09", time:"12:30 UTC", ccy:"USD", title:"CPI (m/m) — illustrative",  impact:"high"},
+  {id:"e14", day:"Fri", date:"10/09", time:"12:30 UTC", ccy:"CAD", title:"Employment change",          impact:"med"}
+];
+function econReminders(){ const s = gStoreGet("tc_econ_v1", {reminders:[]}); return s.reminders || []; }
+function renderEcon(){
+  const list = $("econList"); if(!list) return;
+  const rem = econReminders();
+  list.innerHTML = ECON_EVENTS.map(e=>{
+    const on = rem.indexOf(e.id) >= 0;
+    return '<div class="econ-row">'+
+      '<div class="econ-date"><b>'+e.day+'</b><span>'+e.date+'</span></div>'+
+      '<div class="econ-main"><b>'+esc(e.title)+'</b><span class="fine">'+esc(e.ccy)+' · '+esc(e.time)+'</span></div>'+
+      '<i class="econ-dot '+e.impact+'" title="'+e.impact+' impact"></i>'+
+      '<button class="icon-btn econ-bell'+(on?" on":"")+'" data-econ="'+e.id+'" aria-pressed="'+on+'" aria-label="Reminder">'+
+      '<span class="ic sm" data-icon="bell"></span></button></div>';
+  }).join("");
+  injectIcons();
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-econ]"); if(!b) return;
+  const id = b.dataset.econ, reminders = econReminders(), i = reminders.indexOf(id);
+  if(i >= 0){ reminders.splice(i,1); toast("Reminder off — demo"); }
+  else{ reminders.push(id); toast("Reminder set — demo"); }
+  gStoreSet("tc_econ_v1", { reminders:reminders });
+  renderEcon();
+});
+renderEcon();
+
+/* ---------- 2. LANGUAGE (EN/AR/HI/UR) ---------- */
+const LANGS = {
+  en:{ navHome:"Home", navTrade:"Trade", navLive:"Live", navReels:"Reels", navCommunity:"Community", navPortfolio:"Portfolio",
+       topTraders:"Top Traders", seeAll:"See All ›", reelsIdeas:"Reels & Trade Ideas", classes:"Classes", upcomingLives:"Upcoming lives",
+       watchLive:"Watch Live", startChallenge:"Start demo challenge", viewDashboard:"View dashboard ›",
+       installTitle:"Install the app", installBtn:"Install app",
+       language:"Language", inviteFriends:"Invite friends", econTitle:"Economic Calendar" },
+  ar:{ navHome:"الرئيسية", navTrade:"تداول", navLive:"بث مباشر", navReels:"ريلز", navCommunity:"المجتمع", navPortfolio:"المحفظة",
+       topTraders:"أفضل المتداولين", seeAll:"‹ عرض الكل", reelsIdeas:"ريلز وأفكار التداول", classes:"الدروس", upcomingLives:"بثوث قادمة",
+       watchLive:"شاهد البث", startChallenge:"ابدأ التحدي التجريبي", viewDashboard:"‹ عرض اللوحة",
+       installTitle:"ثبّت التطبيق", installBtn:"تثبيت التطبيق",
+       language:"اللغة", inviteFriends:"ادعُ أصدقاءك", econTitle:"التقويم الاقتصادي" },
+  hi:{ navHome:"होम", navTrade:"ट्रेड", navLive:"लाइव", navReels:"रील्स", navCommunity:"कम्युनिटी", navPortfolio:"पोर्टफोलियो",
+       topTraders:"टॉप ट्रेडर्स", seeAll:"सभी देखें ›", reelsIdeas:"रील्स और ट्रेड आइडिया", classes:"क्लासेस", upcomingLives:"आगामी लाइव",
+       watchLive:"लाइव देखें", startChallenge:"डेमो चैलेंज शुरू करें", viewDashboard:"डैशबोर्ड देखें ›",
+       installTitle:"ऐप इंस्टॉल करें", installBtn:"ऐप इंस्टॉल करें",
+       language:"भाषा", inviteFriends:"दोस्तों को आमंत्रित करें", econTitle:"आर्थिक कैलेंडर" },
+  ur:{ navHome:"ہوم", navTrade:"ٹریڈ", navLive:"لائیو", navReels:"ریلز", navCommunity:"کمیونٹی", navPortfolio:"پورٹ فولیو",
+       topTraders:"ٹاپ ٹریڈرز", seeAll:"سب دیکھیں ›", reelsIdeas:"ریلز اور ٹریڈ آئیڈیاز", classes:"کلاسز", upcomingLives:"آنے والے لائیو",
+       watchLive:"لائیو دیکھیں", startChallenge:"ڈیمو چیلنج شروع کریں", viewDashboard:"ڈیش بورڈ دیکھیں ›",
+       installTitle:"ایپ انسٹال کریں", installBtn:"ایپ انسٹال کریں",
+       language:"زبان", inviteFriends:"دوستوں کو مدعو کریں", econTitle:"معاشی کیلنڈر" }
+};
+function applyLang(l){
+  const d = LANGS[l] || LANGS.en;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const v = d[el.dataset.i18n];
+    if(v != null) el.textContent = v;
+  });
+  const rtl = (l === "ar" || l === "ur");
+  document.documentElement.dir = rtl ? "rtl" : "ltr";
+  document.body.classList.toggle("rtl", rtl);
+  gStoreSet("tc_lang_v1", l);
+}
+const langSel = $("langSel");
+if(langSel){
+  const cur = gStoreGet("tc_lang_v1", "en");
+  langSel.value = LANGS[cur] ? cur : "en";
+  langSel.addEventListener("change", ()=>{ applyLang(langSel.value); toast("Language updated — demo"); });
+  applyLang(langSel.value); /* re-apply on boot */
+}
+
+/* ---------- 3. REFERRAL REWARDS ---------- */
+function refState(){
+  let s = gStoreGet("tc_ref_v1", null);
+  if(!s || !s.code){ s = { code:"DEMO-"+Math.random().toString(36).slice(2,6).toUpperCase(), invited:0 }; gStoreSet("tc_ref_v1", s); }
+  return s;
+}
+function renderRef(){
+  const s = refState(), link = "https://trade.flexspot.lol/?ref="+s.code;
+  ["refLink","refLinkP"].forEach(id=>{ const el=$(id); if(el) el.value = link; });
+  ["refCount","refCountP"].forEach(id=>{ const el=$(id); if(el) el.textContent = s.invited; });
+}
+function copyRef(inputId){
+  const el = $(inputId); if(!el || !el.value) return;
+  const done = ()=>toast("Invite link copied — demo");
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(el.value).then(done, done); }
+  else { try{ el.select(); document.execCommand("copy"); }catch(e){} done(); }
+}
+function simInvite(){
+  const s = refState(); s.invited++; gStoreSet("tc_ref_v1", s); renderRef();
+  state.balance += 25;
+  state.history.push({ id:"h"+(state.orderSeq++), sym:"USD", dir:"DEPOSIT", lots:0, entry:0, exit:0, pl:25,
+    time:new Date().toISOString(), reason:"Referral bonus — demo", cash:true });
+  saveTrades(); renderPortfolio(); renderAccount(); paintProfileStats();
+  toast("Simulated invite — +$25 demo funds");
+}
+["refCopy","refCopyP"].forEach(id=>{ const b=$(id); if(b) b.addEventListener("click", ()=>copyRef(id==="refCopy"?"refLink":"refLinkP")); });
+["refSim","refSimP"].forEach(id=>{ const b=$(id); if(b) b.addEventListener("click", simInvite); });
+renderRef();
+
+/* ---------- 4. INSTALL PROMPT ---------- */
+let bipEvent = null;
+window.addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); bipEvent = e; renderInstallCard(); });
+window.addEventListener("appinstalled", ()=>{ gStoreSet("tc_install_v1", true); });
+function renderInstallCard(){
+  const c = $("installCard"); if(!c) return;
+  if(gStoreGet("tc_install_v1", false)){ c.hidden = true; return; }
+  c.hidden = false;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent || "");
+  const how = $("installHow");
+  if(how) how.textContent = bipEvent ? "Ready to install — tap the button below."
+    : (ios ? "iPhone: Share → Add to Home Screen" : "Android: menu ⋮ → Add to Home screen");
+  const ib = $("installBtn"); if(ib) ib.hidden = !bipEvent;
+  injectIcons();
+}
+const installX = $("installX");
+if(installX) installX.addEventListener("click", ()=>{ gStoreSet("tc_install_v1", true); $("installCard").hidden = true; });
+const installBtn = $("installBtn");
+if(installBtn) installBtn.addEventListener("click", ()=>{
+  if(!bipEvent) return;
+  bipEvent.prompt();
+  bipEvent.userChoice.then(()=>{ gStoreSet("tc_install_v1", true); $("installCard").hidden = true; bipEvent = null; }).catch(()=>{});
+});
+renderInstallCard();
+
+/* ---------- 5. LEVEL QUIZ ---------- */
+const QUIZ = [
+  { q:"How long have you been trading?",       opts:[["Just starting",0],["1–2 years",1],["3+ years",2]] },
+  { q:"Which markets do you trade?",           opts:[["Haven't traded yet — learning",0],["Forex or crypto",1],["Multiple markets, incl. indices/metals",2]] },
+  { q:"How much do you risk per trade?",       opts:[["Not sure yet",0],["1–2% of the account",1],["A fixed % with a written plan",2]] },
+  { q:"Your main goal here?",                  opts:[["Learn the basics",0],["Copy good traders",1],["Build a pro setup",2]] }
+];
+let quizIdx = 0, quizScore = 0;
+function quizLevelName(){ return (gStoreGet("tc_level_v1", {}).level) || null; }
+function paintQuizLevel(){
+  const el = $("quizLevelName"); if(!el) return;
+  const l = quizLevelName();
+  el.textContent = l ? l.charAt(0).toUpperCase()+l.slice(1)+" · retake anytime" : "Beginner · Intermediate · Pro";
+}
+function openQuiz(){
+  quizIdx = 0; quizScore = 0;
+  const sh = $("quizSheet"); if(!sh) return;
+  sh.hidden = false; renderQuizQ(); injectIcons();
+}
+function renderQuizQ(){
+  const body = $("quizBody"); if(!body) return;
+  const q = QUIZ[quizIdx];
+  body.innerHTML =
+    '<div class="quiz-prog">'+QUIZ.map((_,j)=>'<i class="'+(j<quizIdx?"done":j===quizIdx?"cur":"")+'"></i>').join("")+'</div>'+
+    '<h4 class="quiz-q">'+esc(q.q)+'</h4>'+
+    '<div class="quiz-opts">'+q.opts.map((o,j)=>'<button class="quiz-opt" data-qa="'+j+'">'+esc(o[0])+'</button>').join("")+'</div>';
+}
+function finishQuiz(){
+  const level = quizScore <= 2 ? "beginner" : quizScore <= 5 ? "intermediate" : "pro";
+  gStoreSet("tc_level_v1", { level:level, ts:Date.now() });
+  paintQuizLevel(); applyLevelHome();
+  const body = $("quizBody"); if(!body) return;
+  const blurb = { beginner:"Education & classes come first — learn the ropes risk-free.",
+                  intermediate:"Top traders & copy trading — follow the leaderboard.",
+                  pro:"Leaderboard first — your full pro setup is unlocked." }[level];
+  body.innerHTML = '<div class="quiz-done"><div class="ob-emoji">'+(level==="pro"?"🏆":level==="intermediate"?"📈":"🎓")+'</div>'+
+    '<h4 class="quiz-q">You\'re '+level+' — demo</h4><p class="fine">'+blurb+'<br>Home has been personalized. Retake anytime from Settings.</p>'+
+    '<button class="primary-btn wide" id="quizDone">Done</button></div>';
+  const d = $("quizDone"); if(d) d.addEventListener("click", ()=>{ $("quizSheet").hidden = true; });
+  toast("Level set: "+level+" — demo");
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-qa]"); if(!b || !QUIZ[quizIdx]) return;
+  quizScore += QUIZ[quizIdx].opts[+b.dataset.qa][1];
+  quizIdx++;
+  if(quizIdx >= QUIZ.length) finishQuiz(); else renderQuizQ();
+});
+const quizX = $("quizX");
+if(quizX) quizX.addEventListener("click", ()=>{ $("quizSheet").hidden = true; });
+const quizRetake = $("quizRetake");
+if(quizRetake) quizRetake.addEventListener("click", openQuiz);
+paintQuizLevel();
+function applyLevelHome(){
+  const tr = $("homeSecTraders"), cl = $("homeSecClasses");
+  if(!tr || !cl || !tr.parentNode) return;
+  const parent = tr.parentNode, l = quizLevelName();
+  if(l === "beginner"){ parent.insertBefore(cl, tr); }          /* classes first */
+  else if(l === "pro"){ const a = $("homeMktChips"); if(a && a.parentNode===parent) parent.insertBefore(tr, a); } /* traders up */
+  else if(l === "intermediate"){ parent.insertBefore(tr, cl); } /* default order */
+}
+applyLevelHome();
+
+/* ---------- 6. VERIFIED PRO APPLICATIONS ---------- */
+function renderVerify(){
+  const list = $("verifyList"); if(!list) return;
+  const apps = verifyList();
+  list.innerHTML = apps.length ? apps.map((a,i)=>
+    '<div class="vfy-row"><span class="avatar sm vfy-av">'+esc(String(a.handle).replace("@","").slice(0,2).toUpperCase())+'</span>'+
+    '<span class="vfy-tx"><b>'+esc(a.handle)+'</b><span class="fine">'+esc(a.specialty||"—")+' · '+a.status+'</span></span>'+
+    (a.status==="pending"
+      ? '<span class="vfy-actions"><button class="ghost-btn sm" data-vact="approve" data-vidx="'+i+'">Approve</button>'+
+        '<button class="ghost-btn sm" data-vact="reject" data-vidx="'+i+'">Reject</button></span>'
+      : '<span class="fine vfy-'+a.status+'">'+(a.status==="approved"?"✓ Approved":"Rejected")+'</span>')+'</div>').join("")
+    : '<p class="fine">No applications yet — demo.</p>';
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-vact]"); if(!b) return;
+  const apps = verifyList(), i = +b.dataset.vidx, a = apps[i]; if(!a) return;
+  a.status = b.dataset.vact === "approve" ? "approved" : "rejected";
+  gStoreSet("tc_verify_v1", apps); renderVerify();
+  try{ renderCommunityTraders(); renderTraders(); }catch(err){}
+  try{ if(curTprof && !$("traderProfile").hidden) renderTraderProfile(curTprof); }catch(err){}
+  toast(a.handle+(a.status==="approved" ? " approved ✓ — demo" : " rejected — demo"));
+});
+const vfyApply = $("vfyApply");
+if(vfyApply) vfyApply.addEventListener("click", ()=>{
+  let h = (($("vfyHandle")||{}).value || "").trim();
+  if(!h){ toast("Enter a trading handle — demo"); return; }
+  if(h[0] !== "@") h = "@"+h;
+  h = h.toLowerCase();
+  const apps = verifyList();
+  apps.push({ handle:h, specialty:(($("vfySpec")||{}).value||"").trim(), link:(($("vfyLink")||{}).value||"").trim(), status:"pending", ts:Date.now() });
+  gStoreSet("tc_verify_v1", apps); renderVerify();
+  ["vfyHandle","vfySpec","vfyLink"].forEach(id=>{ const el=$(id); if(el) el.value=""; });
+  toast("Application received — demo");
+});
+renderVerify();
+/* remember the open trader profile so approvals can refresh its badge immediately */
+let curTprof = null;
+const _openTraderProfile = openTraderProfile;
+openTraderProfile = function(id){ curTprof = id; return _openTraderProfile(id); };
+
+/* ---------- 7. BROKER AFFILIATE BUTTONS ---------- */
+function renderAffiliates(){
+  const html = '<div class="set-title">Partner brokers <span class="demo-tag">Demo</span></div>' +
+    Object.keys(AFFILIATES).map(k=>{
+      const a = AFFILIATES[k];
+      return '<a class="aff-btn" href="'+a.url+'" target="_blank" rel="nofollow noopener">'+
+        '<span class="aff-ic">'+esc(a.label.slice(0,2).toUpperCase())+'</span>'+
+        '<span class="aff-tx"><b>Open demo account — '+esc(a.label)+'</b><span class="fine">affiliate link — demo</span></span>'+
+        '<span class="ic xs" data-icon="chev"></span></a>';
+    }).join("");
+  ["affRow","affSheetRow"].forEach(id=>{ const el=$(id); if(el) el.innerHTML = html; });
+  injectIcons();
+}
+renderAffiliates();
+
+/* ---------- 8. PROFILE STATS FROM DEMO ACTIVITY ---------- */
+function paintProfileStats(){
+  const tr = state.history.filter(h=>!h.cash);
+  const wins = tr.filter(h=>(h.pl||0) > 0).length;
+  const set = (id,v)=>{ const el=$(id); if(el) el.textContent = v; };
+  set("statWin", tr.length ? Math.round(wins/tr.length*100)+"%" : "—");
+  set("statTrades", String(tr.length));
+  const pl = tr.reduce((a,h)=>a+(h.pl||0), 0);
+  const pe = $("statPL"); if(pe) pe.textContent = (pl>=0?"+":"")+fmt$(pl);
+}
+const _goTabGrowth = goTab;
+goTab = function(t){ _goTabGrowth(t); if(t==="profile"){ try{ paintProfileStats(); }catch(e){} } };
+paintProfileStats();
+
+/* ---------- 9. ONBOARDING ---------- */
+const OB_SLIDES = [
+  { e:"📊", t:"Trade the demo", x:"Buy & sell gold, crypto and forex on a $10,000 virtual account. No real money — ever." },
+  { e:"👥", t:"Copy traders",   x:"Follow top traders and mirror their trades with play money on the leaderboard." },
+  { e:"📹", t:"Go live",        x:"Stream your trading, share ideas and reels, and grow your own community." }
+];
+let obIdx = 0, obFinished = false;
+function renderOb(){
+  const s = OB_SLIDES[obIdx];
+  $("obEmoji").textContent = s.e; $("obTitle").textContent = s.t; $("obText").textContent = s.x;
+  $("obDots").innerHTML = OB_SLIDES.map((_,j)=>'<i class="'+(j===obIdx?"cur":"")+'"></i>').join("");
+  $("obNext").textContent = obIdx === OB_SLIDES.length-1 ? "Get started" : "Next";
+}
+function showOnboard(){ obIdx = 0; renderOb(); $("onboardWrap").hidden = false; }
+function finishOnboard(){
+  if(obFinished) return; obFinished = true;
+  $("onboardWrap").hidden = true;
+  gStoreSet("tc_onboard_v1", true);
+  openQuiz(); /* level quiz right after onboarding */
+}
+const obNext = $("obNext"), obSkip = $("obSkip");
+if(obNext) obNext.addEventListener("click", ()=>{ if(obIdx < OB_SLIDES.length-1){ obIdx++; renderOb(); } else finishOnboard(); });
+if(obSkip) obSkip.addEventListener("click", finishOnboard);
+/* wait for boot (and the demo password gate) before first-run onboarding */
+let obPolled = false;
+const obTimer = setInterval(()=>{
+  if(obPolled) return;
+  const lock = $("tcLock");
+  if(lock && !lock.hidden) return;
+  obPolled = true; clearInterval(obTimer);
+  if(!gStoreGet("tc_onboard_v1", false)) setTimeout(showOnboard, 600);
+}, 500);
+
+})(); /* close growth IIFE */
 
 })(); /* close main IIFE */
