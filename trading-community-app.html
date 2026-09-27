@@ -2020,6 +2020,10 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
   body[data-tab="community"] .appbar .sym-picker,
   body[data-tab="community"] .appbar .px-block{ display:none; }
   body[data-tab="home"] .mh-search{ display:none; }
+  /* home header: single row — search shrinks instead of pushing bell/avatar to a second line */
+  body[data-tab="home"] .appbar{ flex-wrap:nowrap; }
+  body[data-tab="home"] .appbar-sp{ display:none; }
+  body[data-tab="home"] .appbar-search{ min-width:0; }
   body[data-tab="home"] .appbar-search{ display:flex; flex:1; margin-left:8px; align-items:center; gap:8px;
     background:var(--surface-2); border-radius:12px; padding:0 12px; position:relative; }
   body[data-tab="home"] .appbar-search .ic{ color:var(--faint); flex:none; }
