@@ -253,6 +253,7 @@ function goTab(tab){
   document.querySelector(".content").scrollTop = 0;
   if(tab==="live" && !state.liveBuilt){ state.liveBuilt = true; buildLive(); }
   if(tab!=="live" && state.liveBuilt) stopCamera(); /* stop face-cam tracks off the live tab */
+  if(tab==="trade"){ try{ buildMainChart(); }catch(e){} } /* chart may have failed at boot while this tab was hidden — retry now that it has real dimensions */
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.tab)));
 $("avatarBtn").addEventListener("click", ()=>goTab("profile"));
@@ -336,6 +337,7 @@ function setSymbol(s){
   state.sym = s;
   $("symName").textContent = s;
   $("symTitle").textContent = s;
+  $("lgSym").textContent = s; /* legend must follow immediately, even if the chart failed to build */
   $("symSub").textContent = meta(s).name + " · " + meta(s).ex;
   document.querySelectorAll(".wl-item").forEach(el=>{
     const cur = el.dataset.sym === s;

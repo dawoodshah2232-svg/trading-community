@@ -1438,10 +1438,16 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 
 /* ---------- overlap-audit fixes (mobile) ---------- */
 @media (max-width:480px){
-  /* chart legend: symbol + pills only, no O/H/L/C over the candles */
-  .lw-legend .lg-ohlc{ display:none; }
+  /* chart: stacked flex column — legend, proxy note, chart, buttons can never overlap */
+  .chart-wrap{ display:flex; flex-direction:column; height:auto; min-height:420px; }
+  .lw-legend{ position:static; max-width:none; padding:10px 12px 2px; }
+  .lw-legend .lg-ohlc{ display:none; } /* symbol + pills only, no O/H/L/C over the candles */
+  .proxy-note{ padding:2px 12px 6px; }
+  .tv-host{ position:relative; inset:auto; flex:1 1 auto; min-height:280px; }
+  #indPanes{ margin:8px 12px 0; }
+  .ind-readout{ margin:8px 12px 0; }
   /* quick-trade: below the chart instead of floating over candles/panes */
-  .quick-trade{ position:static; margin-top:8px; }
+  .quick-trade{ position:static; margin:10px 12px 12px; }
   .quick-trade .qt{ flex:1; min-height:52px; }
   /* chart toolbar: icon-only Post idea keeps timeframe pills tappable */
   #shareIdeaBtn .if-tx{ display:none; }
