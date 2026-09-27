@@ -717,6 +717,7 @@ select.field{ appearance:none; }
 .poll-btns .primary-btn, .poll-btns .ghost-btn{ flex:1; }
 .poll-btns.voted .btn{ opacity:.45; pointer-events:none; }
 .post-head{ display:flex; gap:10px; align-items:center; margin-bottom:10px; }
+.post-id{ display:flex; gap:10px; align-items:center; min-width:0; cursor:pointer; }
 .post-head .avatar{ width:40px; height:40px; font-size:13px; flex-shrink:0; }
 .post-head b{ display:block; font-size:14px; }
 .post-head span{ font-size:12px; color:var(--faint); }
@@ -2619,13 +2620,6 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
           <p class="fine center">Simulated portfolio — demo</p>
         </section>
 
-        <!-- ============ REELS ============ -->
-        <section class="screen" id="screen-reels" aria-label="Reels">
-          <div class="page-head"><div><h2>Reels</h2><span class="fine">Every reel from the community — demo</span></div>
-            <button class="primary-btn sm" id="reelsPageUpload"><span class="ic xs" data-icon="plus"></span> Upload reel</button></div>
-          <div class="reel-grid page-grid" id="reelsPageGrid"></div>
-        </section>
-
         <!-- ============ TRADE IDEAS ============ -->
         <section class="screen" id="screen-ideas" aria-label="Trade ideas">
           <div class="page-head"><div><h2>Trade Ideas</h2><span class="fine">Setups from top traders — demo</span></div>
@@ -3305,6 +3299,8 @@ document.querySelectorAll("#lbPeriodPills [data-lbperiod]").forEach(b=>b.addEven
 
 /* ---------------- TABS ---------------- */
 function goTab(tab){
+  /* Reels tab: straight into the full-screen viewer at a random reel — no list screen */
+  if(tab === "reels"){ openRandomReel(); return; }
   document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   const scr = $("screen-"+tab);
@@ -4751,8 +4747,8 @@ function postCard(p){
   const c = document.createElement("div");
   c.className = "card post";
   c.innerHTML =
-    '<div class="post-head">'+avImg(t)+
-    '<div data-tprof="'+t.id+'"><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+p.time+'</span></div>'+
+    '<div class="post-head"><div class="post-id" data-tprof="'+t.id+'">'+avImg(t)+
+    '<div><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+p.time+'</span></div></div>'+
     '<button class="follow-btn xs'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button></div>'+
     '<div class="post-body"></div>'+
     '<div class="comments" id="cm-'+p.id+'" hidden></div>'+
@@ -5350,6 +5346,19 @@ function renderTprofTrades(t){
    Instagram Reels / YouTube Shorts. Only the active slide plays (video or
    the animated chart canvas); the rest stay paused. Double-tap to like. */
 let reelFeedState = { list:[], io:null, active:-1, canvasToken:0 };
+
+/* Tapping the Reels tab opens the full-screen viewer immediately, starting on a
+   random reel — the list screen is gone. Closing the viewer lands back on Home. */
+function openRandomReel(){
+  const items = allReels().filter(x=>x.r.visibility!=="private");
+  if(!items.length){ toast("No reels yet"); return; }
+  const pick = items[Math.floor(Math.random()*items.length)];
+  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab==="reels"));
+  document.body.dataset.tab = "reels";
+  openReel(pick.t, pick.r, items);
+  const c = $("reelClose");
+  if(c) c.onclick = ()=>{ closeReel(); goTab("home"); };
+}
 
 function openReel(t, r, list){
   let items = list && list.length ? list : allReels().filter(x=>x.r.visibility!=="private");

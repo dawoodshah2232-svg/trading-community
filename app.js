@@ -334,6 +334,8 @@ document.querySelectorAll("#lbPeriodPills [data-lbperiod]").forEach(b=>b.addEven
 
 /* ---------------- TABS ---------------- */
 function goTab(tab){
+  /* Reels tab: straight into the full-screen viewer at a random reel — no list screen */
+  if(tab === "reels"){ openRandomReel(); return; }
   document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   const scr = $("screen-"+tab);
@@ -1780,8 +1782,8 @@ function postCard(p){
   const c = document.createElement("div");
   c.className = "card post";
   c.innerHTML =
-    '<div class="post-head">'+avImg(t)+
-    '<div data-tprof="'+t.id+'"><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+p.time+'</span></div>'+
+    '<div class="post-head"><div class="post-id" data-tprof="'+t.id+'">'+avImg(t)+
+    '<div><b>'+esc(t.name)+'</b><span>'+esc(t.handle)+' · '+p.time+'</span></div></div>'+
     '<button class="follow-btn xs'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button></div>'+
     '<div class="post-body"></div>'+
     '<div class="comments" id="cm-'+p.id+'" hidden></div>'+
@@ -2379,6 +2381,19 @@ function renderTprofTrades(t){
    Instagram Reels / YouTube Shorts. Only the active slide plays (video or
    the animated chart canvas); the rest stay paused. Double-tap to like. */
 let reelFeedState = { list:[], io:null, active:-1, canvasToken:0 };
+
+/* Tapping the Reels tab opens the full-screen viewer immediately, starting on a
+   random reel — the list screen is gone. Closing the viewer lands back on Home. */
+function openRandomReel(){
+  const items = allReels().filter(x=>x.r.visibility!=="private");
+  if(!items.length){ toast("No reels yet"); return; }
+  const pick = items[Math.floor(Math.random()*items.length)];
+  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab==="reels"));
+  document.body.dataset.tab = "reels";
+  openReel(pick.t, pick.r, items);
+  const c = $("reelClose");
+  if(c) c.onclick = ()=>{ closeReel(); goTab("home"); };
+}
 
 function openReel(t, r, list){
   let items = list && list.length ? list : allReels().filter(x=>x.r.visibility!=="private");
