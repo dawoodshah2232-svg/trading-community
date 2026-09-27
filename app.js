@@ -1774,16 +1774,16 @@ $("brokerConnectGo").addEventListener("click", ()=>{
   };
   const R = {
     daud:[
-      { title:"How I scalp gold on NFP day", views:"12.4k", likes:842, seed:5 },
-      { title:"3 liquidity traps to avoid", views:"8.1k", likes:517, seed:9 }
+      { title:"How I scalp gold on NFP day", views:"12.4k", likes:842, seed:5, videoUrl:"assets/reels/reel-candles-portrait.mp4" },
+      { title:"3 liquidity traps to avoid", views:"8.1k", likes:517, seed:9, videoUrl:"assets/reels/reel-chart-pan.mp4" }
     ],
     sara:[
-      { title:"My swing checklist (5 min)", views:"6.7k", likes:402, seed:13 },
-      { title:"Fundamentals + technicals", views:"4.2k", likes:268, seed:17 }
+      { title:"My swing checklist (5 min)", views:"6.7k", likes:402, seed:13, videoUrl:"assets/reels/reel-trading-chart.mp4" },
+      { title:"Fundamentals + technicals", views:"4.2k", likes:268, seed:17, videoUrl:"assets/reels/reel-market-flow.mp4" }
     ],
     arjun:[
-      { title:"Risk-first crypto entries", views:"9.8k", likes:633, seed:21 },
-      { title:"When I stand aside", views:"5.5k", likes:341, seed:25 }
+      { title:"Risk-first crypto entries", views:"9.8k", likes:633, seed:21, videoUrl:"assets/reels/reel-graph-portrait.mp4" },
+      { title:"When I stand aside", views:"5.5k", likes:341, seed:25, videoUrl:"assets/reels/reel-candles-zoom.mp4" }
     ],
     lena:[
       { title:"Patience: my gold edge", views:"7.3k", likes:489, seed:29 },
@@ -1934,7 +1934,7 @@ function renderTprofReels(t){
   el.querySelectorAll(".reel-tile").forEach(tile=>{
     tile.addEventListener("click", ()=>{
       const r = t.reels.find(x=>x.id===tile.dataset.reel);
-      openReel(t, r);
+      openReel(t, r, t.reels.map(x=>({ t, r:x })));
     });
   });
 }
@@ -1953,46 +1953,136 @@ function renderTprofTrades(t){
 }
 
 /* --- reel viewer --- */
-let reelTimer = null, reelRAF = 0;
-function openReel(t, r){
-  $("reelTrader").textContent = t.handle + (t.live?" · LIVE":"");
-  $("reelTitle").innerHTML = esc(r.title) +
-    (r.desc ? '<span class="reel-desc">'+esc(r.desc)+'</span>' : "") +
-    (r.tags && r.tags.length ? '<span class="reel-tags">'+r.tags.map(esc).join(" ")+'</span>' : "");
-  $("reelLikeN").textContent = fmtK(r.likes);
-  $("reelComN").textContent = fmtK(r.commentsN || (r.comments?r.comments.length:0) || Math.round(r.likes/9));
-  $("reelLike").classList.toggle("liked", !!r.liked);
-  $("reelLike").onclick = ()=>{
-    r.liked = !r.liked; r.likes += r.liked?1:-1;
-    $("reelLikeN").textContent = fmtK(r.likes);
-    $("reelLike").classList.toggle("liked", r.liked);
-    if(r.liked) floatHeart();
-  };
-  $("reelComment").onclick = ()=>openReelComments(t, r);
-  $("reelShare").onclick = ()=>{ shareReel(r); };
-  $("reelView").hidden = false;
+/* reel feed state lives in reelFeedState (see openReel) */
+/* ================= TikTok-style vertical reels feed =================
+   Full-screen snap-scroll: swipe up/down through every reel, like TikTok /
+   Instagram Reels / YouTube Shorts. Only the active slide plays (video or
+   the animated chart canvas); the rest stay paused. Double-tap to like. */
+let reelFeedState = { list:[], io:null, active:-1, canvasToken:0 };
+
+function openReel(t, r, list){
+  let items = list && list.length ? list : allReels().filter(x=>x.r.visibility!=="private");
+  let idx = items.findIndex(x=>x.r.id===r.id);
+  if(idx < 0){ items = [{ t, r }]; idx = 0; }
+  const view = $("reelView");
+  closeReel(); /* silent cleanup of any previous feed */
+  view.innerHTML =
+    '<div class="reel-feed" id="reelFeed"></div>'+
+    '<div class="reel-top"><span class="reel-prog"><i id="reelProg"></i></span>'+
+    '<button class="icon-btn" id="reelClose" aria-label="Close"><span class="ic" data-icon="x"></span></button></div>';
+  const feed = $("reelFeed");
+  items.forEach((it, i)=>feed.appendChild(buildReelSlide(it.t, it.r, i)));
+  $("reelClose").onclick = closeReel;
+  try{ injectIcons(); }catch(e){}
+  view.hidden = false;
   document.body.classList.add("lock-scroll");
-  /* uploaded device video plays natively; seeded reels use the animated chart canvas */
-  const vid = $("reelVideo"), cv = $("reelCanvas");
-  if(r.videoUrl){
-    cancelAnimationFrame(reelRAF);
-    cv.hidden = true; vid.hidden = false;
-    vid.src = r.videoUrl;
-    vid.play().catch(()=>{});
-    $("reelProg").style.width = "100%";
-    return;
+  const st = reelFeedState;
+  st.list = items; st.active = -1;
+  const slides = feed.children;
+  if(slides[idx]) feed.scrollTop = slides[idx].offsetTop; /* jump straight to the tapped reel */
+  st.io = new IntersectionObserver((es)=>{
+    es.forEach(e=>{ if(e.isIntersecting && e.intersectionRatio >= 0.55) activateReelSlide(+e.target.dataset.i); });
+  }, { root:feed, threshold:[0.55] });
+  for(let i=0;i<slides.length;i++) st.io.observe(slides[i]);
+  activateReelSlide(idx);
+}
+
+function buildReelSlide(t, r, i){
+  const s = document.createElement("section");
+  s.className = "reel-slide"; s.dataset.i = i;
+  const comN = r.commentsN || (r.comments ? r.comments.length : 0) || Math.round((r.likes||0)/9);
+  s.innerHTML =
+    (r.videoUrl
+      ? '<video playsinline loop preload="metadata" src="'+esc(r.videoUrl)+'"></video>'
+      : '<canvas width="540" height="960"></canvas>')+
+    '<div class="reel-side">'+
+      '<button class="reel-act rl-like'+(r.liked?" liked":"")+'" aria-label="Like">♥<b class="num">'+fmtK(r.likes||0)+'</b></button>'+
+      '<button class="reel-act rl-com" aria-label="Comments">✉<b class="num">'+fmtK(comN)+'</b></button>'+
+      '<button class="reel-act rl-share" aria-label="Share">↗<b>Share</b></button>'+
+    "</div>"+
+    '<div class="reel-cap"><b>'+esc(t.handle)+(t.live?" · LIVE":"")+"</b><p>"+esc(r.title)+
+      (r.desc ? '<span class="reel-desc">'+esc(r.desc)+"</span>" : "")+
+      (r.tags && r.tags.length ? '<span class="reel-tags">'+r.tags.map(esc).join(" ")+"</span>" : "")+
+    "</p></div>"+
+    (i===0 ? '<div class="reel-dbl-hint">Swipe up for more · double-tap to like</div>' : "");
+  const likeBtn = s.querySelector(".rl-like");
+  const doLike = ()=>{
+    r.liked = !r.liked; r.likes = (r.likes||0) + (r.liked?1:-1);
+    likeBtn.querySelector("b").textContent = fmtK(r.likes);
+    likeBtn.classList.toggle("liked", r.liked);
+  };
+  likeBtn.addEventListener("click", e=>{ e.stopPropagation(); doLike(); });
+  s.querySelector(".rl-com").addEventListener("click", e=>{ e.stopPropagation(); openReelComments(t, r, s.querySelector(".rl-com b")); });
+  s.querySelector(".rl-share").addEventListener("click", e=>{ e.stopPropagation(); shareReel(r); });
+  /* double-tap = like, TikTok-style */
+  let lastTap = 0;
+  s.addEventListener("click", e=>{
+    const now = Date.now();
+    if(now - lastTap < 320){
+      lastTap = 0;
+      if(!r.liked) doLike();
+      reelHeartBurst(s, e.clientX, e.clientY);
+    } else lastTap = now;
+  });
+  /* a video file that fails (offline/404) falls back to the animated chart canvas */
+  const vid = s.querySelector("video");
+  if(vid) vid.addEventListener("error", ()=>{
+    const cv = document.createElement("canvas"); cv.width = 540; cv.height = 960;
+    vid.replaceWith(cv);
+    if(reelFeedState.active === i) startReelCanvas(cv, t, r);
+  }, { once:true });
+  return s;
+}
+
+function reelHeartBurst(slide, x, y){
+  const rc = slide.getBoundingClientRect();
+  const h = document.createElement("div");
+  h.className = "reel-float-heart"; h.textContent = "♥";
+  h.style.left = Math.max(8, (x || rc.left+rc.width/2) - rc.left - 36) + "px";
+  h.style.top = Math.max(8, (y || rc.top+rc.height/2) - rc.top - 36) + "px";
+  slide.appendChild(h);
+  setTimeout(()=>h.remove(), 950);
+}
+
+function activateReelSlide(i){
+  const st = reelFeedState;
+  if(st.active === i || !st.list[i]) return;
+  st.active = i; st.canvasToken++; /* kills any running canvas loop */
+  const feed = $("reelFeed"); if(!feed) return;
+  const prog = $("reelProg"); if(prog) prog.style.width = "0";
+  const slides = feed.children;
+  for(let j=0;j<slides.length;j++){
+    const s = slides[j], vid = s.querySelector("video"), cv = s.querySelector("canvas");
+    if(j === i){
+      const it = st.list[j];
+      if(vid) playReelVideo(vid);
+      else if(cv) startReelCanvas(cv, it.t, it.r);
+    } else if(vid){ try{ vid.pause(); }catch(e){} }
   }
-  vid.pause(); vid.removeAttribute("src"); vid.hidden = true; cv.hidden = false;
-  /* animated chart canvas */
+}
+
+function playReelVideo(vid){
+  vid.muted = false;
+  try{
+    const pr = vid.play();
+    if(pr && pr.catch) pr.catch(()=>{ vid.muted = true; vid.play().catch(()=>{}); });
+  }catch(e){ vid.muted = true; try{ vid.play().catch(()=>{}); }catch(_){} }
+  const prog = $("reelProg");
+  vid.ontimeupdate = ()=>{ if(prog && vid.duration) prog.style.width = (vid.currentTime/vid.duration*100)+"%"; };
+}
+
+/* animated chart-canvas reel (seeded reels without a video file) */
+function startReelCanvas(cv, t, r){
+  const st = reelFeedState, token = ++st.canvasToken, prog = $("reelProg");
   const ctx = cv.getContext("2d");
-  const rnd = mulberry32(r.seed*331+7);
+  const rnd = mulberry32(((r.seed||1)*331+7)>>>0);
   const pts = []; let v = 0.45;
   for(let i=0;i<60;i++){ v += (rnd()-0.44)*0.1; v = Math.max(.1, Math.min(.9, v)); pts.push(v); }
-  const dur = 9000; let start = performance.now();
-  cancelAnimationFrame(reelRAF);
+  const dur = 9000, fontFam = getComputedStyle(document.body).fontFamily;
+  let t0 = performance.now();
   (function frame(now){
-    if($("reelView").hidden) return;
-    const el = Math.min(1, (now-start)/dur);
+    if(token !== st.canvasToken || $("reelView").hidden) return;
+    const el = Math.min(1, (now-t0)/dur);
     const W = cv.width, H = cv.height;
     const grd = ctx.createLinearGradient(0,0,W,H);
     grd.addColorStop(0, t.g[0]); grd.addColorStop(1, "#060A13");
@@ -2003,28 +2093,35 @@ function openReel(t, r){
     ctx.beginPath();
     for(let i=0;i<n;i++){ const x = 30+i*(W-60)/(pts.length-1), y = H*0.72-pts[i]*H*0.5; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
     ctx.strokeStyle = "#fff"; ctx.lineWidth = 6; ctx.lineJoin = "round"; ctx.stroke();
-    ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.font = "700 34px "+getComputedStyle(document.body).fontFamily;
+    ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.font = "700 34px "+fontFam;
     ctx.fillText(t.handle, 30, H-160);
-    ctx.font = "400 26px "+getComputedStyle(document.body).fontFamily;
+    ctx.font = "400 26px "+fontFam;
     ctx.fillStyle = "rgba(255,255,255,.75)";
     wrapText(ctx, r.title, 30, H-116, W-200, 30);
-    $("reelProg").style.width = (el*100)+"%";
-    if(el>=1){ start = performance.now(); }
-    reelRAF = requestAnimationFrame(frame);
-  })(start);
+    if(prog) prog.style.width = (el*100)+"%";
+    if(el>=1) t0 = performance.now(); /* loop the 9s animation */
+    requestAnimationFrame(frame);
+  })(t0);
 }
+
+function closeReel(){
+  const st = reelFeedState;
+  st.canvasToken++;
+  if(st.io){ st.io.disconnect(); st.io = null; }
+  const feed = $("reelFeed");
+  if(feed) for(const v of feed.querySelectorAll("video")){ try{ v.pause(); }catch(e){} v.removeAttribute("src"); }
+  const view = $("reelView");
+  view.innerHTML = ""; view.hidden = true;
+  document.body.classList.remove("lock-scroll");
+  st.list = []; st.active = -1;
+}
+
 function wrapText(ctx, text, x, y, maxW, lh){
   const words = text.split(" "); let line = "";
   for(const w of words){ const t = line+w+" ";
     if(ctx.measureText(t).width > maxW && line){ ctx.fillText(line, x, y); line = w+" "; y += lh; }
     else line = t; }
   ctx.fillText(line, x, y);
-}
-function closeReel(){
-  cancelAnimationFrame(reelRAF);
-  const vid = $("reelVideo"); if(vid){ vid.pause(); vid.hidden = true; }
-  $("reelView").hidden = true;
-  document.body.classList.remove("lock-scroll");
 }
 function shareReel(r){
   const txt = "Reel: "+r.title+" (demo)";
@@ -2033,7 +2130,7 @@ function shareReel(r){
   else toast("Share — demo");
 }
 /* reel comments (simple bottom-sheet style list inside viewer) */
-function openReelComments(t, r){
+function openReelComments(t, r, countEl){
   if(!r.comments){
     r.comments = [
       { n:"Sara Malik", t:"This is exactly how I read liquidity too 🔥", time:"12m" },
@@ -2041,11 +2138,10 @@ function openReelComments(t, r){
       { n:"Lena K", t:"Saving this one 📌", time:"1h" }
     ];
   }
-  const body = $("tprofBody"); /* reuse profile overlay if open? no — dedicated sheet */
-  closeReel();
+  /* the feed stays open behind the sheet (z-210) — no closeReel() */
   openSheetComments("Reel · "+r.title, r.comments, (txt)=>{
     r.comments.push({ n:"You", t:txt, time:"now" });
-    $("reelComN").textContent = fmtK(r.comments.length);
+    if(countEl) countEl.textContent = fmtK(r.comments.length);
   });
 }
 /* generic comment sheet used by reels */
@@ -2518,7 +2614,7 @@ function renderReelsHub(){
   g.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
     const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
     const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
-    openReel(t, r);
+    openReel(t, r, items);
   }));
 }
 
@@ -2598,7 +2694,7 @@ function renderProfReels(){
       (r.visibility==="private"?'<span class="rt-priv">Private</span>':"")+
       '<span class="rt-play"><i>▶</i></span><span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views)+'</span></span></button>').join("")+'</div>';
     g.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
-      const r = you.reels.find(x=>x.id===tile.dataset.reel); openReel(you, r);
+      const r = you.reels.find(x=>x.id===tile.dataset.reel); openReel(you, r, you.reels.map(x=>({ t:you, r:x })));
     }));
   }
   $("newReelBtn").addEventListener("click", triggerReelUpload);
@@ -2797,7 +2893,7 @@ function renderHomeReels(){
   row.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
     const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
     const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
-    openReel(t, r);
+    openReel(t, r, items);
   }));
 }
 function renderHomeIdeas(){
