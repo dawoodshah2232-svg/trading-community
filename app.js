@@ -93,6 +93,7 @@ const state = {
   prices:{}, hist:{}, depth:{},
   open:[], pending:[], history:[],
   alerts:[], alertSeq:1, orderSeq:1,
+  notifs:[], notifSeq:1,
   balance:START_BALANCE,
   liveBuilt:false, voted:null
 };
@@ -184,6 +185,57 @@ setInterval(()=>{ try{ updateDataBadges(); }catch(e){} }, 10000); /* keep the qu
 /* seed one demo alert so the feature is visible */
 state.alerts.push({ id:"a"+(state.alertSeq++), sym:"XAUUSD", cond:"above", price:2660.00, triggered:false });
 
+/* ---------------- NOTIFICATIONS CENTER ---------------- */
+function pushNotif(icon, title, body, onTap){
+  state.notifs.unshift({ id:"n"+(state.notifSeq++), icon, title, body, time:"now", unread:true, onTap:onTap||null });
+  updateNotifDot();
+  if(!$("notifSheet").hidden) renderNotifs();
+}
+function updateNotifDot(){
+  const d = $("alertDot"); if(d) d.hidden = !state.notifs.some(n=>n.unread);
+}
+function renderNotifs(){
+  const list = $("notifList"); if(!list) return;
+  if(!state.notifs.length){
+    list.innerHTML = '<div class="notif-empty">You are all caught up.</div>';
+    return;
+  }
+  list.innerHTML = "";
+  state.notifs.forEach(n=>{
+    const r = document.createElement("button");
+    r.className = "notif-row" + (n.unread ? " unread" : "");
+    r.innerHTML =
+      '<span class="notif-ic"><span class="ic" data-icon="'+n.icon+'"></span></span>'+
+      '<span class="notif-tx"><b>'+esc(n.title)+'</b><span>'+esc(n.body)+'</span></span>'+
+      '<span class="notif-time">'+esc(n.time)+'</span>'+
+      (n.unread ? '<span class="notif-dot"></span>' : '');
+    r.addEventListener("click", ()=>{
+      n.unread = false; updateNotifDot(); renderNotifs();
+      closeNotifSheet();
+      if(n.onTap) setTimeout(n.onTap, 80);
+    });
+    list.appendChild(r);
+  });
+  injectIcons();
+}
+function openNotifSheet(){
+  renderNotifs();
+  $("backdrop").hidden = false;
+  $("notifSheet").hidden = false;
+}
+function closeNotifSheet(){
+  $("notifSheet").hidden = true;
+  if($("symbolSheet").hidden) $("backdrop").hidden = true;
+}
+/* seed demo notifications */
+state.notifs.push(
+  { id:"n"+(state.notifSeq++), icon:"live", title:"@daudtradefx is live", body:"London scalps — XAUUSD live trading started 12 min ago", time:"12m", unread:true, onTap:()=>goTab("live") },
+  { id:"n"+(state.notifSeq++), icon:"community", title:"New follower", body:"@saramalik started following you", time:"1h", unread:true, onTap:null },
+  { id:"n"+(state.notifSeq++), icon:"heart", title:"Post liked", body:"@arjunfx and 23 others liked your XAUUSD idea", time:"3h", unread:true, onTap:null },
+  { id:"n"+(state.notifSeq++), icon:"bell", title:"Welcome", body:"Price alerts, new followers and live streams will appear here", time:"1d", unread:false, onTap:null }
+);
+updateNotifDot();
+
 /* ---------------- FAVORITES / WISHLIST (persisted) ---------------- */
 const FAV_KEY = "tc_favs_v1";
 const DEFAULT_FAVS = ["XAUUSD","EURUSD","BTCUSD"];
@@ -260,9 +312,11 @@ function goTab(tab){
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click", ()=>goTab(b.dataset.tab)));
 $("avatarBtn").addEventListener("click", ()=>goTab("profile"));
-$("bellBtn").addEventListener("click", ()=>{
-  goTab("trade");
-  setTimeout(()=>{ $("alertsCard").scrollIntoView({behavior:"smooth", block:"center"}); }, 60);
+$("bellBtn").addEventListener("click", openNotifSheet);
+$("notifX").addEventListener("click", closeNotifSheet);
+$("notifReadAll").addEventListener("click", ()=>{
+  state.notifs.forEach(n=>n.unread=false);
+  updateNotifDot(); renderNotifs();
 });
 
 /* ---------------- PRICE ENGINE (simulated random walk) ---------------- */
@@ -370,7 +424,7 @@ $("symPicker").addEventListener("click", ()=>{
 });
 function openSheet(){ $("backdrop").hidden = false; $("symbolSheet").hidden = false; }
 function closeSheet(){ $("backdrop").hidden = true; $("symbolSheet").hidden = true; }
-$("backdrop").addEventListener("click", closeSheet);
+$("backdrop").addEventListener("click", ()=>{ closeSheet(); closeNotifSheet(); });
 $("sheetX").addEventListener("click", closeSheet);
 
 /* ---------------- ASSET PICKER: search + category tabs + favorites ---------------- */
@@ -941,7 +995,7 @@ function renderAccount(){
 /* ---------------- PRICE ALERTS ---------------- */
 function renderAlerts(){
   const list = $("alertList"); list.innerHTML = "";
-  $("alertDot").hidden = !state.alerts.some(a=>!a.triggered);
+  updateNotifDot();
   if(!state.alerts.length){
     list.innerHTML = '<div class="alerts-empty fine">No alerts yet. Tap “New alert” to get notified when a price crosses your level.</div>';
     return;
@@ -990,6 +1044,7 @@ function checkAlerts(){
     if((a.cond==="above" && bid>=a.price) || (a.cond==="below" && bid<=a.price)){
       a.triggered = true; hit = true;
       toast("Alert triggered: "+a.sym+" "+(a.cond==="above"?"≥":"≤")+" "+fmtP(a.sym,a.price));
+      pushNotif("bell", "Price alert triggered", a.sym+" "+(a.cond==="above"?"≥":"≤")+" "+fmtP(a.sym,a.price)+" — tap to view", ()=>{ goTab("trade"); setTimeout(()=>{ $("alertsCard").scrollIntoView({behavior:"smooth", block:"center"}); }, 60); });
     }
   });
   if(hit) renderAlerts();
