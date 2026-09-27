@@ -9,9 +9,10 @@
 /* ============================================================
    Trading Community — trading terminal UI
    Design system: 4/8/12/16/24 spacing scale, strict type steps,
-   one brand accent (blue #2F80FF). Green/red reserved strictly
-   for direction: buy/up/profit vs sell/down/loss.
-   Dark = near-black navy. Light = clean paper white.
+   one brand accent (green #22C55E — the Trade.FlexSpot brand).
+   Blue kept for info/links. Green/red also carry direction:
+   buy/up/profit vs sell/down/loss.
+   Dark = near-black navy. Light = clean paper like the reference.
    Apple font stack for words, system mono for numbers.
    EVERYTHING is a demo: simulated prices, fills, brokers.
    ============================================================ */
@@ -39,7 +40,11 @@
   --muted:  #8A94A8;
   --faint:  #5F687E;
 
-  /* brand + signals — green/red are directional ONLY */
+  /* brand + signals — green is the brand AND buy/up/profit */
+  --brand: #22C55E;
+  --brand-deep: #16A34A;
+  --brand-ink: #0E7A38;
+  --brand-soft: rgba(34,197,94,.13);
   --blue:  #2F80FF;
   --blue-deep: #1B5FD6;
   --blue-soft: rgba(47,128,255,.13);
@@ -65,23 +70,25 @@
   --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
 }
 [data-theme="light"]{
-  --bg:        #F1F4F9;
+  --bg:        #F2F4F7;
   --bg-soft:   #FFFFFF;
   --surface:   #FFFFFF;
-  --surface-2: #ECEFF5;
-  --surface-3: #E0E5EE;
-  --border:    rgba(15,23,42,.10);
-  --border-soft: rgba(15,23,42,.065);
+  --surface-2: #EEF1F6;
+  --surface-3: #E2E8F0;
+  --border:    rgba(15,23,42,.08);
+  --border-soft: rgba(15,23,42,.05);
 
   --text:   #0F172A;
-  --muted:  #5B6478;
-  --faint:  #93A0B4;
+  --muted:  #64748B;
+  --faint:  #94A3B8;
 
   --blue-soft: rgba(47,128,255,.10);
+  --brand-soft: rgba(34,197,94,.12);
   --green-soft: rgba(34,197,94,.12);
-  --red-soft: rgba(240,68,82,.10);
+  --red-soft: rgba(240,68,82,.08);
 
-  --shadow: 0 10px 28px rgba(15,23,42,.10);
+  --shadow: 0 2px 14px rgba(15,23,42,.07);
+  --shadow-lg: 0 12px 32px rgba(15,23,42,.12);
 }
 
 /* ---------- base ---------- */
@@ -136,8 +143,10 @@ p{ margin:0; }
     display:flex; align-items:center; gap:12px; padding:0 12px; border-radius:var(--r-md);
     font-size:14.5px; font-weight:600; color:var(--muted); min-height:48px; position:relative; text-align:left;
   }
-  .snav.active{ color:var(--text); background:var(--surface-2); }
-  .snav.active .ic{ color:var(--blue); }
+  .snav.active{ color:var(--brand-ink); background:var(--brand-soft); font-weight:700; }
+  .snav.active .ic{ color:var(--brand-ink); }
+  [data-theme="dark"] .snav.active{ color:var(--brand); }
+  [data-theme="dark"] .snav.active .ic{ color:var(--brand); }
   .side-foot{ margin-top:auto; display:flex; flex-direction:column; gap:2px; }
   .side-row{
     display:flex; align-items:center; gap:12px; padding:0 12px; min-height:48px;
@@ -198,8 +207,9 @@ p{ margin:0; }
   color:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
   border:2px solid var(--border); overflow:hidden; padding:0;
 }
-.avatar{ border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:var(--blue); overflow:hidden; flex-shrink:0; }
-.avatar img, .avatar-btn img{ width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
+.avatar{ position:relative; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:var(--blue); overflow:hidden; flex-shrink:0; }
+.avatar .av-ini{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font:inherit; }
+.avatar img, .avatar-btn img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
 .avatar.sm{ width:34px; height:34px; font-size:12px; }
 .avatar.lg{ width:64px; height:64px; font-size:20px; }
 /* camera badge on the profile avatar = tap to change photo */
@@ -221,8 +231,8 @@ p{ margin:0; }
   min-height:66px; font-size:10.5px; font-weight:600; color:var(--faint); position:relative;
 }
 .tab .ic{ color:var(--faint); }
-.tab.active{ color:var(--blue); font-weight:700; }
-.tab.active .ic{ color:var(--blue); }
+.tab.active{ color:var(--brand); font-weight:700; }
+.tab.active .ic{ color:var(--brand); }
 .tab-badge{
   position:absolute; top:8px; right:calc(50% - 20px); min-width:18px; height:18px; border-radius:9px;
   background:var(--red); color:#fff; font-size:10.5px; font-weight:700; font-style:normal;
@@ -372,7 +382,7 @@ select.field{ appearance:none; }
   padding:6px 14px; border-radius:9px; font-size:13px; font-weight:600; color:var(--muted);
   min-height:40px; white-space:nowrap; font-family:var(--mono);
 }
-.tf.active{ color:var(--blue); background:var(--blue-soft); font-weight:700; }
+.tf.active{ color:#fff; background:var(--brand); font-weight:700; box-shadow:0 3px 10px rgba(34,197,94,.35); }
 .chart-wrap{
   position:relative; height:340px; background:var(--bg-soft);
   border:1px solid var(--border-soft); border-radius:var(--r-lg); overflow:hidden;
@@ -438,7 +448,7 @@ select.field{ appearance:none; }
   border-radius:var(--r-md); padding:3px; margin-bottom:var(--sp3);
 }
 .ttype{ min-height:44px; font-size:13.5px; font-weight:600; color:var(--muted); border-radius:9px; }
-.ttype.active{ background:var(--surface-3); color:var(--text); font-weight:700; }
+.ttype.active{ background:var(--surface); color:var(--text); font-weight:700; box-shadow:var(--shadow); }
 .dir-toggle{
   display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:var(--sp4);
 }
@@ -682,9 +692,10 @@ select.field{ appearance:none; }
 .trader-card .tstat{ font-size:12.5px; color:var(--muted); font-family:var(--mono); margin-top:2px; display:block; }
 .follow-btn{
   min-height:44px; padding:0 20px; border-radius:22px; font-size:13.5px; font-weight:700;
-  background:var(--blue-soft); color:var(--blue); flex-shrink:0;
+  background:var(--brand); color:#fff; flex-shrink:0;
+  box-shadow:0 4px 12px rgba(34,197,94,.30);
 }
-.follow-btn.following{ background:var(--surface-2); color:var(--muted); }
+.follow-btn.following{ background:var(--surface-2); color:var(--muted); box-shadow:none; }
 .trader-live{
   position:absolute; bottom:-5px; left:50%; transform:translateX(-50%);
   background:var(--red); color:#fff; font-size:9px; font-weight:800; letter-spacing:.06em;
@@ -957,12 +968,13 @@ body.lock-scroll{ overflow:hidden; }
 .tprof-id{ flex:1; min-width:0; }
 .tprof-id b{ font-size:18px; letter-spacing:-.02em; display:block; }
 .tprof-bio{ font-size:13px; color:var(--muted); margin-top:6px; line-height:1.5; }
-.watch-live-btn{
-  width:100%; min-height:56px; border-radius:var(--r-md); margin-bottom:16px;
-  background:var(--red-soft); color:var(--red); font-weight:700; font-size:14.5px;
+.tp-actions .watch-live-btn{
+  width:100%; min-height:52px; border-radius:14px; margin-bottom:16px;
+  background:linear-gradient(135deg,var(--brand),var(--brand-deep)); color:#fff; font-weight:800; font-size:14.5px;
   display:flex; align-items:center; justify-content:center; gap:10px;
-  border:1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  box-shadow:0 6px 16px rgba(34,197,94,.35);
 }
+.live-hero-row .watch-live-btn{ width:auto; margin-bottom:0; min-height:44px; }
 .tprof-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px; }
 .tstat-cell{
   background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--r-md);
@@ -1126,7 +1138,8 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .post-tile .pt-meta span{ font-size:11px; font-weight:700; }
 .post-tile .pt-meta span.up{ color:#4ADE80; } .post-tile .pt-meta span.dn{ color:#F87171; }
 .reel-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:3px; }
-.reel-tile{ position:relative; aspect-ratio:9/14; border-radius:8px; overflow:hidden; border:0; padding:0; cursor:pointer; background:linear-gradient(160deg,var(--g1),var(--g2)); }
+.reel-tile{ position:relative; flex:0 0 112px; aspect-ratio:9/15; border-radius:12px; overflow:hidden; border:0; padding:0; cursor:pointer; background:linear-gradient(160deg,var(--g1),var(--g2)); scroll-snap-align:start; }
+.reel-tile .rt-dur{ position:absolute; top:8px; left:8px; z-index:1; background:rgba(0,0,0,.55); color:#fff; font-size:10.5px; font-weight:700; border-radius:7px; padding:3px 7px; font-family:var(--mono); }
 .reel-tile .rt-play{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
 .reel-tile .rt-play i{ width:40px; height:40px; border-radius:50%; background:rgba(0,0,0,.45); color:#fff; display:flex; align-items:center; justify-content:center; font-style:normal; font-size:16px; }
 .reel-tile .rt-meta{ position:absolute; left:0; right:0; bottom:0; padding:16px 8px 8px; background:linear-gradient(transparent,rgba(0,0,0,.75)); color:#fff; text-align:left; }
@@ -1259,7 +1272,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .set-chev{ color:var(--muted); flex:none; }
 .prof-tabs{ display:flex; border-bottom:1px solid var(--border); margin:6px 0 12px; }
 .ptab{ flex:1; border:0; background:none; color:var(--muted); font:inherit; font-size:13.5px; font-weight:600; padding:12px 4px; cursor:pointer; border-bottom:2px solid transparent; }
-.ptab.active{ color:var(--text); border-bottom-color:var(--blue); }
+.ptab.active{ color:var(--text); border-bottom-color:var(--brand); }
 .new-reel-btn{ width:100%; margin-bottom:10px; }
 
 /* ================= v15b: quick trade, idea sheet, watch mode, idea posts ================= */
@@ -1436,17 +1449,18 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
   .chart-card{ padding:20px; }
 }
 
-/* --- center Live FAB (mobile tab bar) --- */
-.tab-fab{ overflow:visible; }
-.live-fab{
-  width:54px; height:54px; border-radius:50%; margin-top:-20px;
-  background:linear-gradient(135deg,#FF4D5E,#C81E2B); color:#fff;
+/* --- center Reels button (mobile tab bar): the big whole button for endless scrolling --- */
+.tab-reels{ overflow:visible; }
+.reels-fab{
+  width:56px; height:56px; border-radius:50%; margin-top:-22px;
+  background:linear-gradient(135deg,var(--brand) 0%,var(--brand-deep) 100%); color:#fff;
   display:flex; align-items:center; justify-content:center;
-  border:3px solid var(--bg-soft); box-shadow:0 6px 18px rgba(255,60,80,.45);
+  border:3px solid var(--bg-soft); box-shadow:0 8px 22px rgba(34,197,94,.45);
 }
-.tab-fab .ic{ color:#fff; }
-.tab-fab.active{ color:var(--red); }
-.tab-fab.active .ic{ color:#fff; }
+.reels-fab .ic{ width:26px; height:26px; color:#fff; }
+.tab-reels .ic{ color:#fff; }
+.tab-reels.active{ color:var(--brand); }
+.tab-reels.active .reels-fab{ box-shadow:0 8px 26px rgba(34,197,94,.65); }
 
 /* --- traders discover --- */
 .trader-search{ margin:12px 0 2px; }
@@ -1579,7 +1593,8 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .mkt-chg.pl-pos{ color:var(--green); } .mkt-chg.pl-neg{ color:var(--red); }
 .home-sec-head{ display:flex; align-items:center; justify-content:space-between; padding:4px 16px 10px; }
 .home-sec-head h3{ font-size:16px; }
-.link-btn{ color:var(--blue); font-size:13px; font-weight:700; min-height:44px; }
+.link-btn{ color:var(--brand-ink); font-size:13px; font-weight:700; min-height:44px; }
+[data-theme="dark"] .link-btn{ color:var(--brand); }
 .h-scroll{ display:flex; gap:12px; overflow-x:auto; padding:0 14px 16px; scroll-snap-type:x mandatory; scrollbar-width:none; }
 .h-scroll::-webkit-scrollbar{ display:none; }
 .tcard{ flex:0 0 150px; scroll-snap-align:start; background:var(--surface); border:1px solid var(--border);
@@ -1588,7 +1603,6 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
   border-radius:8px; padding:2px 8px; }
 .tcard-name{ font-size:13.5px; font-weight:800; }
 .tcard-handle{ font-size:11.5px; color:var(--faint); }
-.tcard-stats{ display:flex; gap:10px; font-size:11.5px; color:var(--muted); margin:2px 0 4px; }
 .tcard-follow{ width:100%; border-radius:10px; min-height:36px; font-size:13px; font-weight:700;
   background:var(--blue-soft); color:var(--blue); }
 .tcard-follow.following{ background:var(--surface-2); color:var(--muted); }
@@ -1618,12 +1632,12 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .tf-row::-webkit-scrollbar{ display:none; }
 .tf-pill{ flex:0 0 auto; border-radius:10px; padding:8px 13px; min-height:36px; font-size:13px; font-weight:700;
   color:var(--muted); background:var(--surface-2); border:1px solid transparent; }
-.tf-pill.active{ background:var(--blue-soft); color:var(--blue); border-color:rgba(47,128,255,.35); }
+.tf-pill.active{ background:var(--brand); color:#fff; border-color:var(--brand); }
 .indchip-row{ display:flex; align-items:center; gap:8px; padding:0 2px 12px; overflow-x:auto; scrollbar-width:none; }
 .indchip-row::-webkit-scrollbar{ display:none; }
 .ind-chip{ flex:0 0 auto; border-radius:10px; padding:8px 12px; min-height:34px; font-size:12.5px; font-weight:700;
   color:var(--muted); background:var(--surface); border:1px solid var(--border); }
-.ind-chip.active{ color:var(--blue); border-color:rgba(47,128,255,.45); background:var(--blue-soft); }
+.ind-chip.active{ color:#fff; border-color:var(--brand); background:var(--brand); }
 .ind-expand{ flex:0 0 auto; width:34px; min-height:34px; border-radius:10px; background:var(--surface);
   border:1px solid var(--border); color:var(--muted); display:flex; align-items:center; justify-content:center; }
 .trade-sec{ margin:0 14px 14px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; }
@@ -1671,8 +1685,9 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .lv-host-tx{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
 .lv-host-tx b{ font-size:14px; }
 .lv-host-tx .fine{ font-size:12px; }
-.copy-open-btn{ border:1.5px solid var(--blue); color:var(--blue); border-radius:10px; padding:8px 14px;
-  min-height:38px; font-size:13px; font-weight:800; }
+.copy-open-btn{ border:1.5px solid var(--brand); color:var(--brand-ink); border-radius:12px; padding:8px 14px;
+  min-height:38px; font-size:13px; font-weight:800; background:transparent; }
+[data-theme="dark"] .copy-open-btn{ color:var(--brand); }
 .lv-engage{ display:flex; align-items:center; gap:10px; padding-bottom:12px; border-bottom:1px solid var(--border-soft); }
 .engage-btn{ display:inline-flex; align-items:center; gap:7px; color:var(--muted); font-size:13px; font-weight:700;
   min-height:40px; padding:6px 4px; }
@@ -1681,7 +1696,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .lv-tab{ position:relative; flex:1; padding:10px 4px 12px; font-size:13.5px; font-weight:700; color:var(--muted); min-height:44px; }
 .lv-tab.active{ color:var(--text); }
 .lv-tab.active::after{ content:""; position:absolute; left:24%; right:24%; bottom:-1px; height:3px;
-  border-radius:3px 3px 0 0; background:var(--text); }
+  border-radius:3px 3px 0 0; background:var(--brand); }
 .lv-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin-left:4px; vertical-align:2px; }
 .lv-page{ padding:12px 14px 14px; }
 .lv-page .chat{ max-height:46vh; }
@@ -1726,25 +1741,25 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .tp-actions .primary-btn{ flex:1; }
 .tp-tabs{ display:flex; gap:4px; padding:0 18px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:2; }
 .tp-tab{ flex:1; padding:12px 4px; font-size:14px; font-weight:700; color:var(--muted); min-height:48px; position:relative; }
-.tp-tab.active{ color:var(--blue); }
-.tp-tab.active::after{ content:""; position:absolute; left:20%; right:20%; bottom:0; height:3px; border-radius:3px 3px 0 0; background:var(--blue); }
+.tp-tab.active{ color:var(--text); }
+.tp-tab.active::after{ content:""; position:absolute; left:20%; right:20%; bottom:0; height:3px; border-radius:3px 3px 0 0; background:var(--brand); }
 #tprofTab-overview,#tprofTab-trades,#tprofTab-posts,#tprofTab-stats{ padding:14px 18px; }
 .tp-perf{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
 .tp-perf span{ font-size:14px; font-weight:700; }
 .tp-perf b{ font-size:22px; }
 .tp-periods{ display:flex; gap:8px; margin:6px 0 12px; }
 .ppill{ border-radius:99px; padding:7px 14px; min-height:34px; font-size:12.5px; font-weight:700; color:var(--muted); background:var(--surface-2); }
-.ppill.active{ background:var(--text); color:var(--bg); }
+.ppill.active{ background:var(--brand); color:#fff; }
 .tp-chart-card{ margin:0 0 14px; }
 .tp-stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .tp-stat-grid > div{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:4px; }
 .tp-stat-grid b{ font-size:18px; } .tp-stat-grid span{ font-size:12px; color:var(--faint); }
 
 /* ---------- community ---------- */
-.comm-tabs{ display:flex; gap:4px; padding:8px 14px 0; border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:5; }
-.comm-tab{ flex:1; padding:11px 4px; font-size:13.5px; font-weight:700; color:var(--muted); min-height:46px; position:relative; }
-.comm-tab.active{ color:var(--blue); }
-.comm-tab.active::after{ content:""; position:absolute; left:22%; right:22%; bottom:0; height:3px; border-radius:3px 3px 0 0; background:var(--blue); }
+.ctabs{ display:flex; gap:4px; padding:8px 14px 0; border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:5; }
+.ctab{ flex:1; padding:11px 4px; font-size:13.5px; font-weight:700; color:var(--muted); min-height:46px; position:relative; white-space:nowrap; }
+.ctab.active{ color:var(--text); }
+.ctab.active::after{ content:""; position:absolute; left:22%; right:22%; bottom:0; height:3px; border-radius:3px 3px 0 0; background:var(--brand); }
 .comm-page{ padding:12px 14px 90px; }
 .period-pills{ display:flex; gap:8px; padding:0 0 12px; overflow-x:auto; scrollbar-width:none; }
 .period-pills::-webkit-scrollbar{ display:none; }
@@ -1752,13 +1767,26 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
   border-radius:16px; padding:12px 14px; margin-bottom:10px; }
 .rank-n{ width:26px; height:26px; border-radius:50%; background:var(--surface-2); color:var(--muted);
   font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none; }
+.rank-n.medal-1{ background:linear-gradient(135deg,#FFD76A,#F5A623); color:#5C3D00; }
+.rank-n.medal-2{ background:linear-gradient(135deg,#E8EDF3,#B9C4D1); color:#3D4A5C; }
+.rank-n.medal-3{ background:linear-gradient(135deg,#F0B08C,#D17A45); color:#5C2E0E; }
 .rank-id{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; text-align:left; }
 .rank-id > span{ display:flex; flex-direction:column; min-width:0; }
 .rank-id b{ font-size:14px; } .rank-id .fine{ font-size:11.5px; }
 .rank-val{ font-size:15px; font-weight:800; }
-.copy-btn{ background:var(--blue-soft); color:var(--blue); font-weight:800; font-size:13px; border-radius:10px; padding:9px 16px; min-height:38px; }
+.copy-btn{ background:transparent; color:var(--brand); border:1.5px solid var(--brand); font-weight:800; font-size:13px; border-radius:12px; padding:9px 16px; min-height:38px; }
 
 /* ---------- portfolio ---------- */
+.pf-balance-card{ margin:10px 14px 14px; background:linear-gradient(135deg,#14532D 0%,#16A34A 55%,#22C55E 100%);
+  border-radius:20px; padding:18px; color:#fff; box-shadow:0 10px 28px rgba(22,163,74,.35); position:relative; overflow:hidden; }
+.pf-balance-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.pf-balance-top > span{ font-size:12.5px; font-weight:600; opacity:.82; }
+.pf-balance-top .icon-btn{ color:#fff; }
+.pf-balance{ font-size:32px; font-weight:800; letter-spacing:-.02em; margin:0 0 6px; font-family:var(--mono); }
+.pf-balance-sub{ font-size:13px; font-weight:700; opacity:.92; margin-bottom:4px; }
+.pf-spark{ width:100%; height:48px; display:block; margin:2px 0 10px; }
+.pf-actions{ display:flex; gap:10px; }
+.pf-actions .primary-btn{ flex:1; background:#fff; color:#15803D; border:0; font-weight:800; min-height:48px; border-radius:14px; box-shadow:none; }
 .pf-card{ margin:10px 14px 14px; background:linear-gradient(135deg,#12233F 0%, #0B1526 60%, #0A1A33 100%);
   border-radius:20px; padding:18px; color:#fff; box-shadow:var(--shadow); position:relative; overflow:hidden; }
 .pf-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
@@ -1844,7 +1872,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 }
 [data-theme="light"] .hero-live{ box-shadow:0 12px 32px rgba(15,23,42,.18); }
 [data-theme="light"] .pf-card{ box-shadow:0 14px 34px rgba(10,20,40,.28); }
-[data-theme="light"] .tf-pill, [data-theme="light"] .ind-chip, [data-theme="light"] .ppill{
+[data-theme="light"] .tf-pill:not(.active), [data-theme="light"] .ind-chip:not(.active), [data-theme="light"] .ppill:not(.active){
   background:#E9EDF4; }
 [data-theme="light"] .quick-btn{ background:#fff; }
 [data-theme="light"] .chat-bar .field, [data-theme="light"] .home-search .field{ background:#fff; }
@@ -1857,9 +1885,9 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .mh-search input{ flex:1; background:none; border:0; outline:0; color:var(--text); font-size:14px; height:46px; min-width:0; }
 .mh-search .gsearch-drop{ position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:60; }
 .live-hero{ position:relative; margin:10px 14px 14px; border-radius:20px; overflow:hidden; min-height:200px;
-  display:flex; align-items:flex-end; box-shadow:var(--shadow); cursor:pointer; }
+  display:flex; align-items:flex-end; box-shadow:var(--shadow); cursor:pointer; background:#0F1B2D; }
 .live-hero-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.live-hero-grad{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.25) 0%, transparent 40%, rgba(0,0,0,.66) 100%); }
+.live-hero-grad{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,.12) 38%, rgba(0,0,0,.72) 100%); }
 .live-hero-top{ position:absolute; top:12px; left:12px; display:flex; align-items:center; gap:8px; z-index:1; }
 .live-viewers{ display:inline-flex; align-items:center; gap:5px; color:#fff; font-size:12px; font-weight:700;
   background:rgba(0,0,0,.45); border-radius:99px; padding:5px 10px; }
@@ -1867,7 +1895,7 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .live-hero-bottom h3{ font-size:20px; margin:0 0 2px; letter-spacing:-.01em; }
 .live-hero-bottom p{ font-size:12.5px; opacity:.9; margin:0 0 10px; }
 .live-hero-row{ display:flex; align-items:center; gap:10px; }
-.live-hero-name{ font-size:13.5px; font-weight:700; flex:1; }
+.live-hero-name{ font-size:13.5px; font-weight:700; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .watch-live-btn{ background:#22C55E; color:#fff; font-weight:800; font-size:13.5px; border-radius:12px; padding:10px 18px; min-height:44px; }
 .mkt-chip .mkt-ic{ width:34px; height:34px; border-radius:10px; background:var(--blue-soft); color:var(--blue);
   font-weight:800; font-size:15px; display:flex; align-items:center; justify-content:center; flex:none; }
@@ -1879,11 +1907,16 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .tt-scroll{ display:flex; gap:12px; overflow-x:auto; padding:2px 14px 16px; scroll-snap-type:x mandatory; scrollbar-width:none; }
 .tt-scroll::-webkit-scrollbar{ display:none; }
 .tt-card{ flex:0 0 148px; scroll-snap-align:start; background:var(--surface); border:1px solid var(--border);
-  border-radius:16px; padding:14px 12px; display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center; }
+  border-radius:18px; padding:14px 12px 12px; display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center;
+  box-shadow:var(--shadow); }
+.tt-card .avatar{ width:62px; height:62px; font-size:19px; }
+.tt-card .follow-btn.sm{ width:100%; }
+.tcard-stats{ display:flex; flex-direction:column; gap:2px; font-size:11.5px; color:var(--muted); margin:2px 0 4px; }
+.tcard-stats b.num{ font-size:14px; }
 .tt-id{ display:flex; flex-direction:column; align-items:center; gap:5px; min-width:0; }
 .tt-id b:first-of-type{ font-size:13.5px; }
 .tt-id .fine{ font-size:11px; }
-.follow-btn.sm{ border-radius:10px; min-height:36px; font-size:13px; font-weight:700; background:var(--blue-soft); color:var(--blue); padding:0 16px; }
+.follow-btn.sm{ border-radius:10px; min-height:36px; font-size:13px; font-weight:700; background:var(--brand); color:#fff; padding:0 16px; box-shadow:0 3px 10px rgba(34,197,94,.28); }
 .follow-btn.sm.following{ background:var(--surface-2); color:var(--muted); }
 .reels-scroll{ display:flex; gap:10px; overflow-x:auto; padding:2px 14px 16px; scrollbar-width:none; }
 .reels-scroll::-webkit-scrollbar{ display:none; }
@@ -2567,7 +2600,6 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
             <svg class="pf-spark" id="pfSpark" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div class="pf-actions">
               <button class="primary-btn" id="pfDeposit">Deposit</button>
-              <button class="ghost-btn" id="pfWithdraw">Withdraw</button>
             </div>
             <div class="pf-meta">
               <div><span>Equity</span><b class="num" id="pfEquity">$12,318.10</b></div>
@@ -2664,7 +2696,8 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
       <nav class="bottomnav" id="bottomNav" aria-label="Primary">
         <button class="tab active" data-tab="home"><span class="ic" data-icon="home"></span><span>Home</span></button>
         <button class="tab" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span><i class="tab-badge" id="posBadge" hidden></i></button>
-        <button class="tab tab-fab" data-tab="live"><span class="live-fab"><span class="ic" data-icon="live"></span></span><span>Live</span></button>
+        <button class="tab" data-tab="live"><span class="ic" data-icon="live"></span><span>Live</span><i class="live-dot"></i></button>
+        <button class="tab tab-reels" data-tab="reels"><span class="reels-fab"><span class="ic" data-icon="reel"></span></span><span>Reels</span></button>
         <button class="tab" data-tab="community"><span class="ic" data-icon="community"></span><span>Community</span></button>
         <button class="tab" data-tab="portfolio"><span class="ic" data-icon="wallet"></span><span>Portfolio</span></button>
       </nav>
@@ -3903,6 +3936,7 @@ $("lotPlus").addEventListener("click", ()=>setLots(state.lots+0.01));
 $("tpslToggle").addEventListener("click", ()=>{
   state.tpslOn = !state.tpslOn;
   $("tpslToggle").setAttribute("aria-pressed", state.tpslOn ? "true" : "false");
+  $("tpslSwitch").classList.toggle("on", state.tpslOn);
   $("tpslWrap").hidden = !state.tpslOn;
   renderTicketTick();
 });
@@ -4576,12 +4610,13 @@ const TRADERS = [
     trades:[ {s:"BTCUSD",d:"BUY",pl:88.40},{s:"ETHUSD",d:"SELL",pl:32.10},{s:"BTCUSD",d:"SELL",pl:-24.60} ] },
 ];
 const fmtK = n => n>=1000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
-/* avatar with photo (falls back to initials if the photo fails) */
+/* avatar with photo (falls back to initials if the photo fails) —
+   the initial sits underneath; the photo absolutely covers it so it can never peek out */
 function avImg(t, cls, extra){
   const c = "avatar" + (cls ? " " + cls : "");
   const g = ' style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')"';
   const img = t.pic ? '<img src="'+t.pic+'" alt="" loading="lazy" onerror="this.remove()">' : "";
-  return '<div class="'+c+'"'+g+'>'+img+t.ini+(extra||"")+'</div>';
+  return '<div class="'+c+'"'+g+'><span class="av-ini">'+t.ini+'</span>'+img+(extra||"")+'</div>';
 }
 /* --- you (the owner) on the social layer --- */
 const YOU = { rank:null, followers:1204, todayPL:0 };
@@ -4841,7 +4876,7 @@ function renderCommunityTraders(){
       const r = document.createElement("div");
       r.className = "rank-row";
       r.innerHTML =
-        '<span class="rank-n">'+(i+1)+'</span>'+
+        '<span class="rank-n'+(i<3?' medal-'+(i+1):'')+'">'+(i+1)+'</span>'+
         '<button class="rank-id" data-tprof="'+t.id+'">'+avImg(t,"sm")+
         '<span><b>'+esc(t.name)+'</b><span class="fine">'+fmtK(t.followers)+' followers</span></span></button>'+
         '<span class="rank-val num pl-pos">+'+(t.ret*periodJitter(t.id,lbPeriod)).toFixed(1)+'%</span>'+
@@ -4987,7 +5022,7 @@ $("pfCloseAll").addEventListener("click", ()=>{
   toast("All positions closed — demo");
 });
 $("pfDeposit").addEventListener("click", ()=>toast("Deposits are simulated — demo"));
-$("pfWithdraw").addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
+const pfw = $("pfWithdraw"); if(pfw) pfw.addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
 
 /* ---------------- PROFILE + BROKERS ---------------- */
 const BROKERS = [
@@ -6309,7 +6344,7 @@ function renderHomeDesk(){
   const top = TRADERS.filter(t=>!t.you).slice().sort((a,b)=>(b.ret||0)-(a.ret||0)).slice(0,4);
   const ht = $("hdTraders");
   if(ht) ht.innerHTML = top.map((t,i)=>
-    '<div class="hd-tr"><span class="rank-n">'+(i+1)+'</span>'+
+    '<div class="hd-tr"><span class="rank-n'+(i<3?' medal-'+(i+1):'')+'">'+(i+1)+'</span>'+
     '<button class="rank-id" data-tprof="'+t.id+'">'+avImg(t,"sm")+
     '<span class="hd-tr-id"><b>'+esc(t.name)+'</b><span>'+fmtK(t.followers)+' followers</span></span></button>'+
     '<span class="hd-tr-ret num">+'+t.ret.toFixed(1)+'%</span>'+
@@ -6363,11 +6398,14 @@ function renderHomeReels(){
   const row = $("homeReelsRow"); if(!row) return;
   const items = allReels().filter(({r})=>r.visibility!=="private").slice(0,8);
   if(!items.length){ row.innerHTML = '<span class="ln-empty">No reels yet — upload the first.</span>'; return; }
-  row.innerHTML = items.map(({t,r})=>
-    '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+  row.innerHTML = items.map(({t,r})=>{
+    let h = 0; for(const c of r.id) h = (h*31 + c.charCodeAt(0)) % 997;
+    const dur = "0:" + String(18 + (h % 42)).padStart(2, "0");
+    return '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+    '<span class="rt-dur">'+dur+'</span>'+
     '<span class="rt-play"><i>▶</i></span>'+
-    '<span class="rt-handle">'+esc(t.handle)+'</span>'+
-    '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views||"0")+'</span></span></button>').join("");
+    '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>'+esc(r.views||"0")+' views</span></span></button>';
+  }).join("");
   row.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
     const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
     const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
@@ -6405,7 +6443,7 @@ function renderHomeTraders(){
     '<span class="rank-badge">#'+(i+1)+'</span>'+
     '<button class="tt-id" data-tprof="'+t.id+'">'+avImg(t, "", (t.live?'<span class="trader-live">LIVE</span>':""))+
     '<b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span></button>'+
-    '<div class="tcard-stats"><span>'+fmtK(t.followers)+'</span><b class="num pl-pos">+'+t.ret.toFixed(1)+'%</b></div>'+
+    '<div class="tcard-stats"><b class="num pl-pos">+'+t.ret.toFixed(1)+'%</b><span>'+fmtK(t.followers)+' followers</span></div>'+
     '<button class="follow-btn sm'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button></div>'
   ).join("");
 }

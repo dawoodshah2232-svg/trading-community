@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=36">
+<link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
 
@@ -560,7 +560,6 @@
             <svg class="pf-spark" id="pfSpark" viewBox="0 0 200 48" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div class="pf-actions">
               <button class="primary-btn" id="pfDeposit">Deposit</button>
-              <button class="ghost-btn" id="pfWithdraw">Withdraw</button>
             </div>
             <div class="pf-meta">
               <div><span>Equity</span><b class="num" id="pfEquity">$12,318.10</b></div>
@@ -657,7 +656,8 @@
       <nav class="bottomnav" id="bottomNav" aria-label="Primary">
         <button class="tab active" data-tab="home"><span class="ic" data-icon="home"></span><span>Home</span></button>
         <button class="tab" data-tab="trade"><span class="ic" data-icon="trade"></span><span>Trade</span><i class="tab-badge" id="posBadge" hidden></i></button>
-        <button class="tab tab-fab" data-tab="live"><span class="live-fab"><span class="ic" data-icon="live"></span></span><span>Live</span></button>
+        <button class="tab" data-tab="live"><span class="ic" data-icon="live"></span><span>Live</span><i class="live-dot"></i></button>
+        <button class="tab tab-reels" data-tab="reels"><span class="reels-fab"><span class="ic" data-icon="reel"></span></span><span>Reels</span></button>
         <button class="tab" data-tab="community"><span class="ic" data-icon="community"></span><span>Community</span></button>
         <button class="tab" data-tab="portfolio"><span class="ic" data-icon="wallet"></span><span>Portfolio</span></button>
       </nav>
@@ -945,6 +945,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=36"></script>
+<script src="app.js?v=37"></script>
 </body>
 </html>

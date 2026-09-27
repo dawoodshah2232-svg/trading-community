@@ -948,6 +948,7 @@ $("lotPlus").addEventListener("click", ()=>setLots(state.lots+0.01));
 $("tpslToggle").addEventListener("click", ()=>{
   state.tpslOn = !state.tpslOn;
   $("tpslToggle").setAttribute("aria-pressed", state.tpslOn ? "true" : "false");
+  $("tpslSwitch").classList.toggle("on", state.tpslOn);
   $("tpslWrap").hidden = !state.tpslOn;
   renderTicketTick();
 });
@@ -1621,12 +1622,13 @@ const TRADERS = [
     trades:[ {s:"BTCUSD",d:"BUY",pl:88.40},{s:"ETHUSD",d:"SELL",pl:32.10},{s:"BTCUSD",d:"SELL",pl:-24.60} ] },
 ];
 const fmtK = n => n>=1000 ? (n/1000).toFixed(1).replace(/\.0$/,"")+"k" : String(n);
-/* avatar with photo (falls back to initials if the photo fails) */
+/* avatar with photo (falls back to initials if the photo fails) —
+   the initial sits underneath; the photo absolutely covers it so it can never peek out */
 function avImg(t, cls, extra){
   const c = "avatar" + (cls ? " " + cls : "");
   const g = ' style="background:linear-gradient(135deg,'+t.g[0]+','+t.g[1]+')"';
   const img = t.pic ? '<img src="'+t.pic+'" alt="" loading="lazy" onerror="this.remove()">' : "";
-  return '<div class="'+c+'"'+g+'>'+img+t.ini+(extra||"")+'</div>';
+  return '<div class="'+c+'"'+g+'><span class="av-ini">'+t.ini+'</span>'+img+(extra||"")+'</div>';
 }
 /* --- you (the owner) on the social layer --- */
 const YOU = { rank:null, followers:1204, todayPL:0 };
@@ -1886,7 +1888,7 @@ function renderCommunityTraders(){
       const r = document.createElement("div");
       r.className = "rank-row";
       r.innerHTML =
-        '<span class="rank-n">'+(i+1)+'</span>'+
+        '<span class="rank-n'+(i<3?' medal-'+(i+1):'')+'">'+(i+1)+'</span>'+
         '<button class="rank-id" data-tprof="'+t.id+'">'+avImg(t,"sm")+
         '<span><b>'+esc(t.name)+'</b><span class="fine">'+fmtK(t.followers)+' followers</span></span></button>'+
         '<span class="rank-val num pl-pos">+'+(t.ret*periodJitter(t.id,lbPeriod)).toFixed(1)+'%</span>'+
@@ -2032,7 +2034,7 @@ $("pfCloseAll").addEventListener("click", ()=>{
   toast("All positions closed — demo");
 });
 $("pfDeposit").addEventListener("click", ()=>toast("Deposits are simulated — demo"));
-$("pfWithdraw").addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
+const pfw = $("pfWithdraw"); if(pfw) pfw.addEventListener("click", ()=>toast("Withdrawals are simulated — demo"));
 
 /* ---------------- PROFILE + BROKERS ---------------- */
 const BROKERS = [
@@ -3354,7 +3356,7 @@ function renderHomeDesk(){
   const top = TRADERS.filter(t=>!t.you).slice().sort((a,b)=>(b.ret||0)-(a.ret||0)).slice(0,4);
   const ht = $("hdTraders");
   if(ht) ht.innerHTML = top.map((t,i)=>
-    '<div class="hd-tr"><span class="rank-n">'+(i+1)+'</span>'+
+    '<div class="hd-tr"><span class="rank-n'+(i<3?' medal-'+(i+1):'')+'">'+(i+1)+'</span>'+
     '<button class="rank-id" data-tprof="'+t.id+'">'+avImg(t,"sm")+
     '<span class="hd-tr-id"><b>'+esc(t.name)+'</b><span>'+fmtK(t.followers)+' followers</span></span></button>'+
     '<span class="hd-tr-ret num">+'+t.ret.toFixed(1)+'%</span>'+
@@ -3408,11 +3410,14 @@ function renderHomeReels(){
   const row = $("homeReelsRow"); if(!row) return;
   const items = allReels().filter(({r})=>r.visibility!=="private").slice(0,8);
   if(!items.length){ row.innerHTML = '<span class="ln-empty">No reels yet — upload the first.</span>'; return; }
-  row.innerHTML = items.map(({t,r})=>
-    '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+  row.innerHTML = items.map(({t,r})=>{
+    let h = 0; for(const c of r.id) h = (h*31 + c.charCodeAt(0)) % 997;
+    const dur = "0:" + String(18 + (h % 42)).padStart(2, "0");
+    return '<button class="reel-tile" data-reel="'+r.id+'" data-tid="'+t.id+'" style="--g1:'+t.g[0]+';--g2:'+t.g[1]+'">'+
+    '<span class="rt-dur">'+dur+'</span>'+
     '<span class="rt-play"><i>▶</i></span>'+
-    '<span class="rt-handle">'+esc(t.handle)+'</span>'+
-    '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>▶ '+esc(r.views||"0")+'</span></span></button>').join("");
+    '<span class="rt-meta"><b>'+esc(r.title)+'</b><span>'+esc(r.views||"0")+' views</span></span></button>';
+  }).join("");
   row.querySelectorAll(".reel-tile").forEach(tile=>tile.addEventListener("click", ()=>{
     const t = TRADERS.find(x=>x.id===tile.dataset.tid); if(!t) return;
     const r = (t.reels||[]).find(x=>x.id===tile.dataset.reel); if(!r) return;
@@ -3450,7 +3455,7 @@ function renderHomeTraders(){
     '<span class="rank-badge">#'+(i+1)+'</span>'+
     '<button class="tt-id" data-tprof="'+t.id+'">'+avImg(t, "", (t.live?'<span class="trader-live">LIVE</span>':""))+
     '<b>'+esc(t.name)+'</b><span class="handle">'+esc(t.handle)+'</span></button>'+
-    '<div class="tcard-stats"><span>'+fmtK(t.followers)+'</span><b class="num pl-pos">+'+t.ret.toFixed(1)+'%</b></div>'+
+    '<div class="tcard-stats"><b class="num pl-pos">+'+t.ret.toFixed(1)+'%</b><span>'+fmtK(t.followers)+' followers</span></div>'+
     '<button class="follow-btn sm'+(t.following?" following":"")+'" data-follow="'+t.id+'">'+(t.following?"Following":"Follow")+'</button></div>'
   ).join("");
 }
