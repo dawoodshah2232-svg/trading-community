@@ -194,7 +194,7 @@ function trackTradeClosed(pl){
 /* Trades, price alerts and broker links survive reloads.
    Everything remains demo/simulated. */
 const TRADES_KEY = "tc_trades_v1", ALERTS_KEY = "tc_alerts_v1", BROKERS_KEY = "tc_brokers_v1";
-const APP_VERSION = "25.16";
+const APP_VERSION = "25.19";
 function paintVersion(){
   const s = $("setVerLine"); if(s) s.textContent = "Trading Community · demo build · v"+APP_VERSION;
   const p = $("profVerLine"); if(p) p.textContent = "v"+APP_VERSION+" · demo build";
