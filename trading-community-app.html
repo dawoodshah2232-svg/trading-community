@@ -6224,9 +6224,9 @@ const MQ = {
       }
       if(!ok) return;
       if(this.buf.length < i+rem) return;
-      const type = this.buf[0]>>4, payload = this.buf.slice(i, i+rem);
+      const type = this.buf[0]>>4, flags = this.buf[0]&0x0F, payload = this.buf.slice(i, i+rem);
       this.buf = this.buf.slice(i+rem);
-      this.handle(type, this.buf[0] & 0x0F, payload);
+      this.handle(type, flags, payload);
     }
   },
   handle(type, flags, p){
