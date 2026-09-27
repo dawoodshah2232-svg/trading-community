@@ -1247,6 +1247,12 @@ button:focus-visible, input:focus-visible{ outline:2px solid var(--blue); outlin
 .side-pill{ flex:none; font-size:11px; font-weight:800; padding:4px 10px; border-radius:8px; }
 .side-pill.long{ color:var(--green); background:var(--green-soft); }
 .side-pill.short{ color:var(--red); background:var(--red-soft); }
+/* course view: solid app bar (not the trader-profile photo overlay) + clear the bar */
+#courseView .tprof-top{ background:var(--bg); }
+#courseView .tprof-top .icon-btn{ background:var(--surface-2); color:var(--text); }
+#courseView .tprof-top b{ color:var(--text); }
+#courseView .tprof-top .demo-tag{ background:var(--blue-soft); color:var(--blue); }
+#courseBody{ padding-top:66px; }
 .lesson-row .l-info{ flex:1; } .lesson-row b{ font-size:13.5px; display:block; }
 .lesson-row span{ font-size:12px; color:var(--muted); }
 .lesson-body{ font-size:14px; line-height:1.65; }

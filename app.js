@@ -2880,7 +2880,7 @@ try{ courseProg = JSON.parse(localStorage.getItem("tc_prog_v1")||"{}"); }catch(e
 function saveProg(){ try{ localStorage.setItem("tc_prog_v1", JSON.stringify(courseProg)); }catch(e){} }
 function courseDoneCount(c){ return c.lessons.filter((_,i)=>courseProg[c.id+":"+i]).length; }
 function renderCourses(){
-  ["courseList","classesPageList"].forEach(lid=>{
+  ["courseList","homeCourseList","classesPageList","hdCourses"].forEach(lid=>{
     const list = $(lid); if(!list) return;
     list.innerHTML = "";
     COURSES.forEach(c=>{
