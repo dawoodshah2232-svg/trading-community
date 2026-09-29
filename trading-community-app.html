@@ -3778,7 +3778,7 @@ body.rtl{ direction:rtl; }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="vendor/lightweight-charts.standalone.production.js"></script>
 <script>
 /* ============================================================
    Trading Community — trading terminal (FULL REBUILD)
@@ -3786,7 +3786,7 @@ body.rtl{ direction:rtl; }
    Random-walk price engine, mock fills, mock brokers, mock
    chat/feed/alerts. No real market data, no real broker, no
    real auth. The chart is self-hosted on Lightweight Charts
-   v4.2.3 (CDN) and fed by the same simulated engine below —
+   v5.2.1 (vendored) and fed by the same simulated engine below —
    there is no external chart provider anymore.
    ============================================================ */
 (function(){
@@ -4505,7 +4505,7 @@ function renderSheetTick(){
   });
 }
 
-/* ---------------- SELF-HOSTED CHART — Lightweight Charts v4.2.3 ----------------
+/* ---------------- SELF-HOSTED CHART — Lightweight Charts v5.2.1 ----------------
    The TradingView widget iframe was removed (it errored on real devices).
    Candles are generated from the same simulated price engine, seeded per
    symbol+timeframe so the history looks real. EVERYTHING REMAINS MOCK. */
@@ -4597,8 +4597,8 @@ function buildMainChartNow(host){
   try{ Object.keys(indPanes).forEach(dropIndPane); }catch(e){}
   indBuilt = null; indSig = ""; indSyncBound = false;
   lw.chart = LW().createChart(host, Object.assign({ width:host.clientWidth, height:host.clientHeight }, lwTheme()));
-  lw.candles = lw.chart.addCandlestickSeries(lwCandleOpts());
-  lw.volume = lw.chart.addHistogramSeries({ priceScaleId:"vol", priceFormat:{ type:"volume" } });
+  lw.candles = lw.chart.addSeries(LW().CandlestickSeries, lwCandleOpts());
+  lw.volume = lw.chart.addSeries(LW().HistogramSeries, { priceScaleId:"vol", priceFormat:{ type:"volume" } });
   lw.chart.priceScale("vol").applyOptions({ scaleMargins:{ top:0.84, bottom:0 } });
   refreshMainData();
   lw.chart.subscribeCrosshairMove(onMainCrosshair);
@@ -4704,7 +4704,7 @@ function buildLiveChart(){
   try{
     host.innerHTML = "";
     lw.liveChart = LW().createChart(host, Object.assign({ width:host.clientWidth||300, height:host.clientHeight||300 }, lwTheme()));
-    lw.liveCandles = lw.liveChart.addCandlestickSeries(lwCandleOpts());
+    lw.liveCandles = lw.liveChart.addSeries(LW().CandlestickSeries, lwCandleOpts());
     lw.liveBars = genBars("XAUUSD", "5m").bars;
     lw.liveCandles.setData(lw.liveBars);
     lw.liveChart.timeScale().scrollToRealTime();
@@ -4714,7 +4714,7 @@ function buildLiveChart(){
     if(stg && !lw.stageChart){
       stg.innerHTML = "";
       lw.stageChart = LW().createChart(stg, Object.assign({ width:stg.clientWidth||300, height:stg.clientHeight||300 }, lwTheme()));
-      lw.stageCandles = lw.stageChart.addCandlestickSeries(lwCandleOpts());
+      lw.stageCandles = lw.stageChart.addSeries(LW().CandlestickSeries, lwCandleOpts());
       lw.stageCandles.setData(lw.liveBars);
       lw.stageChart.timeScale().scrollToRealTime();
       new ResizeObserver(()=>{ if(lw.stageChart && stg.clientWidth) lw.stageChart.resize(stg.clientWidth, stg.clientHeight); }).observe(stg);
@@ -9460,7 +9460,7 @@ function fullRebuildInd(data){
   const L = LW();
   clearIndOverlays();
   data.overlays.forEach(o=>{
-    const s = lw.chart.addLineSeries({ color:o.color, lineWidth:o.width, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+    const s = lw.chart.addSeries(LW().LineSeries, { color:o.color, lineWidth:o.width, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
     s.setData(o.data); indOverlaySeries.push(s);
   });
   Object.keys(indPanes).forEach(id=>{ if(!data.panes[id]) dropIndPane(id); });
@@ -9470,9 +9470,9 @@ function fullRebuildInd(data){
     P.series = {};
     pd.items.forEach((it,i)=>{
       let s;
-      if(it.kind === "hist") s = P.chart.addHistogramSeries({ priceLineVisible:false, lastValueVisible:false });
-      else if(it.kind === "band") s = P.chart.addLineSeries({ color:"rgba(148,163,184,0.45)", lineWidth:1, lineStyle:L.LineStyle.Dashed, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
-      else s = P.chart.addLineSeries({ color:it.color, lineWidth:it.width, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+      if(it.kind === "hist") s = P.chart.addSeries(LW().HistogramSeries, { priceLineVisible:false, lastValueVisible:false });
+      else if(it.kind === "band") s = P.chart.addSeries(LW().LineSeries, { color:"rgba(148,163,184,0.45)", lineWidth:1, lineStyle:L.LineStyle.Dashed, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+      else s = P.chart.addSeries(LW().LineSeries, { color:it.color, lineWidth:it.width, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
       s.setData(it.data); P.series["s"+i] = s;
     });
     P.valEl.textContent = pd.valTxt;
