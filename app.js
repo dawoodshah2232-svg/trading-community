@@ -14,6 +14,22 @@
 const $ = id => document.getElementById(id);
 const $$ = (sel, root) => Array.from((root||document).querySelectorAll(sel));
 
+/* QA 2026-09-29: client-side anti-spam throttle for the demo's public forms.
+   The demo is fully static (no backend), so this is a local flood guard:
+   a minimum gap between submits per form kind plus a per-minute burst cap.
+   Returns true when the submit may proceed. */
+const _spamHits = {};
+function tcSpamGuard(kind, minGapMs, burstPerMin){
+  const now = Date.now(), arr = _spamHits[kind] || (_spamHits[kind] = []);
+  while(arr.length && now - arr[0] > 60000) arr.shift();
+  if((arr.length && now - arr[arr.length-1] < minGapMs) || arr.length >= burstPerMin){
+    if(typeof toast === "function") toast("Slow down a little — demo");
+    return false;
+  }
+  arr.push(now);
+  return true;
+}
+
 /* ============================================================
    AUTH DISABLED for demo — re-enable later.
    The app opens straight into the terminal. The old auth flow
@@ -1764,6 +1780,7 @@ $("chatInput").addEventListener("keydown", e=>{ if(e.key==="Enter") sendChat(); 
 function sendChat(){
   const inp = $("chatInput"), v = inp.value.trim();
   if(!v) return;
+  if(!tcSpamGuard("chat", 2000, 20)) return;
   const you = TRADERS.find(t=>t.you), nm = you ? you.name : "You";
   if(youLive.active && myLiveId){
     MQ.publish(MQ_NS+"live/"+myLiveId+"/chat", {from:myDeviceId, name:nm, text:v, ts:Date.now()});
@@ -2130,6 +2147,7 @@ function closeSchedSheet(){
   if($("symbolSheet").hidden && $("notifSheet").hidden) $("backdrop").hidden = true;
 }
 function saveSchedForm(){
+  if(!tcSpamGuard("sched", 30000, 5)) return;
   const title = ($("schedTitle").value||"").trim().slice(0,60) || "My live stream";
   const v = $("schedAt").value, at = v ? new Date(v) : null;
   if(!at || isNaN(at.getTime()) || at.getTime() < Date.now()-60e3){ toast("Pick a future date & time — demo"); return; }
@@ -2212,6 +2230,7 @@ function closePollSheet(){
   if($("symbolSheet").hidden && $("notifSheet").hidden) $("backdrop").hidden = true;
 }
 function launchPoll(){
+  if(!tcSpamGuard("poll", 30000, 3)) return;
   const q = ($("pollQ").value||"").trim().slice(0,80) || "XAUUSD up or down next?";
   const a = ($("pollOptA").value||"").trim().slice(0,24) || "Up";
   const b = ($("pollOptB").value||"").trim().slice(0,24) || "Down";
@@ -3084,6 +3103,7 @@ document.addEventListener("click", e=>{
 $("composerPost").addEventListener("click", ()=>{
   const inp = $("composerInput");
   const v = inp.value.trim(); if(!v){ toast("Write something first"); return; }
+  if(!tcSpamGuard("post", 5000, 12)) return;
   MOCK_POSTS.unshift({ id:"p"+Date.now(), tid:"you", time:"now", likes:0, liked:false, body:v, comments:[] });
   inp.value = "";
   renderPosts();
@@ -4989,6 +5009,7 @@ $("reelTitleBg").addEventListener("click", hideReelUpload);
 $("reelTitleCancel").addEventListener("click", hideReelUpload);
 $("reelTitleSave").addEventListener("click", ()=>{
   if(!pendingReelFile) return;
+  if(!tcSpamGuard("reel", 30000, 5)) return;
   const title = ($("reelTitleInput").value || "").trim().slice(0,80) || cleanFileName(pendingReelFile.name);
   const desc = ($("reelDescInput").value || "").trim().slice(0,300);
   const tags = parseTags($("reelTagsInput").value);
@@ -6137,6 +6158,7 @@ function sendDm(){
   const inp = $("dmInput");
   const txt = inp ? (inp.value || "").trim() : "";
   if(!txt || !dmOpenTid) return;
+  if(!tcSpamGuard("dm", 2000, 20)) return;
   const tid = dmOpenTid;
   const d = dmEnsure();
   d.threads[tid].push({ from:"you", text:txt, time:dmNow() });
@@ -6424,12 +6446,15 @@ document.addEventListener("click", e=>{
 });
 const vfyApply = $("vfyApply");
 if(vfyApply) vfyApply.addEventListener("click", ()=>{
+  if(!tcSpamGuard("vfy", 60000, 2)) return;
   let h = (($("vfyHandle")||{}).value || "").trim();
   if(!h){ toast("Enter a trading handle — demo"); return; }
   if(h[0] !== "@") h = "@"+h;
   h = h.toLowerCase();
+  const link = (($("vfyLink")||{}).value||"").trim();
+  if(link && !/^https?:\/\//i.test(link)){ toast("Profile link must start with http(s):// — demo"); return; }
   const apps = verifyList();
-  apps.push({ handle:h, specialty:(($("vfySpec")||{}).value||"").trim(), link:(($("vfyLink")||{}).value||"").trim(), status:"pending", ts:Date.now() });
+  apps.push({ handle:h, specialty:(($("vfySpec")||{}).value||"").trim(), link, status:"pending", ts:Date.now() });
   gStoreSet("tc_verify_v1", apps); renderVerify();
   ["vfyHandle","vfySpec","vfyLink"].forEach(id=>{ const el=$(id); if(el) el.value=""; });
   toast("Application received — demo");
