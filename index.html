@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#05080F">
 <title>Trading Community — Live Trading Terminal</title>
-<link rel="stylesheet" href="styles.css?v=55">
+<link rel="stylesheet" href="styles.css?v=56">
 </head>
 <body>
 
@@ -129,7 +129,7 @@
             </div>
             <div class="hd-side">
               <div class="hd-acct">
-                <div class="hd-acct-head"><b>Your Account</b><span class="acct-tag">Real Account</span></div>
+                <div class="hd-acct-head"><b>Your Account</b><span class="acct-tag">Demo Account</span></div>
                 <span class="fine">Equity</span>
                 <div class="hd-eq num" id="hdEquity">$12,450.32</div>
                 <div class="hd-eq-chg num pl-pos" id="hdEqChg">+2.35% (+$285.40)</div>
@@ -295,8 +295,8 @@
                 <button class="exec buy" id="buyBtn"><span>BUY</span><b class="num" id="buyPx">—</b></button>
                 <button class="exec sell" id="sellBtn"><span>SELL</span><b class="num" id="sellPx">—</b></button>
               </div>
-              <div class="risk-line">Est. Margin <b class="num" id="estMargin">$0.00</b><span class="sep">·</span>Leverage <b class="num">1:500</b></div>
-              <p class="fine">Demo execution — no real orders are placed.</p>
+              <div class="risk-line">Est. Margin <b class="num" id="estMargin">$0.00</b><span class="sep">·</span>Leverage <b class="num">1:100</b></div>
+              <p class="fine">Paper trading — virtual $10,000 account, no real orders are placed. Pending/TP/SL fills use the trigger price; real markets can gap or slip.</p>
               </div>
             </div>
             <div class="trade-side">
@@ -697,7 +697,7 @@
           </div>
           <div class="sec-head"><h3>Account Overview</h3></div>
           <div class="pf-ov-grid">
-            <div class="pf-ov-cell"><span>Real Account</span><b class="num" id="pfOvBalance">$12,450.32</b></div>
+            <div class="pf-ov-cell"><span>Demo Account</span><b class="num" id="pfOvBalance">$12,450.32</b></div>
             <div class="pf-ov-cell"><span>Total P/L</span><b class="num" id="pfOvPL">+$386.51</b></div>
             <div class="pf-ov-cell"><span>Open Trades</span><b class="num" id="pfOvOpen">2</b></div>
             <div class="pf-ov-cell"><span>Margin Level</span><b class="num" id="pfOvLevel">386.5%</b></div>
@@ -914,18 +914,10 @@
     <button class="modal-x" id="brokerModalX" aria-label="Close"><span class="ic sm" data-icon="x"></span></button>
     <div class="broker-ic lg" id="brokerModalIc">EX</div>
     <h3 id="brokerModalName">Exness</h3>
-    <p class="modal-sub">Log in to link your account <span class="demo-tag">demo</span></p>
-    <label class="fld-label">Login / account number
-      <input class="field" id="brokerLogin" inputmode="numeric" placeholder="e.g. 12345678" autocomplete="off">
-    </label>
-    <label class="fld-label">Password
-      <input class="field" id="brokerPass" type="password" placeholder="••••••••" autocomplete="off">
-    </label>
-    <label class="fld-label">Server
-      <input class="field" id="brokerServer" placeholder="e.g. Exness-MT5Real" autocomplete="off">
-    </label>
-    <button class="primary-btn" id="brokerConnectGo">Connect</button>
-    <p class="auth-fine">Demo — credentials never leave your device.</p>
+    <p class="modal-sub">Simulated broker link <span class="demo-tag">demo</span></p>
+    <p class="fine" style="margin:10px 0 16px">This creates a <b>simulated</b> link for paper-trading mirrors. No real broker connection, no real account — we never ask for trading passwords.</p>
+    <button class="primary-btn" id="brokerConnectGo">Link (demo)</button>
+    <p class="auth-fine">Demo only — nothing is sent anywhere.</p>
   </div>
 </div>
 
@@ -1283,6 +1275,6 @@
 </div>
 
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
-<script src="app.js?v=55"></script>
+<script src="app.js?v=56"></script>
 </body>
 </html>

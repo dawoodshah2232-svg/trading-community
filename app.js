@@ -113,7 +113,6 @@ const START_BALANCE = 10000;
 const state = {
   sym:"XAUUSD", tf:"1m",
   ttype:"market", dir:"buy", lots:0.10, tpslOn:true,
-  lev:500,
   prices:{}, hist:{}, depth:{},
   open:[], pending:[], history:[],
   alerts:[], alertSeq:1, orderSeq:1,
@@ -194,7 +193,7 @@ function trackTradeClosed(pl){
 /* Trades, price alerts and broker links survive reloads.
    Everything remains demo/simulated. */
 const TRADES_KEY = "tc_trades_v1", ALERTS_KEY = "tc_alerts_v1", BROKERS_KEY = "tc_brokers_v1";
-const APP_VERSION = "25.20";
+const APP_VERSION = "25.21";
 function paintVersion(){
   const s = $("setVerLine"); if(s) s.textContent = "Trading Community · demo build · v"+APP_VERSION;
   const p = $("profVerLine"); if(p) p.textContent = "v"+APP_VERSION+" · demo build";
@@ -878,6 +877,10 @@ async function refreshMainData(){
   else { const d = genBars(s, tf); bars = d.bars; vols = d.vols; }
   state.dataReal[s] = real;
   lw.bars = bars; lw.vols = vols;
+  /* F-02/F-03: volume is optional — hide the series when the provider has no true per-bar volume.
+     Never invent volume from timer ticks. */
+  lw.hasVol = !!(vols && vols.length);
+  try{ lw.volume.applyOptions({ visible: lw.hasVol }); }catch(e){}
   lw.candles.setData(bars);
   lw.volume.setData(vols);
   lw.chart.timeScale().scrollToRealTime();
@@ -891,6 +894,7 @@ function applyChartTheme(){
   if(!LW()) return;
   if(lw.chart) lw.chart.applyOptions(lwTheme());
   if(lw.liveChart) lw.liveChart.applyOptions(lwTheme());
+  if(lw.stageChart) lw.stageChart.applyOptions(lwTheme()); /* live-stage background chart follows the theme too */
   try{ Object.values(indPanes).forEach(P=>P.chart.applyOptions(lwTheme())); }catch(e){}
 }
 function onMainCrosshair(param){
@@ -949,15 +953,19 @@ function updateChartTick(){
     if(bt > last.time){
       last = { time:bt, open:last.close, high:Math.max(last.close,p), low:Math.min(last.close,p), close:p };
       lw.bars.push(last); lw.candles.update(last);
-      const up = p>=last.open;
-      const v = { time:bt, value:0.05, color: up?"rgba(34,197,94,0.32)":"rgba(239,68,68,0.32)" };
-      lw.vols.push(v); lw.volume.update(v);
-      if(lw.bars.length > N_BARS+20){ lw.bars.shift(); lw.vols.shift(); }
+      if(lw.hasVol){ /* only real per-bar volume ever reaches the series — never timer-invented */
+        const up = p>=last.open;
+        const v = { time:bt, value:0.05, color: up?"rgba(34,197,94,0.32)":"rgba(239,68,68,0.32)" };
+        lw.vols.push(v); lw.volume.update(v);
+      }
+      if(lw.bars.length > N_BARS+20){ lw.bars.shift(); if(lw.hasVol) lw.vols.shift(); }
     }else{
       last.close = p; if(p>last.high) last.high = p; if(p<last.low) last.low = p;
       lw.candles.update(last);
-      const lv = lw.vols[lw.vols.length-1];
-      lv.value = +(lv.value+0.01).toFixed(2); lw.volume.update(lv);
+      if(lw.hasVol){
+        const lv = lw.vols[lw.vols.length-1];
+        if(lv){ lv.value = +(lv.value+0.01).toFixed(2); lw.volume.update(lv); }
+      }
     }
     updateLegend(last);
   }
@@ -1233,12 +1241,47 @@ function renderTicketTick(){
 }
 function estMarginSafe(){ try{ return estMargin(); }catch(e){ return 0; } }
 
+/* F-13: one validation gate for every order entry path (Buy/Sell buttons).
+   Paper-trading rules: live market session, lot limits, SL/TP side + minimum
+   distance, and sufficient free margin. F-15: pending/protection fills use the
+   requested price in this simulator — real markets can gap/slip; that is
+   disclosed on the ticket, not hidden in the fill. */
+const MIN_LOTS = 0.01, MAX_LOTS = 50;
+function validateOrder(){
+  const s = state.sym, dir = state.dir.toUpperCase();
+  if(state.ttype === "market" && !mktOpen(s))
+    return "Market is closed for "+s+" — paper orders trade the live session only";
+  const lots = state.lots;
+  if(!(lots >= MIN_LOTS) || lots > MAX_LOTS)
+    return "Lot size must be "+MIN_LOTS+"–"+MAX_LOTS;
+  if(state.tpslOn){
+    const tpV = parseFloat($("tpPrice").value), slV = parseFloat($("slPrice").value);
+    let ref;
+    if(state.ttype === "market") ref = dir==="BUY" ? px(s).ask : px(s).bid;
+    else { ref = parseFloat($("tPrice").value); if(!(ref > 0)) return "Enter a valid "+state.ttype+" price"; }
+    const minDist = (meta(s).spread || 0) * 2;
+    if(!isNaN(tpV)){
+      if(!(dir==="BUY" ? tpV > ref : tpV < ref)) return "Take profit must sit on the profit side of entry";
+      if(Math.abs(tpV-ref) < minDist) return "Take profit too close to entry (min "+fmtP(s,minDist)+")";
+    }
+    if(!isNaN(slV)){
+      if(!(dir==="BUY" ? slV < ref : slV > ref)) return "Stop loss must sit on the loss side of entry";
+      if(Math.abs(slV-ref) < minDist) return "Stop loss too close to entry (min "+fmtP(s,minDist)+")";
+    }
+  }
+  const need = estMarginSafe(), free = equity() - usedMargin();
+  if(need > free) return "Insufficient margin — need "+fmt$(need)+", free "+fmt$(free);
+  return null;
+}
+
 function linkedBroker(){
   return BROKERS.find(b=>b.connected) || null;
 }
 function execute(){
   const s = state.sym, dir = state.dir.toUpperCase();
   const lots = state.lots;
+  const vErr = validateOrder(); /* F-13: every entry path passes the same gate */
+  if(vErr){ toast(vErr); return; }
   let tp = null, sl = null;
   if(state.tpslOn){
     const tpV = parseFloat($("tpPrice").value), slV = parseFloat($("slPrice").value);
@@ -1253,7 +1296,7 @@ function execute(){
     state.open.push({
       id:"o"+(state.orderSeq++), sym:s, dir, lots, entry, tp, sl,
       time:new Date(),
-      mirror: lb ? { broker: lb.name, ms: 40 + Math.round(Math.random()*100) } : null
+      mirror: lb ? { broker: lb.name } : null
     });
     renderPositions();
     saveTrades();
@@ -1297,7 +1340,7 @@ function fillPending(){
     state.open.push({
       id:"o"+(state.orderSeq++), sym:o.sym, dir:o.dir, lots:o.lots, entry:o.price,
       tp:o.tp, sl:o.sl, time:new Date(),
-      mirror: lb ? { broker: lb.name, ms: 40 + Math.round(Math.random()*100) } : null
+      mirror: lb ? { broker: lb.name } : null
     });
     toast(o.type+" "+o.sym+" filled @ "+fmtP(o.sym,o.price)+" — demo");
   });
@@ -1474,7 +1517,7 @@ function renderPositions(){
     const mb = p.copy
       ? '<div class="copy-badge"><span class="mdot"></span>Copied from '+esc(p.copy.from)+' · auto</div>'
       : p.mirror
-      ? '<div class="mirror-badge"><span class="mdot"></span>Mirrored to '+esc(p.mirror.broker)+' · '+p.mirror.ms+'ms</div>'
+      ? '<div class="mirror-badge"><span class="mdot"></span>Simulated mirror to '+esc(p.mirror.broker)+' — demo</div>'
       : '<div class="mirror-badge demo"><span class="mdot"></span>Demo fill — connect a broker to mirror</div>';
     card.innerHTML =
       '<div class="pos-top"><span class="pos-sym">'+p.sym+'</span>'+
@@ -3512,10 +3555,8 @@ function openBrokerModal(i){
   const b = BROKERS[i];
   $("brokerModalIc").innerHTML = brokerLogoHTML(b, "lg");
   $("brokerModalName").textContent = b.name;
-  $("brokerLogin").value = ""; $("brokerPass").value = "";
-  $("brokerServer").value = b.server;
   const go = $("brokerConnectGo");
-  go.disabled = false; go.textContent = "Connect";
+  go.disabled = false; go.textContent = "Link (demo)";
   const m = $("brokerModal");
   m.hidden = false; m.style.display = ""; /* belt & braces with the [hidden] CSS rule */
 }
@@ -5462,7 +5503,6 @@ function renderYouIdentity(){
   document.getElementById("tcName").addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
   setTimeout(function(){ var inp = document.getElementById("tcName"); if(inp) inp.focus(); }, 300);
 })();
-      if(er) er.hidden = false;
 /* ================= INDICATORS (real-time, computed on chart candles) =================
    The mostly-used set with industry-standard defaults. Overlay indicators draw on
    the price chart; oscillators get their own synced panes below it. Values are real
@@ -5826,6 +5866,7 @@ function updateDataBadges(){
   if(pill){
     pill.className = "mkt-pill " + (open ? "open" : "closed");
     pill.innerHTML = "<i></i>" + (open ? "LIVE" : "MARKET CLOSED");
+    pill.title = "Market session: " + (open ? "open" : "closed") + " — session state only, not feed health";
   }
   const badge = $("dataBadge");
   if(badge){
@@ -5835,14 +5876,21 @@ function updateDataBadges(){
     const ts = state.quoteAt[s] ? new Date(state.quoteAt[s]).toLocaleString() : "";
     let src = kind === "live" ? "CoinGecko" : kind === "daily" ? "open.er-api.com" : "";
     if(!src) src = CG_IDS[s] ? "CoinGecko" : "open.er-api.com"; /* known provider even before first quote */
+    /* F-10: quote freshness is separate from market session — a stale quote is never called live */
+    const quoteMs = state.quoteAt[s] ? Date.now()-state.quoteAt[s] : Infinity;
+    const staleLive = kind === "live" && quoteMs > 180000;
     if(!open){
       badge.className = "data-badge sim";
       badge.textContent = "Frozen · last price";
       badge.title = ts ? "Last real quote: "+ts+" via "+src : "Market closed — source: "+src;
+    }else if(staleLive){
+      badge.className = "data-badge sim";
+      badge.textContent = "Stale"+ageTxt;
+      badge.title = "Feed stale — last quote "+ts+" via "+src+". Not live data.";
     }else if(kind === "live"){
       badge.className = "data-badge live";
       badge.textContent = "Real-time"+ageTxt;
-      badge.title = "Source: CoinGecko"+(ts ? " · updated "+ts : "");
+      badge.title = "Source: CoinGecko · sampled price history (OHLC built from price samples, not exchange ticks)"+(ts ? " · updated "+ts : "");
     }else if(kind === "daily"){
       badge.className = "data-badge sim";
       badge.textContent = "Daily indicative"+ageTxt;
@@ -5862,7 +5910,7 @@ function updateDataBadges(){
   if(inl){
     const kind = state.live[s];
     inl.textContent = state.dataReal[s]
-      ? "Computed live on real market candles."
+      ? "Computed live on sampled market candles (CoinGecko price samples, not exchange ticks)."
       : "Computed on simulated history — price feed is " +
         (kind === "live" ? "real-time." : kind === "daily" ? "a daily indicative anchor." : "simulated.");
   }
