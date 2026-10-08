@@ -18,6 +18,8 @@ Status derived from `git log` (v25.21, 2026-09-29) + current repo state. Unknown
 
 ## Next / TODO
 
+- [ ] **SEO follow-ups (owner actions in Search Console UI — repo-side done):** (a) verify https://trade.flexspot.lol as a property in Google Search Console, then paste the issued `<meta name="google-site-verification" content="...">` tag at the marked placeholder in `index.html` head; (b) submit `https://trade.flexspot.lol/sitemap.xml` in Sitemaps; (c) request indexing for `/`, `/privacy.html`, `/terms.html`; (d) check the Enhancements/CWV report after a week of real traffic. Nothing here needs code changes — all repo-side SEO is committed.
+- [ ] **Backlink strategy (earn via content only — NEVER buy links, NEVER spam):** publish original trading-education content (reels highlights, class lesson summaries, economic-calendar explainers) on the site and share natively on Dawood's own channels (IG @daudtradefx, YouTube @daudtradefx, trading community Telegram); earn links from event/partner pages (ProFX Media events, Trading Expo sites) where a real relationship exists; submit to legitimate directories only if editorially reviewed. No link schemes, no paid placements, no comment spam.
 - [ ] Update `README.md` — it describes the old UI terminal build and a TradingView chart; reality is v25.21 with vendored Lightweight Charts (verify before rewriting)
 - [ ] Script the `trading-community-app.html` inline build — today it is hand-generated and goes stale when `index.html`/`app.js` change
 - [ ] Run `node tests/p0-regress.mjs` after every app.js change (nothing runs automatically; no CI)

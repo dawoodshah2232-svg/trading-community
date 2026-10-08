@@ -3503,12 +3503,12 @@ $("pfShare").addEventListener("click", ()=>{
 
 /* ---------------- PROFILE + BROKERS ---------------- */
 const BROKERS = [
-  { name:"Exness",     sub:"MT4 / MT5",            g:["#2F80FF","#1B5FD6"], ini:"EX", server:"Exness-MT5Real", connected:false, logo:"assets/brokers/exness.png" },
-  { name:"Vantage",    sub:"MT4 / MT5",            g:["#22C55E","#166534"], ini:"VA", server:"Vantage-MT5",     connected:false, logo:"assets/brokers/vantage.png" },
-  { name:"IC Markets", sub:"MT4 / MT5 · cTrader",  g:["#5B8DEF","#2B4A8A"], ini:"IC", server:"ICMarkets-MT5",  connected:false, logo:"assets/brokers/icmarkets.png" },
-  { name:"XM",         sub:"MT4 / MT5",            g:["#B678F0","#5E2B8A"], ini:"XM", server:"XM-MT5",          connected:false, logo:"assets/brokers/xm.png" },
-  { name:"OctaFX",     sub:"MT4 / MT5",            g:["#F5A623","#B26A00"], ini:"OC", server:"OctaFX-MT5",     connected:false, logo:"assets/brokers/octafx.png" },
-  { name:"FBS",        sub:"MT4 / MT5",            g:["#F04452","#8A1F28"], ini:"FB", server:"FBS-MT5",         connected:false, logo:"assets/brokers/fbs.png" }
+  { name:"Exness",     sub:"MT4 / MT5",            g:["#2F80FF","#1B5FD6"], ini:"EX", server:"Exness-MT5Real", connected:false, logo:"assets/brokers/exness.webp" },
+  { name:"Vantage",    sub:"MT4 / MT5",            g:["#22C55E","#166534"], ini:"VA", server:"Vantage-MT5",     connected:false, logo:"assets/brokers/vantage.webp" },
+  { name:"IC Markets", sub:"MT4 / MT5 · cTrader",  g:["#5B8DEF","#2B4A8A"], ini:"IC", server:"ICMarkets-MT5",  connected:false, logo:"assets/brokers/icmarkets.webp" },
+  { name:"XM",         sub:"MT4 / MT5",            g:["#B678F0","#5E2B8A"], ini:"XM", server:"XM-MT5",          connected:false, logo:"assets/brokers/xm.webp" },
+  { name:"OctaFX",     sub:"MT4 / MT5",            g:["#F5A623","#B26A00"], ini:"OC", server:"OctaFX-MT5",     connected:false, logo:"assets/brokers/octafx.webp" },
+  { name:"FBS",        sub:"MT4 / MT5",            g:["#F04452","#8A1F28"], ini:"FB", server:"FBS-MT5",         connected:false, logo:"assets/brokers/fbs.webp" }
 ];
 /* broker logo tile: real logo image; falls back to the gradient monogram if the image fails */
 function brokerLogoHTML(b, cls){
@@ -3726,7 +3726,7 @@ function igProfileHTML(t){
   const copyingThis = copyState.on && copyState.host === t.id;
   const ret = t.ret != null ? t.ret : 0;
   return ''+
-  '<div class="tp-cover"><img src="https://picsum.photos/seed/tpcover-'+t.id+'/800/300" alt="" loading="lazy"><div class="tp-cover-grad"></div></div>'+
+  '<div class="tp-cover"><img src="assets/img/live-hero.webp" width="1280" height="720" alt="" loading="lazy" decoding="async"><div class="tp-cover-grad"></div></div>'+
   '<div class="tp-head">'+
     '<div class="tp-av">'+avImg(t, "xl", (t.live?'<span class="trader-live">LIVE</span>':''))+'</div>'+
     '<b class="tp-name">'+esc(t.name)+(t.kycVerified?' <span class="verified">✓</span>':'')+(typeof verifiedSet==="function"&&verifiedSet().has(String(t.handle||"").toLowerCase())?' <span class="verified" title="Verified Pro · demo">✓</span>':'')+'</b>'+
@@ -5217,7 +5217,7 @@ function renderHomeDesk(){
   const reels = allReels().filter(({r})=>r.visibility!=="private").slice(0,4);
   const hr = $("hdReels");
   if(hr) hr.innerHTML = reels.map(({t,r},i)=>
-    '<button class="hd-reel" data-hr="'+i+'"><img src="https://picsum.photos/seed/hdreel'+r.id+'/300/420" alt="" loading="lazy">'+
+    '<button class="hd-reel" data-hr="'+i+'"><img src="assets/img/live-hero.webp" width="1280" height="720" alt="" loading="lazy" decoding="async">'+
     '<span class="rm-grad"></span><span class="rm-tx"><b>'+esc(r.title||"Reel")+'</b><span>▶ '+esc(r.views||"0")+'</span></span>'+
     '<span class="rm-dur num">0:'+(28+i*7)+'</span></button>').join("");
   if(hr) hr.querySelectorAll("[data-hr]").forEach(b=>b.addEventListener("click", ()=>{

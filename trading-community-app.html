@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#060A13">
 <meta name="description" content="Trade.FlexSpot — a live trading community demo terminal. Paper-trade simulated markets, watch live rooms, and learn with other traders. All prices are simulated; not financial advice.">
+<link rel="canonical" href="https://trade.flexspot.lol/">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-<meta name="og:title" content="Trade.FlexSpot — Live Trading Community (Demo)">
-<meta name="og:description" content="Paper-trade simulated markets, watch live rooms, and learn with other traders. Demo build — all prices simulated.">
-<meta name="og:type" content="website">
-<meta name="og:url" content="https://trade.flexspot.lol/">
-<meta name="og:image" content="https://trade.flexspot.lol/assets/og-card.png">
-<meta name="og:image:width" content="1200">
-<meta name="og:image:height" content="630">
+<meta property="og:title" content="Trade.FlexSpot — Live Trading Community (Demo)">
+<meta property="og:description" content="Paper-trade simulated markets, watch live rooms, and learn with other traders. Demo build — all prices simulated.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://trade.flexspot.lol/">
+<meta property="og:image" content="https://trade.flexspot.lol/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Trade.FlexSpot — Live Trading Community (Demo)">
 <meta name="twitter:description" content="Paper-trade simulated markets, watch live rooms, and learn with other traders. Demo build — all prices simulated.">
@@ -32,6 +33,8 @@
 
 /* hidden attribute must always win over display rules (modals, sheets) */
 [hidden]{ display:none !important; }
+.vh{ position:absolute !important; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+html,body{ overflow-x:clip; }
 
 /* ---------- theme tokens ---------- */
 :root, [data-theme="dark"]{
@@ -2522,6 +2525,15 @@ body.rtl{ direction:rtl; }
 .live-pill.sm{ font-size:10px; padding:3px 9px; }
 
 </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebSite","@id":"https://trade.flexspot.lol/#website","url":"https://trade.flexspot.lol/","name":"Trade.FlexSpot","inLanguage":"en","description":"Trade.FlexSpot is a demo trading-community terminal: paper-trade simulated markets, watch live rooms, and learn with other traders. All prices are simulated; not financial advice."},
+{"@type":"WebApplication","name":"Trade.FlexSpot \u2014 Live Trading Community (Demo)","url":"https://trade.flexspot.lol/","applicationCategory":"FinanceApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript","isPartOf":{"@id":"https://trade.flexspot.lol/#website"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Demo trading-community terminal with simulated paper trading, live rooms, reels, and trading classes. All prices simulated; not financial advice."},
+{"@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"Home","item":"https://trade.flexspot.lol/"},
+{"@type":"ListItem","position":2,"name":"Privacy Policy","item":"https://trade.flexspot.lol/privacy.html"},
+{"@type":"ListItem","position":3,"name":"Terms of Use","item":"https://trade.flexspot.lol/terms.html"}]}]}
+</script>
 </head>
 <body>
 
@@ -2573,6 +2585,7 @@ body.rtl{ direction:rtl; }
 
         <!-- ============ HOME ============ -->
         <section class="screen active" id="screen-home" aria-label="Home">
+          <h1 class="vh">Trade.FlexSpot — live trading community demo terminal</h1>
           <div class="mh-search"><span class="ic sm" data-icon="search"></span><input id="homeSearch" placeholder="Search traders, symbols, ideas…" autocomplete="off" aria-label="Search"><div class="gsearch-drop" id="homeSearchDrop" hidden></div></div>
           <!-- v25.20: TikTok-style live circles — who's live now, scrollable -->
           <div class="live-circles" id="homeLiveRow" hidden aria-label="Live now"></div>
@@ -2584,7 +2597,7 @@ body.rtl{ direction:rtl; }
             <button class="icon-btn" id="installX" aria-label="Dismiss"><span class="ic sm" data-icon="x"></span></button>
           </div>
           <div class="live-hero" id="liveHero">
-            <img class="live-hero-bg" src="https://picsum.photos/seed/tradingdesk7/800/420" alt="" loading="lazy">
+            <img class="live-hero-bg" src="assets/img/live-hero.webp" width="1280" height="720" alt="Trading desk monitors glowing with live candlestick charts" fetchpriority="high" decoding="async">
             <div class="live-hero-grad"></div>
             <div class="live-hero-top"><span class="live-pill"><i></i>LIVE</span><span class="live-viewers"><span class="ic xs" data-icon="eye"></span>2.4K</span></div>
             <div class="live-hero-bottom">
@@ -2625,7 +2638,7 @@ body.rtl{ direction:rtl; }
           <div class="home-desk">
             <div class="hd-main">
               <div class="hd-hero" id="hdHero">
-                <img src="https://picsum.photos/seed/tradingdesk7/1000/420" alt="" loading="lazy">
+                <img src="assets/img/live-hero.webp" width="1280" height="720" alt="Trading desk monitors glowing with live candlestick charts" loading="lazy" decoding="async">
                 <div class="hd-hero-grad"></div>
                 <div class="hd-hero-top"><span class="live-pill"><i></i>LIVE</span><span class="live-viewers"><span class="ic xs" data-icon="eye"></span>2.4K</span></div>
                 <div class="hd-hero-bottom">
@@ -7277,12 +7290,12 @@ $("pfShare").addEventListener("click", ()=>{
 
 /* ---------------- PROFILE + BROKERS ---------------- */
 const BROKERS = [
-  { name:"Exness",     sub:"MT4 / MT5",            g:["#2F80FF","#1B5FD6"], ini:"EX", server:"Exness-MT5Real", connected:false, logo:"assets/brokers/exness.png" },
-  { name:"Vantage",    sub:"MT4 / MT5",            g:["#22C55E","#166534"], ini:"VA", server:"Vantage-MT5",     connected:false, logo:"assets/brokers/vantage.png" },
-  { name:"IC Markets", sub:"MT4 / MT5 · cTrader",  g:["#5B8DEF","#2B4A8A"], ini:"IC", server:"ICMarkets-MT5",  connected:false, logo:"assets/brokers/icmarkets.png" },
-  { name:"XM",         sub:"MT4 / MT5",            g:["#B678F0","#5E2B8A"], ini:"XM", server:"XM-MT5",          connected:false, logo:"assets/brokers/xm.png" },
-  { name:"OctaFX",     sub:"MT4 / MT5",            g:["#F5A623","#B26A00"], ini:"OC", server:"OctaFX-MT5",     connected:false, logo:"assets/brokers/octafx.png" },
-  { name:"FBS",        sub:"MT4 / MT5",            g:["#F04452","#8A1F28"], ini:"FB", server:"FBS-MT5",         connected:false, logo:"assets/brokers/fbs.png" }
+  { name:"Exness",     sub:"MT4 / MT5",            g:["#2F80FF","#1B5FD6"], ini:"EX", server:"Exness-MT5Real", connected:false, logo:"assets/brokers/exness.webp" },
+  { name:"Vantage",    sub:"MT4 / MT5",            g:["#22C55E","#166534"], ini:"VA", server:"Vantage-MT5",     connected:false, logo:"assets/brokers/vantage.webp" },
+  { name:"IC Markets", sub:"MT4 / MT5 · cTrader",  g:["#5B8DEF","#2B4A8A"], ini:"IC", server:"ICMarkets-MT5",  connected:false, logo:"assets/brokers/icmarkets.webp" },
+  { name:"XM",         sub:"MT4 / MT5",            g:["#B678F0","#5E2B8A"], ini:"XM", server:"XM-MT5",          connected:false, logo:"assets/brokers/xm.webp" },
+  { name:"OctaFX",     sub:"MT4 / MT5",            g:["#F5A623","#B26A00"], ini:"OC", server:"OctaFX-MT5",     connected:false, logo:"assets/brokers/octafx.webp" },
+  { name:"FBS",        sub:"MT4 / MT5",            g:["#F04452","#8A1F28"], ini:"FB", server:"FBS-MT5",         connected:false, logo:"assets/brokers/fbs.webp" }
 ];
 /* broker logo tile: real logo image; falls back to the gradient monogram if the image fails */
 function brokerLogoHTML(b, cls){
@@ -7500,7 +7513,7 @@ function igProfileHTML(t){
   const copyingThis = copyState.on && copyState.host === t.id;
   const ret = t.ret != null ? t.ret : 0;
   return ''+
-  '<div class="tp-cover"><img src="https://picsum.photos/seed/tpcover-'+t.id+'/800/300" alt="" loading="lazy"><div class="tp-cover-grad"></div></div>'+
+  '<div class="tp-cover"><img src="assets/img/live-hero.webp" width="1280" height="720" alt="" loading="lazy" decoding="async"><div class="tp-cover-grad"></div></div>'+
   '<div class="tp-head">'+
     '<div class="tp-av">'+avImg(t, "xl", (t.live?'<span class="trader-live">LIVE</span>':''))+'</div>'+
     '<b class="tp-name">'+esc(t.name)+(t.kycVerified?' <span class="verified">✓</span>':'')+(typeof verifiedSet==="function"&&verifiedSet().has(String(t.handle||"").toLowerCase())?' <span class="verified" title="Verified Pro · demo">✓</span>':'')+'</b>'+
@@ -8990,7 +9003,7 @@ function renderHomeDesk(){
   const reels = allReels().filter(({r})=>r.visibility!=="private").slice(0,4);
   const hr = $("hdReels");
   if(hr) hr.innerHTML = reels.map(({t,r},i)=>
-    '<button class="hd-reel" data-hr="'+i+'"><img src="https://picsum.photos/seed/hdreel'+r.id+'/300/420" alt="" loading="lazy">'+
+    '<button class="hd-reel" data-hr="'+i+'"><img src="assets/img/live-hero.webp" width="1280" height="720" alt="" loading="lazy" decoding="async">'+
     '<span class="rm-grad"></span><span class="rm-tx"><b>'+esc(r.title||"Reel")+'</b><span>▶ '+esc(r.views||"0")+'</span></span>'+
     '<span class="rm-dur num">0:'+(28+i*7)+'</span></button>').join("");
   if(hr) hr.querySelectorAll("[data-hr]").forEach(b=>b.addEventListener("click", ()=>{

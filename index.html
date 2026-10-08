@@ -6,22 +6,32 @@
 <meta name="theme-color" content="#060A13">
 <meta name="description" content="Trade.FlexSpot — a live trading community demo terminal. Paper-trade simulated markets, watch live rooms, and learn with other traders. All prices are simulated; not financial advice.">
 <link rel="canonical" href="https://trade.flexspot.lol/">
+<!-- Google Search Console: paste the <meta name="google-site-verification" content="..."> tag here after verifying https://trade.flexspot.lol in Search Console (see docs/TASKS.md). -->
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<meta name="og:title" content="Trade.FlexSpot — Live Trading Community (Demo)">
-<meta name="og:description" content="Paper-trade simulated markets, watch live rooms, and learn with other traders. Demo build — all prices simulated.">
-<meta name="og:type" content="website">
-<meta name="og:url" content="https://trade.flexspot.lol/">
-<meta name="og:image" content="https://trade.flexspot.lol/assets/og-card.png">
-<meta name="og:image:width" content="1200">
-<meta name="og:image:height" content="630">
-<meta name="og:image:alt" content="Trade.FlexSpot — live trading community demo terminal">
+<meta property="og:title" content="Trade.FlexSpot — Live Trading Community (Demo)">
+<meta property="og:description" content="Paper-trade simulated markets, watch live rooms, and learn with other traders. Demo build — all prices simulated.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://trade.flexspot.lol/">
+<meta property="og:image" content="https://trade.flexspot.lol/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Trade.FlexSpot — live trading community demo terminal">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Trade.FlexSpot — Live Trading Community (Demo)">
 <meta name="twitter:description" content="Paper-trade simulated markets, watch live rooms, and learn with other traders. Demo build — all prices simulated.">
 <meta name="twitter:image" content="https://trade.flexspot.lol/assets/og-card.png">
 <title>Trade.FlexSpot — Live Trading Community (Demo)</title>
 <link rel="stylesheet" href="styles.css?v=56">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebSite","@id":"https://trade.flexspot.lol/#website","url":"https://trade.flexspot.lol/","name":"Trade.FlexSpot","inLanguage":"en","description":"Trade.FlexSpot is a demo trading-community terminal: paper-trade simulated markets, watch live rooms, and learn with other traders. All prices are simulated; not financial advice."},
+{"@type":"WebApplication","name":"Trade.FlexSpot \u2014 Live Trading Community (Demo)","url":"https://trade.flexspot.lol/","applicationCategory":"FinanceApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript","isPartOf":{"@id":"https://trade.flexspot.lol/#website"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Demo trading-community terminal with simulated paper trading, live rooms, reels, and trading classes. All prices simulated; not financial advice."},
+{"@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"Home","item":"https://trade.flexspot.lol/"},
+{"@type":"ListItem","position":2,"name":"Privacy Policy","item":"https://trade.flexspot.lol/privacy.html"},
+{"@type":"ListItem","position":3,"name":"Terms of Use","item":"https://trade.flexspot.lol/terms.html"}]}]}
+</script>
 </head>
 <body>
 
@@ -73,6 +83,7 @@
 
         <!-- ============ HOME ============ -->
         <section class="screen active" id="screen-home" aria-label="Home">
+          <h1 class="vh">Trade.FlexSpot — live trading community demo terminal</h1>
           <div class="mh-search"><span class="ic sm" data-icon="search"></span><input id="homeSearch" placeholder="Search traders, symbols, ideas…" autocomplete="off" aria-label="Search"><div class="gsearch-drop" id="homeSearchDrop" hidden></div></div>
           <!-- v25.20: TikTok-style live circles — who's live now, scrollable -->
           <div class="live-circles" id="homeLiveRow" hidden aria-label="Live now"></div>
@@ -84,7 +95,7 @@
             <button class="icon-btn" id="installX" aria-label="Dismiss"><span class="ic sm" data-icon="x"></span></button>
           </div>
           <div class="live-hero" id="liveHero">
-            <img class="live-hero-bg" src="https://picsum.photos/seed/tradingdesk7/800/420" alt="" loading="lazy">
+            <img class="live-hero-bg" src="assets/img/live-hero.webp" width="1280" height="720" alt="Trading desk monitors glowing with live candlestick charts" fetchpriority="high" decoding="async">
             <div class="live-hero-grad"></div>
             <div class="live-hero-top"><span class="live-pill"><i></i>LIVE</span><span class="live-viewers"><span class="ic xs" data-icon="eye"></span>2.4K</span></div>
             <div class="live-hero-bottom">
@@ -125,7 +136,7 @@
           <div class="home-desk">
             <div class="hd-main">
               <div class="hd-hero" id="hdHero">
-                <img src="https://picsum.photos/seed/tradingdesk7/1000/420" alt="" loading="lazy">
+                <img src="assets/img/live-hero.webp" width="1280" height="720" alt="Trading desk monitors glowing with live candlestick charts" loading="lazy" decoding="async">
                 <div class="hd-hero-grad"></div>
                 <div class="hd-hero-top"><span class="live-pill"><i></i>LIVE</span><span class="live-viewers"><span class="ic xs" data-icon="eye"></span>2.4K</span></div>
                 <div class="hd-hero-bottom">
